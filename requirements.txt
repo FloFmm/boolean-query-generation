@@ -1,2 +1,9 @@
 biopython
 scikit-learn
+
+# pubmed baseline download
+requests
+
+# neural retrieval
+transformers
+torch
