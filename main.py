@@ -9,15 +9,15 @@ Entrez.email = "florian_maurus.mueller@mailbox.tu-dresden.de"
 # Search PubMed
 start_time = time.time()
 # Using Keywords
-# search_term = '"CRISPR-Cas Systems"[MeSH]'
-# relevant_ids = search_pubmed(search_term, retmax=1000)
-# relevant_records = [entry for entry in fetch_pubmed_records(relevant_ids) if entry["abstract"]]
+search_term = '"CRISPR-Cas Systems"[MeSH]'
+relevant_ids = search_pubmed(search_term, retmax=1000)
+relevant_records = [entry for entry in fetch_pubmed_records(relevant_ids) if entry["abstract"]]
 
 # Using dense Retreival
-query = "studies on ketoprofen"
-result = search_pubmed_med_cpt(query, top_k=100)
-query_node, relevant_records, edges = result["query_node"], result["nodes"], result["edges"]
-relevant_ids = [record["pmid"] for record in relevant_records]
+# query = "studies on ketoprofen"
+# result = search_pubmed_med_cpt(query, top_k=100)
+# query_node, relevant_records, edges = result["query_node"], result["nodes"], result["edges"]
+# relevant_ids = [record["id"] for record in relevant_records]
 print("time to find relevant records:", time.time()-start_time)
 
 # Find negative Records
