@@ -1,5 +1,5 @@
 from Bio import Entrez
-from app.pubmed.retrieval import search_pubmed,fetch_pubmed_records, sample_jsonl_files, search_pubmed_med_cpt
+from app.backend.data.pubmed.search import search_pubmed,fetch_pubmed_records, sample_jsonl_files, search_pubmed_med_cpt
 from logical_query_generation import train_text_classifier
 import time
 
