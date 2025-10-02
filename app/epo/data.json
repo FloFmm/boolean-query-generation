@@ -1,0 +1,1129 @@
+{
+    "id": 14,
+    "name": "14.7 EPO worldwide bibliographic data (DOCDB) back file",
+    "description": "EPO worldwide bibliographic data (DOCDB) back file. Available yearly. The 2025 backfile will be extracted in week 09/2025 and made available in week 10/2025. ",
+    "deliveries": [
+        {
+            "deliveryId": 2238,
+            "deliveryName": "14.7 DOCDB XML Back file February 2025",
+            "deliveryPublicationDatetime": "2025-03-03T12:33:00.000+01:00",
+            "deliveryExpiryDatetime": null,
+            "items": [
+                {
+                    "itemId": 6980,
+                    "itemName": "docdb_xml_bck_202508_031_D.zip",
+                    "fileSize": "486.0 MB",
+                    "fileChecksum": "B723CA35F38E65B0F0CF4F98A8892A4919387895",
+                    "itemPublicationDatetime": "2025-03-03T13:52:10.000+01:00"
+                },
+                {
+                    "itemId": 6979,
+                    "itemName": "docdb_xml_bck_202508_031_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "B9668684178C34E351F1E513816776780C6C34A4",
+                    "itemPublicationDatetime": "2025-03-03T13:51:54.000+01:00"
+                },
+                {
+                    "itemId": 6978,
+                    "itemName": "docdb_xml_bck_202508_031_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "1B7E17A88855371701B5B098A5006B5B951B6602",
+                    "itemPublicationDatetime": "2025-03-03T13:51:20.000+01:00"
+                },
+                {
+                    "itemId": 6977,
+                    "itemName": "docdb_xml_bck_202508_031_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "03C901EE6F5E2373A4AAAD3997282454F4C92AE7",
+                    "itemPublicationDatetime": "2025-03-03T13:50:50.000+01:00"
+                },
+                {
+                    "itemId": 6976,
+                    "itemName": "docdb_xml_bck_202508_030_G.zip",
+                    "fileSize": "242.1 MB",
+                    "fileChecksum": "8FE57A8D9D2A2564D0416C03C84C9D8A4ECE52E6",
+                    "itemPublicationDatetime": "2025-03-03T13:50:18.000+01:00"
+                },
+                {
+                    "itemId": 6975,
+                    "itemName": "docdb_xml_bck_202508_030_F.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "943A21A5EBF01AE5079D77055FD809F3A37CCF43",
+                    "itemPublicationDatetime": "2025-03-03T13:50:05.000+01:00"
+                },
+                {
+                    "itemId": 6974,
+                    "itemName": "docdb_xml_bck_202508_030_E.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "E7A6A0C6B787821A96C1C894EEA2510D6D8BD566",
+                    "itemPublicationDatetime": "2025-03-03T13:49:33.000+01:00"
+                },
+                {
+                    "itemId": 6973,
+                    "itemName": "docdb_xml_bck_202508_030_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "0D4B1A5D3F828184A7494711CB02FAD4A14E3343",
+                    "itemPublicationDatetime": "2025-03-03T13:49:02.000+01:00"
+                },
+                {
+                    "itemId": 6972,
+                    "itemName": "docdb_xml_bck_202508_030_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "0BF8F1C937B4CD80B3F8C7E30468F4FBC2F471FD",
+                    "itemPublicationDatetime": "2025-03-03T13:48:27.000+01:00"
+                },
+                {
+                    "itemId": 6971,
+                    "itemName": "docdb_xml_bck_202508_030_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "975903FD9A6709CE1986D2744E7DFAE252698E5C",
+                    "itemPublicationDatetime": "2025-03-03T13:47:52.000+01:00"
+                },
+                {
+                    "itemId": 6970,
+                    "itemName": "docdb_xml_bck_202508_030_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "F145CB04D8BE47AD963892EDF513BCB0BF38EAA9",
+                    "itemPublicationDatetime": "2025-03-03T13:47:20.000+01:00"
+                },
+                {
+                    "itemId": 6969,
+                    "itemName": "docdb_xml_bck_202508_029_D.zip",
+                    "fileSize": "27.0 MB",
+                    "fileChecksum": "ECDBC492A79ECC98D6F2E1A91928478D508E0AAE",
+                    "itemPublicationDatetime": "2025-03-03T13:46:49.000+01:00"
+                },
+                {
+                    "itemId": 6968,
+                    "itemName": "docdb_xml_bck_202508_029_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "E85394F3A6A2F99D1DCAA267A02F4890E245C984",
+                    "itemPublicationDatetime": "2025-03-03T13:46:39.000+01:00"
+                },
+                {
+                    "itemId": 6967,
+                    "itemName": "docdb_xml_bck_202508_029_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "B3A6CC9C25F664C026E628C1AA13F10726559F17",
+                    "itemPublicationDatetime": "2025-03-03T13:46:04.000+01:00"
+                },
+                {
+                    "itemId": 6966,
+                    "itemName": "docdb_xml_bck_202508_029_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "4AABA00A22E326661DA955CD358D9C74E9D080C9",
+                    "itemPublicationDatetime": "2025-03-03T13:45:31.000+01:00"
+                },
+                {
+                    "itemId": 6965,
+                    "itemName": "docdb_xml_bck_202508_028_H.zip",
+                    "fileSize": "721.5 MB",
+                    "fileChecksum": "C213682857EC8C7F4D8326D51A3836554429DF7D",
+                    "itemPublicationDatetime": "2025-03-03T13:44:59.000+01:00"
+                },
+                {
+                    "itemId": 6964,
+                    "itemName": "docdb_xml_bck_202508_028_G.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "08832F96EC018F4D4C01485D3A28D54E70853D23",
+                    "itemPublicationDatetime": "2025-03-03T13:44:39.000+01:00"
+                },
+                {
+                    "itemId": 6963,
+                    "itemName": "docdb_xml_bck_202508_028_F.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "C55C520C7E6F4AD94193B114E3269A87ABB1AC20",
+                    "itemPublicationDatetime": "2025-03-03T13:44:03.000+01:00"
+                },
+                {
+                    "itemId": 6962,
+                    "itemName": "docdb_xml_bck_202508_028_E.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "20994703558271A388083BFDC1A6151910923D6B",
+                    "itemPublicationDatetime": "2025-03-03T13:43:32.000+01:00"
+                },
+                {
+                    "itemId": 6961,
+                    "itemName": "docdb_xml_bck_202508_028_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "A5B5E3945CA6D860592431D6A2FC89656417766F",
+                    "itemPublicationDatetime": "2025-03-03T13:42:56.000+01:00"
+                },
+                {
+                    "itemId": 6960,
+                    "itemName": "docdb_xml_bck_202508_028_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "6DCDCA3FBF1B40D2921685762575BCA5B68606A5",
+                    "itemPublicationDatetime": "2025-03-03T13:42:22.000+01:00"
+                },
+                {
+                    "itemId": 6959,
+                    "itemName": "docdb_xml_bck_202508_028_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "A0FDC589E892FA01996253087239ECD06467DADD",
+                    "itemPublicationDatetime": "2025-03-03T13:41:50.000+01:00"
+                },
+                {
+                    "itemId": 6958,
+                    "itemName": "docdb_xml_bck_202508_028_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "A6E56C1618CF1AB98129F616F1AFD40E4BC27253",
+                    "itemPublicationDatetime": "2025-03-03T13:41:16.000+01:00"
+                },
+                {
+                    "itemId": 6957,
+                    "itemName": "docdb_xml_bck_202508_027_E.zip",
+                    "fileSize": "758.4 MB",
+                    "fileChecksum": "88EAA14E8882DF919DFD333672261EA597237D0C",
+                    "itemPublicationDatetime": "2025-03-03T13:40:44.000+01:00"
+                },
+                {
+                    "itemId": 6956,
+                    "itemName": "docdb_xml_bck_202508_027_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "3F26039E86A648C65E16E89B3FACD6B4D6E0B713",
+                    "itemPublicationDatetime": "2025-03-03T13:40:24.000+01:00"
+                },
+                {
+                    "itemId": 6955,
+                    "itemName": "docdb_xml_bck_202508_027_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "0F31ADDD0DE7F6B882B5F4ABF852BE214712A4E0",
+                    "itemPublicationDatetime": "2025-03-03T13:39:50.000+01:00"
+                },
+                {
+                    "itemId": 6954,
+                    "itemName": "docdb_xml_bck_202508_027_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "74FA33AF49ECDD8590DCDB6AB4488EC014FE1BD0",
+                    "itemPublicationDatetime": "2025-03-03T13:39:18.000+01:00"
+                },
+                {
+                    "itemId": 6953,
+                    "itemName": "docdb_xml_bck_202508_027_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "4880E77D0FC10D79EBCB5DC69CA223C85C6B8548",
+                    "itemPublicationDatetime": "2025-03-03T13:38:46.000+01:00"
+                },
+                {
+                    "itemId": 6952,
+                    "itemName": "docdb_xml_bck_202508_026_C.zip",
+                    "fileSize": "1.2 GB",
+                    "fileChecksum": "C14645140FE5722C019327D82E1F6F3615BEDF1A",
+                    "itemPublicationDatetime": "2025-03-03T13:38:12.000+01:00"
+                },
+                {
+                    "itemId": 6951,
+                    "itemName": "docdb_xml_bck_202508_026_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "0FD1C472F569722765E6B190155CAE82F8FA9697",
+                    "itemPublicationDatetime": "2025-03-03T13:37:44.000+01:00"
+                },
+                {
+                    "itemId": 6950,
+                    "itemName": "docdb_xml_bck_202508_026_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "8AD926D7AD2A99602EB4C7DF8B3A8597CFDE0759",
+                    "itemPublicationDatetime": "2025-03-03T13:37:10.000+01:00"
+                },
+                {
+                    "itemId": 6949,
+                    "itemName": "docdb_xml_bck_202508_025_B.zip",
+                    "fileSize": "296.9 MB",
+                    "fileChecksum": "6E5F8A3E41C8DF57CFE7612385EE1048B7A1A061",
+                    "itemPublicationDatetime": "2025-03-03T13:36:40.000+01:00"
+                },
+                {
+                    "itemId": 6948,
+                    "itemName": "docdb_xml_bck_202508_025_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "A4D0C33C98E39ADB29D10CA7DB1D155BAC88EDE8",
+                    "itemPublicationDatetime": "2025-03-03T13:36:28.000+01:00"
+                },
+                {
+                    "itemId": 6947,
+                    "itemName": "docdb_xml_bck_202508_024_C.zip",
+                    "fileSize": "332.0 MB",
+                    "fileChecksum": "3C37F712203F2B7C7CB7CFC909D7707392341F53",
+                    "itemPublicationDatetime": "2025-03-03T13:35:54.000+01:00"
+                },
+                {
+                    "itemId": 6946,
+                    "itemName": "docdb_xml_bck_202508_024_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "F879140189F7BE28EA8CA59915B4328D4FA1242A",
+                    "itemPublicationDatetime": "2025-03-03T13:35:41.000+01:00"
+                },
+                {
+                    "itemId": 6945,
+                    "itemName": "docdb_xml_bck_202508_024_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "B0A6545876C8DE949683AD54C28E9D01BF333E34",
+                    "itemPublicationDatetime": "2025-03-03T13:35:09.000+01:00"
+                },
+                {
+                    "itemId": 6944,
+                    "itemName": "docdb_xml_bck_202508_023_C.zip",
+                    "fileSize": "107.3 MB",
+                    "fileChecksum": "484060725D16EF145FAC7C8483790207459942CD",
+                    "itemPublicationDatetime": "2025-03-03T13:34:35.000+01:00"
+                },
+                {
+                    "itemId": 6943,
+                    "itemName": "docdb_xml_bck_202508_023_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "A35F6DB27D74B3FF1653FE66E67B7683F17CAA60",
+                    "itemPublicationDatetime": "2025-03-03T13:34:25.000+01:00"
+                },
+                {
+                    "itemId": 6942,
+                    "itemName": "docdb_xml_bck_202508_023_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "E87A7880D5B53C85B487E18C77DCDDDF3B1AC743",
+                    "itemPublicationDatetime": "2025-03-03T13:33:51.000+01:00"
+                },
+                {
+                    "itemId": 6941,
+                    "itemName": "docdb_xml_bck_202508_022_B.zip",
+                    "fileSize": "1.1 GB",
+                    "fileChecksum": "725E9CA84481A442ED904A383D37F39FFAC28749",
+                    "itemPublicationDatetime": "2025-03-03T13:33:16.000+01:00"
+                },
+                {
+                    "itemId": 6940,
+                    "itemName": "docdb_xml_bck_202508_022_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "E751AC2AA70EF4C4F51FFBA763367EAFC2AC996E",
+                    "itemPublicationDatetime": "2025-03-03T13:32:48.000+01:00"
+                },
+                {
+                    "itemId": 6939,
+                    "itemName": "docdb_xml_bck_202508_021_E.zip",
+                    "fileSize": "538.5 MB",
+                    "fileChecksum": "AAD3E6C58EBEFCF14BFBA8E067E539975C50B146",
+                    "itemPublicationDatetime": "2025-03-03T13:32:20.000+01:00"
+                },
+                {
+                    "itemId": 6938,
+                    "itemName": "docdb_xml_bck_202508_021_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "088B22F1F38271C0EDBE2321718C7C8B867D5734",
+                    "itemPublicationDatetime": "2025-03-03T13:32:04.000+01:00"
+                },
+                {
+                    "itemId": 6937,
+                    "itemName": "docdb_xml_bck_202508_021_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "4181EFFB32282CEBB061F42C406D7356A323E96A",
+                    "itemPublicationDatetime": "2025-03-03T13:31:30.000+01:00"
+                },
+                {
+                    "itemId": 6936,
+                    "itemName": "docdb_xml_bck_202508_021_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "235EDF6C77DE6E1E8D0349DE714CC2B58213DBE5",
+                    "itemPublicationDatetime": "2025-03-03T13:30:59.000+01:00"
+                },
+                {
+                    "itemId": 6935,
+                    "itemName": "docdb_xml_bck_202508_021_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "1F81FC2F3F93FD749C5B3323BCF9A8F0A32F3EC8",
+                    "itemPublicationDatetime": "2025-03-03T13:30:25.000+01:00"
+                },
+                {
+                    "itemId": 6934,
+                    "itemName": "docdb_xml_bck_202508_020_D.zip",
+                    "fileSize": "704.1 MB",
+                    "fileChecksum": "2665B8DC561326733BF78926D876E417B3F1925A",
+                    "itemPublicationDatetime": "2025-03-03T13:29:53.000+01:00"
+                },
+                {
+                    "itemId": 6933,
+                    "itemName": "docdb_xml_bck_202508_020_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "F1D79BFCECF70297119F703E3E670FC4655385EA",
+                    "itemPublicationDatetime": "2025-03-03T13:29:32.000+01:00"
+                },
+                {
+                    "itemId": 6932,
+                    "itemName": "docdb_xml_bck_202508_020_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "04387D4F0888042F3B58D5E2D3C500BC0A9719E4",
+                    "itemPublicationDatetime": "2025-03-03T13:29:01.000+01:00"
+                },
+                {
+                    "itemId": 6931,
+                    "itemName": "docdb_xml_bck_202508_020_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "B94EE9DF6C0ADD5CE0DA3D27DD5FF5CE2CF62CF2",
+                    "itemPublicationDatetime": "2025-03-03T13:28:28.000+01:00"
+                },
+                {
+                    "itemId": 6930,
+                    "itemName": "docdb_xml_bck_202508_019_F.zip",
+                    "fileSize": "366.6 MB",
+                    "fileChecksum": "132FB10DB38AE054F921E94B0F6D40A15F9138C5",
+                    "itemPublicationDatetime": "2025-03-03T13:27:57.000+01:00"
+                },
+                {
+                    "itemId": 6929,
+                    "itemName": "docdb_xml_bck_202508_019_E.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "ACD49BE1D7DF91D1432AFDCD6D788C70B23A5642",
+                    "itemPublicationDatetime": "2025-03-03T13:27:44.000+01:00"
+                },
+                {
+                    "itemId": 6928,
+                    "itemName": "docdb_xml_bck_202508_019_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "DDBEC31267DDBFCFDC119A8805F161D43C92B45D",
+                    "itemPublicationDatetime": "2025-03-03T13:27:13.000+01:00"
+                },
+                {
+                    "itemId": 6927,
+                    "itemName": "docdb_xml_bck_202508_019_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "32276BA153B534DB7419FDA94F6A66F49ABE33A1",
+                    "itemPublicationDatetime": "2025-03-03T13:26:41.000+01:00"
+                },
+                {
+                    "itemId": 6926,
+                    "itemName": "docdb_xml_bck_202508_019_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "06E992A83CA2AFB1D25A4CBCAA2543A6FB403EB6",
+                    "itemPublicationDatetime": "2025-03-03T13:26:06.000+01:00"
+                },
+                {
+                    "itemId": 6925,
+                    "itemName": "docdb_xml_bck_202508_019_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "AF13C5B617DD6B6EED5E748B529438FF9B32719F",
+                    "itemPublicationDatetime": "2025-03-03T13:25:29.000+01:00"
+                },
+                {
+                    "itemId": 6924,
+                    "itemName": "docdb_xml_bck_202508_018_G.zip",
+                    "fileSize": "15.1 MB",
+                    "fileChecksum": "379B8583D2841B1D11116A0CAC5116C75C3FCBB3",
+                    "itemPublicationDatetime": "2025-03-03T13:24:57.000+01:00"
+                },
+                {
+                    "itemId": 6923,
+                    "itemName": "docdb_xml_bck_202508_018_F.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "0FC37BF6D80E9B3EDFDE32CA2502D37402E7F96F",
+                    "itemPublicationDatetime": "2025-03-03T13:24:47.000+01:00"
+                },
+                {
+                    "itemId": 6922,
+                    "itemName": "docdb_xml_bck_202508_018_E.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "BBBF43CB1ED70C9F0BDA62663F8ED1417C43A148",
+                    "itemPublicationDatetime": "2025-03-03T13:24:13.000+01:00"
+                },
+                {
+                    "itemId": 6921,
+                    "itemName": "docdb_xml_bck_202508_018_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "BF8F1DB938470BBCDE2204B858030E115192B139",
+                    "itemPublicationDatetime": "2025-03-03T13:23:39.000+01:00"
+                },
+                {
+                    "itemId": 6920,
+                    "itemName": "docdb_xml_bck_202508_018_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "9A0DED7786A96954F1620348390767216CD70B50",
+                    "itemPublicationDatetime": "2025-03-03T13:23:05.000+01:00"
+                },
+                {
+                    "itemId": 6919,
+                    "itemName": "docdb_xml_bck_202508_018_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "480798DA86E6261073442E13EC7C478C1E5C141D",
+                    "itemPublicationDatetime": "2025-03-03T13:22:34.000+01:00"
+                },
+                {
+                    "itemId": 6918,
+                    "itemName": "docdb_xml_bck_202508_018_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "61A499EFB23BC0D99CA786F30CFAF7FDFEE783B2",
+                    "itemPublicationDatetime": "2025-03-03T13:21:59.000+01:00"
+                },
+                {
+                    "itemId": 6917,
+                    "itemName": "docdb_xml_bck_202508_017_F.zip",
+                    "fileSize": "1.3 GB",
+                    "fileChecksum": "C5457B3B3AD3F0753C3C39F92AE79B342B1DC1B8",
+                    "itemPublicationDatetime": "2025-03-03T13:21:24.000+01:00"
+                },
+                {
+                    "itemId": 6916,
+                    "itemName": "docdb_xml_bck_202508_017_E.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "CBA5C163AD03EFA1C64A7A91C5F9C29F1E0F7476",
+                    "itemPublicationDatetime": "2025-03-03T13:20:55.000+01:00"
+                },
+                {
+                    "itemId": 6915,
+                    "itemName": "docdb_xml_bck_202508_017_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "28E7242659A0E99F1A157CB67A28BDF3CE23533B",
+                    "itemPublicationDatetime": "2025-03-03T13:20:23.000+01:00"
+                },
+                {
+                    "itemId": 6914,
+                    "itemName": "docdb_xml_bck_202508_017_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "598693C285D7274E9E0B4066BB3AEA6374C8995C",
+                    "itemPublicationDatetime": "2025-03-03T13:19:47.000+01:00"
+                },
+                {
+                    "itemId": 6913,
+                    "itemName": "docdb_xml_bck_202508_017_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "751E73EA89A6A43E2381A795BDBF71DB2F1C6078",
+                    "itemPublicationDatetime": "2025-03-03T13:19:12.000+01:00"
+                },
+                {
+                    "itemId": 6912,
+                    "itemName": "docdb_xml_bck_202508_017_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "4CE8CDB5A1342316A14C76EA02BCBB407376F9C7",
+                    "itemPublicationDatetime": "2025-03-03T13:18:37.000+01:00"
+                },
+                {
+                    "itemId": 6911,
+                    "itemName": "docdb_xml_bck_202508_016_D.zip",
+                    "fileSize": "1.0 GB",
+                    "fileChecksum": "106AF297A90A2C5A47C9D45376D11E7A29620901",
+                    "itemPublicationDatetime": "2025-03-03T13:18:07.000+01:00"
+                },
+                {
+                    "itemId": 6910,
+                    "itemName": "docdb_xml_bck_202508_016_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "ADFBFD48469DCA2F5717BC21954DA9C0B07E20EA",
+                    "itemPublicationDatetime": "2025-03-03T13:17:41.000+01:00"
+                },
+                {
+                    "itemId": 6909,
+                    "itemName": "docdb_xml_bck_202508_016_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "8F270C80B8922529832CF2DF241773553359D5EC",
+                    "itemPublicationDatetime": "2025-03-03T13:17:05.000+01:00"
+                },
+                {
+                    "itemId": 6908,
+                    "itemName": "docdb_xml_bck_202508_016_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "947FBB9289C958930460243955224CF436CA876A",
+                    "itemPublicationDatetime": "2025-03-03T13:16:33.000+01:00"
+                },
+                {
+                    "itemId": 6907,
+                    "itemName": "docdb_xml_bck_202508_015_C.zip",
+                    "fileSize": "1.0 GB",
+                    "fileChecksum": "E0AFDFD140064FDCF5C4D4EB45E9D968D084BFAF",
+                    "itemPublicationDatetime": "2025-03-03T13:15:56.000+01:00"
+                },
+                {
+                    "itemId": 6906,
+                    "itemName": "docdb_xml_bck_202508_015_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "32AEA46DFB7B48332A8DD38B41F90CFABDD97069",
+                    "itemPublicationDatetime": "2025-03-03T13:15:29.000+01:00"
+                },
+                {
+                    "itemId": 6905,
+                    "itemName": "docdb_xml_bck_202508_015_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "D6953F9D199B0E3CA7F805C86E8CAF22CE868411",
+                    "itemPublicationDatetime": "2025-03-03T13:14:53.000+01:00"
+                },
+                {
+                    "itemId": 6904,
+                    "itemName": "docdb_xml_bck_202508_014_D.zip",
+                    "fileSize": "476.7 MB",
+                    "fileChecksum": "E16FF70D56190467846175A3C042B583A03672B1",
+                    "itemPublicationDatetime": "2025-03-03T13:14:26.000+01:00"
+                },
+                {
+                    "itemId": 6903,
+                    "itemName": "docdb_xml_bck_202508_014_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "450AE5A4246281B9CED9D58421A281D66DA9D9AC",
+                    "itemPublicationDatetime": "2025-03-03T13:14:10.000+01:00"
+                },
+                {
+                    "itemId": 6902,
+                    "itemName": "docdb_xml_bck_202508_014_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "6E1F52B43BC3A94A98322F6609D77E4D0A4018CD",
+                    "itemPublicationDatetime": "2025-03-03T13:13:40.000+01:00"
+                },
+                {
+                    "itemId": 6901,
+                    "itemName": "docdb_xml_bck_202508_014_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "0E87DE7A695CB51ACDE0847749A3FF55961C5EF7",
+                    "itemPublicationDatetime": "2025-03-03T13:13:07.000+01:00"
+                },
+                {
+                    "itemId": 6900,
+                    "itemName": "docdb_xml_bck_202508_013_C.zip",
+                    "fileSize": "1.2 GB",
+                    "fileChecksum": "5C90D6241DCF37535CB987C20EB4A85A8F674075",
+                    "itemPublicationDatetime": "2025-03-03T13:12:38.000+01:00"
+                },
+                {
+                    "itemId": 6899,
+                    "itemName": "docdb_xml_bck_202508_013_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "F8628D621E98D3838CCD3E7612E71E967B95B9AE",
+                    "itemPublicationDatetime": "2025-03-03T13:12:10.000+01:00"
+                },
+                {
+                    "itemId": 6898,
+                    "itemName": "docdb_xml_bck_202508_013_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "1DAA88E020061DB7A96938145265DEB3580986E1",
+                    "itemPublicationDatetime": "2025-03-03T13:11:36.000+01:00"
+                },
+                {
+                    "itemId": 6897,
+                    "itemName": "docdb_xml_bck_202508_012_D.zip",
+                    "fileSize": "215.4 MB",
+                    "fileChecksum": "AEA3C9F3FCF168CAF6DF35AFE0E1DA18F436E22E",
+                    "itemPublicationDatetime": "2025-03-03T13:11:06.000+01:00"
+                },
+                {
+                    "itemId": 6896,
+                    "itemName": "docdb_xml_bck_202508_012_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "C2F1B1178D3403EA6A2493F0CFCC0CE6FE26A2F6",
+                    "itemPublicationDatetime": "2025-03-03T13:10:54.000+01:00"
+                },
+                {
+                    "itemId": 6895,
+                    "itemName": "docdb_xml_bck_202508_012_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "DE837349ABA1AB367019EEB6AAB048AE8DA0446C",
+                    "itemPublicationDatetime": "2025-03-03T13:10:18.000+01:00"
+                },
+                {
+                    "itemId": 6894,
+                    "itemName": "docdb_xml_bck_202508_012_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "AB68F6E6F93478A1634BCCEFF2C17C9BB64E4B9C",
+                    "itemPublicationDatetime": "2025-03-03T13:09:48.000+01:00"
+                },
+                {
+                    "itemId": 6893,
+                    "itemName": "docdb_xml_bck_202508_011_G.zip",
+                    "fileSize": "35.0 MB",
+                    "fileChecksum": "A8880E09BAF53F49140ECEDCEF797B2BF8EAF780",
+                    "itemPublicationDatetime": "2025-03-03T13:09:19.000+01:00"
+                },
+                {
+                    "itemId": 6892,
+                    "itemName": "docdb_xml_bck_202508_011_F.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "27796157EC9AFC8A029AFDDC90E34863749ADED0",
+                    "itemPublicationDatetime": "2025-03-03T13:09:09.000+01:00"
+                },
+                {
+                    "itemId": 6891,
+                    "itemName": "docdb_xml_bck_202508_011_E.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "F262187DD44102EE415F5C626A2D6B9785E625E0",
+                    "itemPublicationDatetime": "2025-03-03T13:08:38.000+01:00"
+                },
+                {
+                    "itemId": 6890,
+                    "itemName": "docdb_xml_bck_202508_011_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "4453AEE8B2D8E84C59823769A1E716D8B4623E53",
+                    "itemPublicationDatetime": "2025-03-03T13:08:03.000+01:00"
+                },
+                {
+                    "itemId": 6889,
+                    "itemName": "docdb_xml_bck_202508_011_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "592D0C8A83489BE72C04AB52C2D7AA5941066195",
+                    "itemPublicationDatetime": "2025-03-03T13:07:28.000+01:00"
+                },
+                {
+                    "itemId": 6888,
+                    "itemName": "docdb_xml_bck_202508_011_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "E53AD7B747670F0B4C5C35AE5BA44DB84DCE6A02",
+                    "itemPublicationDatetime": "2025-03-03T13:06:57.000+01:00"
+                },
+                {
+                    "itemId": 6886,
+                    "itemName": "docdb_xml_bck_202508_011_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "8573E392218730803A14601AAB7BA60790DA3FCC",
+                    "itemPublicationDatetime": "2025-03-03T13:06:25.000+01:00"
+                },
+                {
+                    "itemId": 6884,
+                    "itemName": "docdb_xml_bck_202508_010_E.zip",
+                    "fileSize": "522.7 MB",
+                    "fileChecksum": "E08866E0EEC20721CF6FD2CB583B695BA66813F8",
+                    "itemPublicationDatetime": "2025-03-03T13:05:55.000+01:00"
+                },
+                {
+                    "itemId": 6883,
+                    "itemName": "docdb_xml_bck_202508_010_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "063B2661856E617B5A744C1CDBBAF91101BB1A6A",
+                    "itemPublicationDatetime": "2025-03-03T13:05:39.000+01:00"
+                },
+                {
+                    "itemId": 6882,
+                    "itemName": "docdb_xml_bck_202508_010_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "F81F473E7317F722D8BC7E590B841E0B49B1CF56",
+                    "itemPublicationDatetime": "2025-03-03T13:05:07.000+01:00"
+                },
+                {
+                    "itemId": 6881,
+                    "itemName": "docdb_xml_bck_202508_010_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "8F55A5FE8D6054824A4768FFE306BA2E3C36E0AE",
+                    "itemPublicationDatetime": "2025-03-03T13:04:31.000+01:00"
+                },
+                {
+                    "itemId": 6880,
+                    "itemName": "docdb_xml_bck_202508_010_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "DD69941A43345C1BD6BAA223211BE192FD315326",
+                    "itemPublicationDatetime": "2025-03-03T13:03:56.000+01:00"
+                },
+                {
+                    "itemId": 6879,
+                    "itemName": "docdb_xml_bck_202508_009_C.zip",
+                    "fileSize": "347.1 MB",
+                    "fileChecksum": "B0957EECB03A68C670CB7A14A5378AB7506300C5",
+                    "itemPublicationDatetime": "2025-03-03T13:03:26.000+01:00"
+                },
+                {
+                    "itemId": 6878,
+                    "itemName": "docdb_xml_bck_202508_009_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "05D5AED315AFC5C119EF2EB3499E80C23B5CC8D5",
+                    "itemPublicationDatetime": "2025-03-03T13:03:12.000+01:00"
+                },
+                {
+                    "itemId": 6877,
+                    "itemName": "docdb_xml_bck_202508_009_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "FF5A87C169676A3E2B2D6FBC22A5C608122C61BA",
+                    "itemPublicationDatetime": "2025-03-03T13:02:38.000+01:00"
+                },
+                {
+                    "itemId": 6876,
+                    "itemName": "docdb_xml_bck_202508_008_J.zip",
+                    "fileSize": "587.7 MB",
+                    "fileChecksum": "4D144A1EA9215F4C24B0E9355A4E3A5A7A12ADBD",
+                    "itemPublicationDatetime": "2025-03-03T13:02:07.000+01:00"
+                },
+                {
+                    "itemId": 6875,
+                    "itemName": "docdb_xml_bck_202508_008_I.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "B6822EC0F970A931DC76E3C9BA80D0DA31FE747B",
+                    "itemPublicationDatetime": "2025-03-03T13:01:45.000+01:00"
+                },
+                {
+                    "itemId": 6874,
+                    "itemName": "docdb_xml_bck_202508_008_H.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "0807B8B24A466E0416D11EF434044F5D62A58474",
+                    "itemPublicationDatetime": "2025-03-03T13:01:10.000+01:00"
+                },
+                {
+                    "itemId": 6873,
+                    "itemName": "docdb_xml_bck_202508_008_G.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "1D3B6E8B6E3C823AAD3DF4FF1D63DAB9D87A1426",
+                    "itemPublicationDatetime": "2025-03-03T13:00:31.000+01:00"
+                },
+                {
+                    "itemId": 6872,
+                    "itemName": "docdb_xml_bck_202508_008_F.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "E57EA0BAEAE6ADDE0EC20DC10B675965EA84B857",
+                    "itemPublicationDatetime": "2025-03-03T12:59:55.000+01:00"
+                },
+                {
+                    "itemId": 6871,
+                    "itemName": "docdb_xml_bck_202508_008_E.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "C1DCAD22C70D658EBA97FA1B9B67B62005B85FF5",
+                    "itemPublicationDatetime": "2025-03-03T12:59:22.000+01:00"
+                },
+                {
+                    "itemId": 6870,
+                    "itemName": "docdb_xml_bck_202508_008_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "2CCC82CB79E64CF2B8D8C80C87A2FA09B03BD2DC",
+                    "itemPublicationDatetime": "2025-03-03T12:58:49.000+01:00"
+                },
+                {
+                    "itemId": 6869,
+                    "itemName": "docdb_xml_bck_202508_008_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "45836365895AA830915E6E385F6F7F22D9E28B0D",
+                    "itemPublicationDatetime": "2025-03-03T12:58:14.000+01:00"
+                },
+                {
+                    "itemId": 6868,
+                    "itemName": "docdb_xml_bck_202508_008_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "B595DDFFFDAA994FEA388F9758932684EA4E9B1C",
+                    "itemPublicationDatetime": "2025-03-03T12:57:37.000+01:00"
+                },
+                {
+                    "itemId": 6867,
+                    "itemName": "docdb_xml_bck_202508_008_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "A277D4FF8FAEBE91CADB16455DDB3D73B649FF0F",
+                    "itemPublicationDatetime": "2025-03-03T12:57:03.000+01:00"
+                },
+                {
+                    "itemId": 6866,
+                    "itemName": "docdb_xml_bck_202508_007_F.zip",
+                    "fileSize": "444.3 MB",
+                    "fileChecksum": "A4E5110573210D4F6268BF0AC09F87A09E3DF63C",
+                    "itemPublicationDatetime": "2025-03-03T12:56:29.000+01:00"
+                },
+                {
+                    "itemId": 6865,
+                    "itemName": "docdb_xml_bck_202508_007_E.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "474ED3BC83AA2FDC02DA887D2010F5D9E8FFED92",
+                    "itemPublicationDatetime": "2025-03-03T12:56:13.000+01:00"
+                },
+                {
+                    "itemId": 6864,
+                    "itemName": "docdb_xml_bck_202508_007_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "AD58C9BE97B6190D267701826E250233E7F642E5",
+                    "itemPublicationDatetime": "2025-03-03T12:55:42.000+01:00"
+                },
+                {
+                    "itemId": 6863,
+                    "itemName": "docdb_xml_bck_202508_007_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "A42CAC1710D524ADCE6099C8EB52A9662AACA48B",
+                    "itemPublicationDatetime": "2025-03-03T12:55:11.000+01:00"
+                },
+                {
+                    "itemId": 6862,
+                    "itemName": "docdb_xml_bck_202508_007_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "BBBA50C28C41AC1A61EFD810231FF25351386A15",
+                    "itemPublicationDatetime": "2025-03-03T12:54:39.000+01:00"
+                },
+                {
+                    "itemId": 6861,
+                    "itemName": "docdb_xml_bck_202508_007_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "FE3660B59E78DBF09E6B76CD3930D07AF18B95A9",
+                    "itemPublicationDatetime": "2025-03-03T12:54:05.000+01:00"
+                },
+                {
+                    "itemId": 6860,
+                    "itemName": "docdb_xml_bck_202508_006_J.zip",
+                    "fileSize": "249.3 MB",
+                    "fileChecksum": "CFECD8E56AE43720394A9ECAD9B56011F7860F3A",
+                    "itemPublicationDatetime": "2025-03-03T12:53:34.000+01:00"
+                },
+                {
+                    "itemId": 6859,
+                    "itemName": "docdb_xml_bck_202508_006_I.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "C81663BF53B832881B8882C29F9021E526CE3278",
+                    "itemPublicationDatetime": "2025-03-03T12:53:23.000+01:00"
+                },
+                {
+                    "itemId": 6858,
+                    "itemName": "docdb_xml_bck_202508_006_H.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "762578F317447DCBF2BBDEC893FC13CC2B6EB7AA",
+                    "itemPublicationDatetime": "2025-03-03T12:52:49.000+01:00"
+                },
+                {
+                    "itemId": 6857,
+                    "itemName": "docdb_xml_bck_202508_006_G.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "2C07603C954CC1F3478FFA895BF9C1C1C51C586F",
+                    "itemPublicationDatetime": "2025-03-03T12:52:15.000+01:00"
+                },
+                {
+                    "itemId": 6856,
+                    "itemName": "docdb_xml_bck_202508_006_F.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "EE07D1937A8288F2DD892AE09F489CAD2C40F7BB",
+                    "itemPublicationDatetime": "2025-03-03T12:51:36.000+01:00"
+                },
+                {
+                    "itemId": 6855,
+                    "itemName": "docdb_xml_bck_202508_006_E.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "A8FB848C1EB2C3B6B2B01D9A40A91C018BFD2A6C",
+                    "itemPublicationDatetime": "2025-03-03T12:51:04.000+01:00"
+                },
+                {
+                    "itemId": 6854,
+                    "itemName": "docdb_xml_bck_202508_006_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "1E6C4FB7B40E72F049A301FA050A97EFD29EE11B",
+                    "itemPublicationDatetime": "2025-03-03T12:50:27.000+01:00"
+                },
+                {
+                    "itemId": 6853,
+                    "itemName": "docdb_xml_bck_202508_006_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "DB019628D2878640993DBF793A990BE79CC01A7E",
+                    "itemPublicationDatetime": "2025-03-03T12:49:52.000+01:00"
+                },
+                {
+                    "itemId": 6852,
+                    "itemName": "docdb_xml_bck_202508_006_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "B449DB78154055CD0D413FAA16ED5F46877C22DC",
+                    "itemPublicationDatetime": "2025-03-03T12:49:16.000+01:00"
+                },
+                {
+                    "itemId": 6851,
+                    "itemName": "docdb_xml_bck_202508_006_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "FC1EB7A12A98464A61810773EE53CA242A06BBCA",
+                    "itemPublicationDatetime": "2025-03-03T12:48:40.000+01:00"
+                },
+                {
+                    "itemId": 6850,
+                    "itemName": "docdb_xml_bck_202508_005_I.zip",
+                    "fileSize": "540.5 MB",
+                    "fileChecksum": "E4B16E83FAB8CE16D4B28C417687316DA23F6FB8",
+                    "itemPublicationDatetime": "2025-03-03T12:48:05.000+01:00"
+                },
+                {
+                    "itemId": 6849,
+                    "itemName": "docdb_xml_bck_202508_005_H.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "8CDC7812250E9937540B9C5E0D0F786D7CCD4FDD",
+                    "itemPublicationDatetime": "2025-03-03T12:47:48.000+01:00"
+                },
+                {
+                    "itemId": 6848,
+                    "itemName": "docdb_xml_bck_202508_005_G.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "1F8C54618636D771F0335AF4A021C5AC956C64E2",
+                    "itemPublicationDatetime": "2025-03-03T12:47:13.000+01:00"
+                },
+                {
+                    "itemId": 6847,
+                    "itemName": "docdb_xml_bck_202508_005_F.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "1A3889A3DEE2548DF01141E306D616D6CCA82BD3",
+                    "itemPublicationDatetime": "2025-03-03T12:46:38.000+01:00"
+                },
+                {
+                    "itemId": 6846,
+                    "itemName": "docdb_xml_bck_202508_005_E.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "EB4FE72B2913337B0AD33078402A0C449EA1994C",
+                    "itemPublicationDatetime": "2025-03-03T12:46:06.000+01:00"
+                },
+                {
+                    "itemId": 6845,
+                    "itemName": "docdb_xml_bck_202508_005_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "8933BE99302BFFEBC512AEB410C994C752B81DB2",
+                    "itemPublicationDatetime": "2025-03-03T12:45:33.000+01:00"
+                },
+                {
+                    "itemId": 6844,
+                    "itemName": "docdb_xml_bck_202508_005_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "38AEAE580B617742FACDA4049ECF7DB0F77D0B79",
+                    "itemPublicationDatetime": "2025-03-03T12:45:02.000+01:00"
+                },
+                {
+                    "itemId": 6843,
+                    "itemName": "docdb_xml_bck_202508_005_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "A58E4F7D35A64D75490C58E5D35EBF0EFCFDAEDE",
+                    "itemPublicationDatetime": "2025-03-03T12:44:29.000+01:00"
+                },
+                {
+                    "itemId": 6842,
+                    "itemName": "docdb_xml_bck_202508_005_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "8620BD2D5E828EADCF7F9A086C606C9CF0218A37",
+                    "itemPublicationDatetime": "2025-03-03T12:43:56.000+01:00"
+                },
+                {
+                    "itemId": 6841,
+                    "itemName": "docdb_xml_bck_202508_004_G.zip",
+                    "fileSize": "1.4 GB",
+                    "fileChecksum": "AF187228E7E819E7A4CCBC7F503DC854A0D4837B",
+                    "itemPublicationDatetime": "2025-03-03T12:43:22.000+01:00"
+                },
+                {
+                    "itemId": 6840,
+                    "itemName": "docdb_xml_bck_202508_004_F.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "6B5DD8C97297887648400F2025A81514002D501D",
+                    "itemPublicationDatetime": "2025-03-03T12:42:51.000+01:00"
+                },
+                {
+                    "itemId": 6839,
+                    "itemName": "docdb_xml_bck_202508_004_E.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "982916D5307A83DD8E2EA41376CA1BC69664F127",
+                    "itemPublicationDatetime": "2025-03-03T12:42:17.000+01:00"
+                },
+                {
+                    "itemId": 6838,
+                    "itemName": "docdb_xml_bck_202508_004_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "2BFE4E732644A2242FCC0E97F503FD9007DC9154",
+                    "itemPublicationDatetime": "2025-03-03T12:41:43.000+01:00"
+                },
+                {
+                    "itemId": 6837,
+                    "itemName": "docdb_xml_bck_202508_004_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "55D1AC41D306CFA0087A5457C487B40BF26A767D",
+                    "itemPublicationDatetime": "2025-03-03T12:41:11.000+01:00"
+                },
+                {
+                    "itemId": 6836,
+                    "itemName": "docdb_xml_bck_202508_004_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "49B0AAE6D03E6546E700702FC5640906A002BBB0",
+                    "itemPublicationDatetime": "2025-03-03T12:40:39.000+01:00"
+                },
+                {
+                    "itemId": 6835,
+                    "itemName": "docdb_xml_bck_202508_004_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "DE13C74D2596539B31789525FC968959D1149298",
+                    "itemPublicationDatetime": "2025-03-03T12:40:04.000+01:00"
+                },
+                {
+                    "itemId": 6834,
+                    "itemName": "docdb_xml_bck_202508_003_E.zip",
+                    "fileSize": "292.7 MB",
+                    "fileChecksum": "F14111080FD117C471E4438EF5C8F7296DC4AEF3",
+                    "itemPublicationDatetime": "2025-03-03T12:39:32.000+01:00"
+                },
+                {
+                    "itemId": 6833,
+                    "itemName": "docdb_xml_bck_202508_003_D.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "D52E9EA9FC8A95E70313CFF175F007EA1F485828",
+                    "itemPublicationDatetime": "2025-03-03T12:39:18.000+01:00"
+                },
+                {
+                    "itemId": 6832,
+                    "itemName": "docdb_xml_bck_202508_003_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "17F6CAC742DA36A9B1E5C04D6F45C74C1B56D8BE",
+                    "itemPublicationDatetime": "2025-03-03T12:38:43.000+01:00"
+                },
+                {
+                    "itemId": 6831,
+                    "itemName": "docdb_xml_bck_202508_003_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "59CD647E1B2085881A08ED0D97D95971C1B03E52",
+                    "itemPublicationDatetime": "2025-03-03T12:38:09.000+01:00"
+                },
+                {
+                    "itemId": 6830,
+                    "itemName": "docdb_xml_bck_202508_003_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "30BD042237980A6DBF56AB35E77AF420C47D921F",
+                    "itemPublicationDatetime": "2025-03-03T12:37:35.000+01:00"
+                },
+                {
+                    "itemId": 6829,
+                    "itemName": "docdb_xml_bck_202508_002_D.zip",
+                    "fileSize": "594.6 MB",
+                    "fileChecksum": "A47A773AD066779D589C1DDA5EE7E548AEE34859",
+                    "itemPublicationDatetime": "2025-03-03T12:37:04.000+01:00"
+                },
+                {
+                    "itemId": 6828,
+                    "itemName": "docdb_xml_bck_202508_002_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "E4D4460F2DD91F0BDD52CC08181DA8ED3EFA3C69",
+                    "itemPublicationDatetime": "2025-03-03T12:36:45.000+01:00"
+                },
+                {
+                    "itemId": 6827,
+                    "itemName": "docdb_xml_bck_202508_002_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "9D5D88FE25412289C235B1F09EA588621AFD3C72",
+                    "itemPublicationDatetime": "2025-03-03T12:36:12.000+01:00"
+                },
+                {
+                    "itemId": 6826,
+                    "itemName": "docdb_xml_bck_202508_002_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "5A6FAC253ED298801873F04FA4F4C692F553E8AE",
+                    "itemPublicationDatetime": "2025-03-03T12:35:37.000+01:00"
+                },
+                {
+                    "itemId": 6825,
+                    "itemName": "docdb_xml_bck_202508_001_D.zip",
+                    "fileSize": "124.9 MB",
+                    "fileChecksum": "1587AA1332469E3CDD7415AF674CE42D5B3B4084",
+                    "itemPublicationDatetime": "2025-03-03T12:35:07.000+01:00"
+                },
+                {
+                    "itemId": 6824,
+                    "itemName": "docdb_xml_bck_202508_001_C.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "0B225021FDDB7ED58F5DD2B413CD9827B00BD3F8",
+                    "itemPublicationDatetime": "2025-03-03T12:34:57.000+01:00"
+                },
+                {
+                    "itemId": 6823,
+                    "itemName": "docdb_xml_bck_202508_001_B.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "E8247BE6A26ADA872F8ABCD44DC8CD20FD58E6F4",
+                    "itemPublicationDatetime": "2025-03-03T12:34:25.000+01:00"
+                },
+                {
+                    "itemId": 6822,
+                    "itemName": "docdb_xml_bck_202508_001_A.zip",
+                    "fileSize": "1.5 GB",
+                    "fileChecksum": "6817A1BEAAEC1ED34BFEE90BBA7744B2CC964F6E",
+                    "itemPublicationDatetime": "2025-03-03T12:33:00.000+01:00"
+                }
+            ]
+        },
+        {
+            "deliveryId": 1851,
+            "deliveryName": "Notifications",
+            "deliveryPublicationDatetime": "2024-08-21T08:00:00.000+02:00",
+            "deliveryExpiryDatetime": null,
+            "items": [
+                {
+                    "itemId": 6887,
+                    "itemName": "2025_February_DOCDB_Backfile_readme.zip",
+                    "fileSize": "427.9 kB",
+                    "fileChecksum": "FDC617CEA19023DD376685BE2AC4324ACC82ABF8",
+                    "itemPublicationDatetime": "2024-08-21T08:00:00.000+02:00"
+                }
+            ]
+        }
+    ]
+}
