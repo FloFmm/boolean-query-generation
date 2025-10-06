@@ -124,10 +124,10 @@ def create_parser(resources: DTDResources, base_dir: Path):
             huge_tree=True,
         )
         parser.resolvers.add(LocalResolver(base_dir, resources.dtd_paths))
-        print(
-            f"Creating lxml parser with {len(resources.dtd_paths)} DTDs and "
-            f"{len(resources.entities)} entity overrides."
-        )
+        # print(
+        #     f"Creating lxml parser with {len(resources.dtd_paths)} DTDs and "
+        #     f"{len(resources.entities)} entity overrides."
+        # )
         return parser
 
     if not resources.entities:
@@ -157,9 +157,9 @@ def process_xml_file(
         print(f"    No documents parsed from {xml_path.name}.")
         return 0
     ingest_documents(es, documents, index)
-    print(
-        f"    Indexed {len(documents)} document(s) from {xml_path.name} into '{index}'."
-    )
+    # print(
+    #     f"    Indexed {len(documents)} document(s) from {xml_path.name} into '{index}'."
+    # )
     return len(documents)
 
 
@@ -171,7 +171,7 @@ def process_nested_archive(
     resources: DTDResources,
 ) -> ProcessingStats:
     stats = ProcessingStats(nested_archives=1)
-    print(f"  Processing nested archive {archive_path.name}...")
+    # print(f"  Processing nested archive {archive_path.name}...")
     try:
         with zipfile.ZipFile(archive_path) as nested_zip:
             xml_members = [
@@ -187,7 +187,7 @@ def process_nested_archive(
             for member in xml_members:
                 xml_file = extract_xml_to_temp(nested_zip, member, temp_dir)
                 try:
-                    print(f"    Parsed XML member {member.filename}")
+                    # print(f"    Parsed XML member {member.filename}")
                     stats.xml_files += 1
                     stats.documents += process_xml_file(
                         es,

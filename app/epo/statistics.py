@@ -86,34 +86,51 @@ for bucket in lang_buckets:
 table3.add_row(["sum", sum_count, f"{sum_count/total_lang_docs*100:.2f}%"])
 print(table3)
 
-def get_field_size(es, index, field, total_count, sample_size=10000, num_buckets=10):
-    """Estimate disk size of a field by sampling documents and print histogram, including zero-size bucket."""
-    res = es.search(
-        index=index,
-        body={
-            "_source": [field],
-            "size": sample_size
-        }
-    )
-
+def get_field_size(es, index, field, total_count, sample_size=50000, batch_size=10000, num_buckets=20):
+    """Estimate disk size of a field by sampling documents with scrolling."""
     doc_sizes = []
     zero_count = 0
-    for hit in res["hits"]["hits"]:
-        value = hit["_source"].get(field)
-        if isinstance(value, list):
-            size = sum(len(str(v.get("text")).encode("utf-8")) for v in value)
-        elif value is not None:
-            size = len(str(value).encode("utf-8"))
-        else:
-            size = 0
+    fetched = 0
 
-        if size == 0:
-            zero_count += 1
-        else:
-            doc_sizes.append(size)
+    # Initial search with scroll
+    res = es.search(
+        index=index,
+        body={"_source": [field]},
+        size=batch_size,
+        scroll="2m"
+    )
+    scroll_id = res["_scroll_id"]
+    hits = res["hits"]["hits"]
+
+    while hits and fetched < sample_size:
+        for hit in hits:
+            value = hit["_source"].get(field)
+            if isinstance(value, list):
+                size = sum(len(str(v.get("text")).encode("utf-8")) for v in value)
+            elif value is not None:
+                size = len(str(value).encode("utf-8"))
+            else:
+                size = 0
+
+            if size == 0:
+                zero_count += 1
+            else:
+                doc_sizes.append(size)
+
+            fetched += 1
+            if fetched >= sample_size:
+                break
+
+        # Fetch next batch
+        res = es.scroll(scroll_id=scroll_id, scroll="2m")
+        scroll_id = res["_scroll_id"]
+        hits = res["hits"]["hits"]
+
+    # Clear scroll
+    es.clear_scroll(scroll_id=scroll_id)
 
     total_bytes = sum(doc_sizes)
-    avg_size = total_bytes / sample_size
+    avg_size = total_bytes / fetched
     estimated_total = avg_size * total_count
 
     # Histogram buckets for non-zero sizes
@@ -130,7 +147,7 @@ def get_field_size(es, index, field, total_count, sample_size=10000, num_buckets
         min_size = max_size = bucket_size = 0
 
     # Print histogram
-    print(f"\nHistogram of '{field}' sizes (bytes, sample size: {sample_size}):")
+    print(f"\nHistogram of '{field}' sizes (bytes):")
     print(f"      0 (empty) | {'#' * (zero_count * 40 // sample_size)} ({zero_count})")
     for i, count in enumerate(histogram_buckets):
         lower = min_size + i * bucket_size
@@ -155,10 +172,11 @@ table4.add_row(["Claims", f"{claims_size/1_000_000:.2f}", f"{claims_size/total_i
 print(table4)
 
 table5 = PrettyTable()
+total_number_of_patents = 100_000_000
 table5.field_names = ["Part", "Size (TB)", "Percentage"]
-table5.add_row(["Prediction Total Index (20mio)", f"{total_index_size/1_000_000_000_000*20_000_000/count:.2f}", "100%"])
-table5.add_row(["Prediction Abstracts", f"{abstract_size/1_000_000_000_000*20_000_000/count:.2f}", f"{abstract_size/total_index_size*100:.2f}%"])
-table5.add_row(["Prediction Claims", f"{claims_size/1_000_000_000_000*20_000_000/count:.2f}", f"{claims_size/total_index_size*100:.2f}%"])
+table5.add_row([f"Prediction Total Index ({total_number_of_patents/1000_000}mio)", f"{total_index_size/1_000_000_000_000*total_number_of_patents/count:.2f}", "100%"])
+table5.add_row(["Prediction Abstracts", f"{abstract_size/1_000_000_000_000*total_number_of_patents/count:.2f}", f"{abstract_size/total_index_size*100:.2f}%"])
+table5.add_row(["Prediction Claims", f"{claims_size/1_000_000_000_000*total_number_of_patents/count:.2f}", f"{claims_size/total_index_size*100:.2f}%"])
 print(table5)
 
 
