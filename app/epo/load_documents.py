@@ -28,8 +28,8 @@ from sample_loader import ingest_documents, parse_exchange_documents, get_client
 load_dotenv()
 
 
-ARCHIVE_PATTERN = "docdb_xml_bck_*"
-ENTITY_DTD_NAME = "docdb-entities.dtd"
+ARCHIVE_PATTERN = "EPRTBJV*.zip"#docdb_xml_bck_*"
+ENTITY_DTD_NAME = "ep-patent-document-v1-7.dtd"#"docdb-entities.dtd"
 ENTITY_DECLARATION_PATTERN = re.compile(
     r"<!ENTITY\s+(?P<name>[A-Za-z0-9._-]+)\s+\"(?P<value>[^\"]*)\""
 )
@@ -178,6 +178,7 @@ def process_nested_archive(
                 member
                 for member in nested_zip.infolist()
                 if member.filename.lower().endswith(".xml") and not member.is_dir()
+                and not member.filename.lower().endswith("toc.xml")  # skip TOC files
             ]
             if not xml_members:
                 print(f"  No XML members found inside {archive_path.name}.")
