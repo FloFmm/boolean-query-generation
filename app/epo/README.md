@@ -18,7 +18,7 @@ python app/epo/load_documents.py data/epo/full_text
 
 # Elastic
 ## Init
-sh app/epo/start.sh
+sh app/epo/start-local.sh
 
 ## start/stop
 app/epo/elastic-start-local/start.sh

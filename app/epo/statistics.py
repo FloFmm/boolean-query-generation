@@ -5,7 +5,8 @@ import json
 from prettytable import PrettyTable
 load_dotenv()
 import math
-
+import warnings
+warnings.filterwarnings("ignore")
 def get_client() -> Elasticsearch:
     url = os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
     api_key = os.getenv("ELASTICSEARCH_API_KEY")
@@ -48,7 +49,6 @@ abstract_langs = es.search(
     }
 )
 lang_buckets = abstract_langs["aggregations"]["langs"]["buckets"]
-total_lang_docs = sum(bucket["doc_count"] for bucket in lang_buckets)
 table2 = PrettyTable()
 table2.field_names = ["Abstract Language", "Documents", "Percentage"]
 sum_count = 0
@@ -56,9 +56,9 @@ for bucket in lang_buckets:
     lang = bucket["key"]
     count = bucket["doc_count"]
     sum_count += count
-    pct = (count / total_lang_docs) * 100
+    pct = (count / abstract_count) * 100
     table2.add_row([lang, count, f"{pct:.2f}%"])
-table2.add_row(["sum", sum_count, f"{sum_count/total_lang_docs*100:.2f}%"])
+table2.add_row(["sum", sum_count, f"{sum_count/abstract_count*100:.2f}%"])
 print(table2)
 
 claim_langs = es.search(
@@ -72,8 +72,7 @@ claim_langs = es.search(
         }
     }
 )
-lang_buckets = abstract_langs["aggregations"]["langs"]["buckets"]
-total_lang_docs = sum(bucket["doc_count"] for bucket in lang_buckets)
+lang_buckets = claim_langs["aggregations"]["langs"]["buckets"]
 table3 = PrettyTable()
 table3.field_names = ["Claims Language", "Documents", "Percentage"]
 sum_count = 0
@@ -81,9 +80,9 @@ for bucket in lang_buckets:
     lang = bucket["key"]
     count = bucket["doc_count"]
     sum_count += count
-    pct = (count / total_lang_docs) * 100
+    pct = (count / claim_count) * 100
     table3.add_row([lang, count, f"{pct:.2f}%"])
-table3.add_row(["sum", sum_count, f"{sum_count/total_lang_docs*100:.2f}%"])
+table3.add_row(["sum", sum_count, f"{sum_count/claim_count*100:.2f}%"])
 print(table3)
 
 def get_field_size(es, index, field, total_count, sample_size=50000, batch_size=10000, num_buckets=20):
@@ -181,3 +180,29 @@ print(table5)
 
 
 
+# Get language counts
+counts = es.search(
+    index="patents",
+    body={
+        "size": 0,
+        "aggs": {
+            "pub_date": {
+                "terms": {"field": "pub_date.keyword", "size": 20}
+            }
+        }
+    }
+)
+lang_buckets = counts["aggregations"]["pub_date"]["buckets"]
+table6 = PrettyTable()
+table6.field_names = ["Language", "Patent Count", "Percentage"]
+sum = 0
+for bucket in lang_buckets:
+    lang = bucket["key"] or "(missing)"
+    count = bucket["doc_count"]
+    percentage = count / total * 100
+    table6.add_row([lang, f"{count:,}", f"{percentage:.2f}%"])
+    sum += count
+# Add total row
+table6.add_row(["Total", f"{sum:,}", f"{sum/total*100:.2f}%"])
+
+print(table6)

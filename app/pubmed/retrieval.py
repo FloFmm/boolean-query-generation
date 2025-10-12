@@ -3,6 +3,8 @@ from pathlib import Path
 from transformers import AutoTokenizer, AutoModel
 from typing import List, Dict, Tuple
 from sklearn.manifold import TSNE  # or UMAP if you prefer
+from tqdm import tqdm
+from collections import defaultdict
 import random
 import json
 import os
@@ -301,3 +303,34 @@ def search_pubmed_med_cpt(
         })
 
     return {"query_node": query_node, "nodes": nodes, "edges": edges}
+
+
+def classify_by_mesh(folder_path, n_docs = 1_000_000_000_000):
+    folder = Path(folder_path)
+    all_files = list(folder.glob("*.jsonl"))
+    docs_by_pmid = {}
+    pmids_by_mesh = defaultdict(list)
+    count = 0
+    fail_count = 0
+    # Outer progress bar for files
+    for file_path in tqdm(all_files, desc="Processing files", unit="file"):
+        with open(file_path, "r", encoding="utf-8") as f:
+            # Inner progress bar for lines in each file
+            for line in f:
+                try:
+                    data = json.loads(line)
+                    pmid, abstract, title, mesh_terms, bag_of_words = data["pmid"], data["abstract"], data["title"], data["mesh_terms"], data["bag_of_words"]
+                    docs_by_pmid[pmid] = {"title": title, "abstract": abstract, "mesh_terms": mesh_terms, "bag_of_words": bag_of_words}
+                    for mesh in mesh_terms:
+                        pmids_by_mesh[mesh].append(pmid)
+                    count += 1
+
+                    if count >= n_docs:
+                        print(f"Failed to extract {fail_count} jsonl lines")
+                        return docs_by_pmid, pmids_by_mesh
+                except Exception:
+                    fail_count += 1
+                    continue
+    print(f"Failed to extract {fail_count} jsonl lines")
+    return docs_by_pmid, pmids_by_mesh
+

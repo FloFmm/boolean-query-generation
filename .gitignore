@@ -7,3 +7,5 @@ data
 # epo
 aria2_downloads.txt
 data_full_text.json
+
+example_data.json

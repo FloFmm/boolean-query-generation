@@ -54,18 +54,18 @@ result = es.search(
     body={
         "query": {
             "match": {
-                "abstracts.text": {
-                    "query": "display device",
+                "claims.text": {
+                    "query": "The pharmaceutical composition of claim 1, wherein the compound A or a pharmaceutically acceptable salt thereof is present at an amount of: (i) 5% to 15% by weight of the total core composition; (ii) 10% to 15% by weight of the total core composition; or (iii) about 10% by weight of the total core composition; wherein the term \"about\" means a weight percent within 30% of the specified weight percent.",
                     "operator": "and"
                 }
             }
         },
         "highlight": {
             "fields": {
-                "abstracts.text": {},
+                "claims.text": {},
             }
         },
-        "size": 25,
+        "size": 1,
     },
 )
 
