@@ -1,17 +1,74 @@
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.tree import DecisionTreeClassifier, export_text, _tree
 from sklearn.metrics import recall_score
+from sklearn.metrics.pairwise import cosine_distances
 from sklearn import tree
 import matplotlib.pyplot as plt#plt the figure, setting a black background
 import numpy as np
 import spacy
+from nltk.corpus import wordnet as wn
+from sklearn.cluster import AgglomerativeClustering
+from tqdm import tqdm
 
-nlp = spacy.load("en_core_web_sm")
+nlp = spacy.load("en_core_web_lg")
 def lemmatize_text(text):
     doc = nlp(text)
     return " ".join([token.lemma_ for token in doc if not token.is_stop])
 
+def build_semantic_map(words, similarity_threshold=0.7):
+    """
+    Group words by semantic similarity and assign each cluster a canonical lemmatized word.
+    """
+    # Get SpaCy docs and vectors
+    # docs = [nlp(word) for word in tqdm(words, desc="Processing words with SpaCy")]
+    docs = list(nlp.pipe(tqdm(words, desc="Processing words with SpaCy", unit="word")))
+    vectors = np.array([doc.vector for doc in docs])
 
+    # Compute cosine distance matrix
+    tqdm.write("Computing cosine distance matrix...")
+    distance_matrix = cosine_distances(vectors)
+
+    # Cluster words using Agglomerative Clustering
+    # distance_threshold controls similarity; 0 = identical, higher = more lenient
+    tqdm.write("Clustering words...")
+    clustering = AgglomerativeClustering(
+        n_clusters=None,  # Let distance_threshold decide
+        metric='precomputed',  # was affinity='precomputed'
+        linkage='complete',
+        distance_threshold=1-similarity_threshold
+    )
+    labels = clustering.fit_predict(distance_matrix)
+
+    # Map each word to the canonical lemma of its cluster
+    tqdm.write("Building semantic map...")
+    semantic_map = {}
+    for label in set(labels):
+        cluster_words = [words[i] for i in range(len(words)) if labels[i] == label]
+        # Pick the most common lemma as canonical (or just first one)
+        canonical = nlp(cluster_words[0])[0].lemma_
+        for w in cluster_words:
+            semantic_map[w] = canonical
+
+    return semantic_map
+
+def map_synonyms(text, synonym_map):
+    """
+    Replace words in the text with their canonical synonym.
+    """
+    return " ".join([synonym_map.get(word, word) for word in text.split()])
+
+def build_synonym_map(words):
+    """
+    Build a mapping of words to their canonical synonym using WordNet.
+    """
+    synonym_map = {}
+    for word in words:
+        synsets = wn.synsets(word)
+        if synsets:
+            # Pick the first lemma of the first synset as canonical
+            canonical = synsets[0].lemmas()[0].name()
+            synonym_map[word] = canonical
+    return synonym_map
 
 def train_text_classifier(
     set1,
@@ -41,7 +98,6 @@ def train_text_classifier(
             "vectorizer": CountVectorizer
         }
     """
-
     # Combine texts and create labels
     texts = set1 + set2
     labels = ["set1"] * len(set1) + ["set2"] * len(set2)
@@ -190,25 +246,25 @@ def plot_tree(model, feature_names, class_names):
 
 # Example usage
 if __name__ == "__main__":
+    # words = ["teeth", "dental", "tooth", "smile", "orthodontic", "drawing", "draw", "painting", "art", "Sketch", "Depict", "Design", "Draft"]
+    # semantic_map = build_semantic_map(words, similarity_threshold=0.5)
+    # print(semantic_map)
+
     set1 = [
-        "biofeedback Apples and bananas are tasty.",
-        "I love eating fruit in the morning. Biofeedback",
-        "I love eating fruit in the morning. Biofeedback",
-        "I love eating fruit in the morning. Biofeedback",
-        "I love eating fruit in the morning. Biofeedback",
-        "I love eating fruit in the morning. Biofeedback",
-        "I love eating fruit in the morning. Biofeedback",
+        "car.",
+        "automobile",
+        "auto",
     ]
     set2 = [
-        "My car needs a new engine.",
-        "Wheels and tires are important for driving.",
-        "Wheels and tires are important for driving.",
-        "Wheels and tires are important for driving.",
-        "Wheels and tires are important for driving.",
-        "Wheels and tires are important for driving.",
-        "Wheels and tires are important for driving.",
-        "Wheels and tires are important for driving.",
-        "Wheels and tires are important for driving.",
+        "flora",
+        "vegetation.",
+        "greenery.",
+        "seedling.",
+        "sapling.",
+        "herb.",
+        "shrub.",
+        "tree.",
+        "plant.",
     ]
 
     result = train_text_classifier(set1, set2)

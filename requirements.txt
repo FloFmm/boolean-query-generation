@@ -22,3 +22,6 @@ prettytable
 
 # visualization
 matplotlib
+
+# synonym mapping 
+nltk

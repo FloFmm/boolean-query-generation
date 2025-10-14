@@ -4,7 +4,7 @@ from pathlib import Path
 from tqdm import tqdm
 from Bio import Entrez
 from app.pubmed.retrieval import classify_by_mesh
-from app.tree_learning.logical_query_generation import train_text_classifier
+from app.tree_learning.logical_query_generation import train_text_classifier, build_semantic_map, map_synonyms, build_synonym_map
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -38,22 +38,33 @@ def train_all_mesh_terms_jsonl(baseline_folder: str, output_path: str = "mesh_re
     if max_mesh_terms:
         mesh_terms = mesh_terms[:max_mesh_terms]
 
+
+    unique_words = set(
+        word
+        for doc in docs_by_pmid.values()
+        for word in doc["bag_of_words"].split()
+    )
+    synonym_map = build_synonym_map(list(unique_words))
+    for doc in docs_by_pmid.values():
+        doc["bag_of_words_synonyms"] = map_synonyms(doc["bag_of_words"], synonym_map)
+    print("unique words:", len(unique_words))
+
     with output_path.open("a", encoding="utf-8") as out_f:
         for mesh in tqdm(mesh_terms, desc="Training classifiers per MeSH term"):
             if skip_existing and mesh in completed_mesh:
                 continue
 
             relevant_ids = pmids_by_mesh[mesh]
-            relevant_records = [docs_by_pmid[pmid] for pmid in relevant_ids if "bag_of_words" in docs_by_pmid[pmid]]
+            relevant_records = [docs_by_pmid[pmid] for pmid in relevant_ids if "bag_of_words_synonyms" in docs_by_pmid[pmid]]
 
             negative_ids = list(set(docs_by_pmid.keys()) - set(relevant_ids))
-            negative_records = [docs_by_pmid[pmid] for pmid in negative_ids if "bag_of_words" in docs_by_pmid[pmid]]
+            negative_records = [docs_by_pmid[pmid] for pmid in negative_ids if "bag_of_words_synonyms" in docs_by_pmid[pmid]]
 
             start_time = time.time()
             for max_depth in max_depths:
                 result = train_text_classifier(
-                    [r["bag_of_words"] for r in relevant_records],
-                    [r["bag_of_words"] for r in negative_records],
+                    [r["bag_of_words_synonyms"] for r in relevant_records],
+                    [r["bag_of_words_synonyms"] for r in negative_records],
                     max_depth = max_depth,
                 )
                 duration = time.time() - start_time
@@ -161,7 +172,6 @@ def plot_metrics_from_jsonl(path: str):
     fig.tight_layout()
     plt.show()
 
-
 def plot_metrics_vs_class_ratio(path: str):
     """
     Reads a JSONL file and plots recall and accuracy
@@ -231,7 +241,8 @@ def plot_metrics_vs_class_ratio(path: str):
     plt.title("Recall and Accuracy vs. Positive Class Ratio (with min/max deviation)")
     fig.tight_layout()
     plt.show()
+
 if __name__ == "__main__":
-    # train_all_mesh_terms_jsonl("./data/pubmed/baseline", output_path="data/pubmed/statistics/mesh_results_1000k.jsonl", skip_existing=True)
-    plot_metrics_from_jsonl("data/pubmed/statistics/mesh_results_330k.jsonl")
-    plot_metrics_vs_class_ratio("data/pubmed/statistics/mesh_results_330k.jsonl")
+    train_all_mesh_terms_jsonl("./data/pubmed/baseline", output_path="data/pubmed/statistics/mesh_results_semantic_synonym.jsonl", skip_existing=True, n_docs=1_000_000)
+    # plot_metrics_from_jsonl("data/pubmed/statistics/mesh_results_330k.jsonl")
+    # plot_metrics_vs_class_ratio("data/pubmed/statistics/mesh_results_330k.jsonl")
