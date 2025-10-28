@@ -25,3 +25,6 @@ matplotlib
 
 # synonym mapping 
 nltk
+
+# evaluation
+pytrec_eval

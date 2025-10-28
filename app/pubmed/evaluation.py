@@ -243,6 +243,6 @@ def plot_metrics_vs_class_ratio(path: str):
     plt.show()
 
 if __name__ == "__main__":
-    train_all_mesh_terms_jsonl("./data/pubmed/baseline", output_path="data/pubmed/statistics/mesh_results_semantic_synonym.jsonl", skip_existing=True, n_docs=1_000_000)
-    # plot_metrics_from_jsonl("data/pubmed/statistics/mesh_results_330k.jsonl")
-    # plot_metrics_vs_class_ratio("data/pubmed/statistics/mesh_results_330k.jsonl")
+    # train_all_mesh_terms_jsonl("./data/pubmed/baseline", output_path="data/pubmed/statistics/mesh_results_semantic_synonym.jsonl", skip_existing=True, n_docs=1_000_000)
+    plot_metrics_from_jsonl("data/pubmed/statistics/mesh_results_330k.jsonl")
+    plot_metrics_vs_class_ratio("data/pubmed/statistics/mesh_results_330k.jsonl")

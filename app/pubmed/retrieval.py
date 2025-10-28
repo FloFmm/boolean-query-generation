@@ -9,7 +9,6 @@ import random
 import json
 import os
 import torch
-import json
 
 
 Entrez.email = "florian_maurus.mueller@mailbox.tu-dresden.de"
@@ -91,91 +90,103 @@ def sample_jsonl_files(folder_path, n_files, n_lines):
 
     return result
 
-# def search_pubmed_med_cpt(
-#     query: str,
-#     embeddings_dir: str = "data/pubmed/embeddings",
-#     records_dir: str = "data/pubmed/baseline",
-#     top_k: int = 10,
-#     device: str = None
-# ) -> List[Dict]:
-#     """
-#     Retrieve PubMed records most relevant to a query.
+def load_pubmed_embeddings(
+    embeddings_dir: str = "data/pubmed/embeddings"
+) -> Tuple[List[str], torch.Tensor, Dict[str, str]]:
+    """
+    Load all PubMed embeddings from disk.
 
-#     Args:
-#         query (str): The query string to search.
-#         embeddings_dir (str): Directory containing saved .pt embeddings.
-#         records_dir (str): Directory containing original JSONL records.
-#         top_k (int): Number of top records to return.
-#         device (str or torch.device): 'cuda' or 'cpu'. Defaults to auto-detect.
+    Args:
+        embeddings_dir (str): Directory containing saved .pt embedding files.
 
-#     Returns:
-#         List[Dict]: List of records ordered by relevance.
-#     """
+    Returns:
+        Tuple:
+            - all_pmids (List[str]): List of PubMed IDs.
+            - all_embs (torch.Tensor): Tensor of embeddings (N x D).
+            - file_map (Dict[str, str]): Maps PMID -> corresponding .jsonl file.
+    """
+    all_pmids, all_embs = [], []
 
-#     # Device setup
-#     device = torch.device(device if device else ("cuda" if torch.cuda.is_available() else "cpu"))
+    for fname in os.listdir(embeddings_dir):
+        if not fname.endswith(".pt"):
+            continue
+        path = os.path.join(embeddings_dir, fname)
+        emb_dict = torch.load(path, map_location="cpu")  # dict: pmid -> tensor
 
-#     # Load tokenizer and model
-#     tokenizer = AutoTokenizer.from_pretrained("ncbi/MedCPT-Article-Encoder")
-#     model = AutoModel.from_pretrained("ncbi/MedCPT-Article-Encoder").to(device)
-#     model.eval()
+        for pmid, emb in emb_dict.items():
+            all_pmids.append(pmid)
+            all_embs.append(emb)
 
-#     # Encode the query
-#     encoded_query = tokenizer(
-#         query,
-#         truncation=True,
-#         padding="max_length",
-#         max_length=512,
-#         return_tensors="pt"
-#     ).to(device)
+    if not all_embs:
+        raise ValueError(f"No embeddings found in directory: {embeddings_dir}")
 
-#     with torch.no_grad():
-#         query_emb = model(**encoded_query).last_hidden_state[:, 0, :]
-#         query_emb = torch.nn.functional.normalize(query_emb, p=2, dim=1).squeeze(0).cpu()
+    all_embs = torch.stack(all_embs)
+    print(f"✅ Loaded {len(all_pmids):,} PubMed embeddings.")
+    return all_pmids, all_embs
 
-#     # Load all embeddings
-#     all_pmids, all_embs, file_map = [], [], {}
-#     for fname in os.listdir(embeddings_dir):
-#         if not fname.endswith(".pt"):
-#             continue
-#         path = os.path.join(embeddings_dir, fname)
-#         emb_dict = torch.load(path)  # dict: pmid -> tensor
-#         for pmid, emb in emb_dict.items():
-#             all_pmids.append(pmid)
-#             all_embs.append(emb)
-#             file_map[pmid] = fname.replace(".pt", ".jsonl")
 
-#     if not all_embs:
-#         raise ValueError("No embeddings found in directory.")
-
-#     all_embs = torch.stack(all_embs)
-
-#     # Compute cosine similarity
-#     similarities = torch.nn.functional.cosine_similarity(query_emb.unsqueeze(0), all_embs)
-#     top_indices = similarities.topk(top_k).indices
-
-#     # Retrieve corresponding records
-#     top_records = []
-#     for idx in top_indices:
-#         pmid = all_pmids[idx]
-#         file_name = file_map[pmid]
-#         record_path = os.path.join(records_dir, file_name)
-#         with open(record_path, "r") as f:
-#             for line in f:
-#                 record = json.loads(line)
-#                 if record.get("pmid") == pmid:
-#                     top_records.append(record)
-#                     break
-
-#     return top_records
-
-from typing import List, Dict
-import os, json, torch
-from transformers import AutoTokenizer, AutoModel
-from sklearn.manifold import TSNE  # or UMAP if you prefer
-
+def load_valid_pmids(embeddings_dir: str):
+    """Collect all PMIDs present in the stored embeddings."""
+    valid_pmids = set()
+    for fname in os.listdir(embeddings_dir):
+        if not fname.endswith(".pt"):
+            continue
+        path = os.path.join(embeddings_dir, fname)
+        emb_dict = torch.load(path, map_location="cpu")
+        valid_pmids.update(emb_dict.keys())
+    return valid_pmids
 
 def search_pubmed_med_cpt(
+    query: str,
+    all_pmids: List[str],
+    all_embs: torch.Tensor,
+    top_k: int = 10,
+    device: str = None,
+) -> List[str]:
+    """
+    Retrieve PubMed PMIDs most relevant to a query using preloaded embeddings.
+
+    Args:
+        query (str): The search query.
+        all_pmids (List[str]): PMIDs corresponding to the embeddings.
+        all_embs (torch.Tensor): Preloaded embedding tensor (N x D).
+        top_k (int): Number of top results to return.
+        device (str or torch.device): 'cuda' or 'cpu'. Defaults to auto-detect.
+
+    Returns:
+        List[str]: List of retrieved PMIDs.
+    """
+    # Device setup
+    device = torch.device(device if device else ("cuda" if torch.cuda.is_available() else "cpu"))
+
+    # Load model & tokenizer once per process
+    tokenizer = AutoTokenizer.from_pretrained("ncbi/MedCPT-Article-Encoder")
+    model = AutoModel.from_pretrained("ncbi/MedCPT-Article-Encoder").to(device)
+    model.eval()
+
+    # Encode query
+    encoded_query = tokenizer(
+        query,
+        truncation=True,
+        padding="max_length",
+        max_length=512,
+        return_tensors="pt"
+    ).to(device)
+
+    with torch.no_grad():
+        query_emb = model(**encoded_query).last_hidden_state[:, 0, :]
+        query_emb = torch.nn.functional.normalize(query_emb, p=2, dim=1).squeeze(0).cpu()
+
+    # Compute cosine similarity
+    similarities = torch.nn.functional.cosine_similarity(query_emb.unsqueeze(0), all_embs)
+    values, indices = similarities.topk(top_k)
+
+    # Collect PMIDs in ranked order
+    selected_pmids = [all_pmids[idx] for idx in indices.tolist()]
+
+    return selected_pmids
+
+def search_pubmed_med_cpt_graph(
     query: str,
     embeddings_dir: str = "data/pubmed/embeddings",
     records_dir: str = "data/pubmed/baseline",
@@ -303,7 +314,6 @@ def search_pubmed_med_cpt(
         })
 
     return {"query_node": query_node, "nodes": nodes, "edges": edges}
-
 
 def classify_by_mesh(folder_path, n_docs = 1_000_000_000_000):
     folder = Path(folder_path)
