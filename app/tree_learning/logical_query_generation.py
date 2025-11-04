@@ -1,19 +1,24 @@
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.tree import DecisionTreeClassifier, export_text, _tree
-from sklearn.metrics import recall_score
+from sklearn.tree import export_text, _tree
+from sklearn.metrics import recall_score, precision_score
 from sklearn.metrics.pairwise import cosine_distances
 from sklearn import tree
-import matplotlib.pyplot as plt#plt the figure, setting a black background
+import matplotlib.pyplot as plt  # plt the figure, setting a black background
 import numpy as np
 import spacy
 from nltk.corpus import wordnet as wn
 from sklearn.cluster import AgglomerativeClustering
 from tqdm import tqdm
+from imodels import SkopeRulesClassifier, DecisionTreeClassifier, Rule
+import re
 
 nlp = spacy.load("en_core_web_lg")
+
+
 def lemmatize_text(text):
     doc = nlp(text)
     return " ".join([token.lemma_ for token in doc if not token.is_stop])
+
 
 def build_semantic_map(words, similarity_threshold=0.7):
     """
@@ -33,9 +38,9 @@ def build_semantic_map(words, similarity_threshold=0.7):
     tqdm.write("Clustering words...")
     clustering = AgglomerativeClustering(
         n_clusters=None,  # Let distance_threshold decide
-        metric='precomputed',  # was affinity='precomputed'
-        linkage='complete',
-        distance_threshold=1-similarity_threshold
+        metric="precomputed",  # was affinity='precomputed'
+        linkage="complete",
+        distance_threshold=1 - similarity_threshold,
     )
     labels = clustering.fit_predict(distance_matrix)
 
@@ -51,11 +56,13 @@ def build_semantic_map(words, similarity_threshold=0.7):
 
     return semantic_map
 
+
 def map_synonyms(text, synonym_map):
     """
     Replace words in the text with their canonical synonym.
     """
     return " ".join([synonym_map.get(word, word) for word in text.split()])
+
 
 def build_synonym_map(words):
     """
@@ -70,14 +77,11 @@ def build_synonym_map(words):
             synonym_map[word] = canonical
     return synonym_map
 
+
 def train_text_classifier(
+    clf,
     set1,
     set2,
-    max_depth=5,
-    random_state=42,
-    # min_samples_split=5,
-    # min_samples_leaf=5,
-    class_weight="balanced",
 ):
     # class_weight = {"set1": int(len(set2)/len(set1)*4.0), "set2": 1}
     """
@@ -100,37 +104,66 @@ def train_text_classifier(
     """
     # Combine texts and create labels
     texts = set1 + set2
-    labels = ["set1"] * len(set1) + ["set2"] * len(set2)
+    labels = [1] * len(set1) + [0] * len(set2)
 
     # Vectorizer: binary presence, remove stopwords
-    vectorizer = CountVectorizer(binary=True)#, stop_words="english")
+    vectorizer = CountVectorizer(binary=True)  # , stop_words="english")
     X = vectorizer.fit_transform(texts)
+    feature_names = vectorizer.get_feature_names_out()
 
-    # Train decision tree
-    clf = DecisionTreeClassifier(
-        max_depth=max_depth,
-        random_state=random_state,
-        # min_samples_split=min_samples_split,
-        class_weight=class_weight,
-        # min_samples_leaf=min_samples_leaf,
-    )
+    if isinstance(clf, SkopeRulesClassifier):
+        X = X.toarray()
+    # Train classifier
     clf.fit(X, labels)
 
     # Accuracy on the same data
-    y_pred = clf.predict(X)
-    accuracy = clf.score(X, labels)
-    recall_set1 = recall_score(labels, y_pred, pos_label="set1")
-
+    if isinstance(clf, SkopeRulesClassifier):
+        clf.rules_ = [
+            rule
+            for rule in clf.rules_
+            if all(symbol != "==" for feature, symbol in sorted(rule.agg_dict.keys()))
+        ]
+        top_n_rules = min(5, len(clf.rules_))
+        y_pred = clf._predict_top_rules(X, top_n_rules)
+    else:
+        y_pred = clf.predict(X)
+    # print(y_pred)
+    recall = recall_score(labels, y_pred, pos_label=1)
+    precision = precision_score(labels, y_pred, pos_label=1)
     # Human-readable rules
-    feature_names = vectorizer.get_feature_names_out()
-    decision_tree = export_text(clf, feature_names=list(feature_names))
+
+    if isinstance(clf, SkopeRulesClassifier):
+        pretty_print = [rule.rule for rule in clf.rules_]
+        boolean_function_set1 = " OR ".join(
+            [
+                "("
+                + " AND ".join(
+                    [
+                        ("NOT " if symbol == "<=" else "")
+                        + feature_names[int(feature[1:])]
+                        for feature, symbol in sorted(rule.agg_dict.keys())
+                    ]
+                )
+                + ")"
+                for rule in clf.rules_[:top_n_rules]
+            ]
+        )
+        # for rule in clf.rules_:
+        #     print(rule.rule, rule.args, rule.agg_dict)
+        boolean_function_set2 = (
+            "boolean_function_set2 not available for SkopeRulesClassifier"
+        )
+    else:
+        pretty_print = export_text(clf, feature_names=list(feature_names))
+        boolean_function_set1 = tree_to_dnf_pubmed(clf, feature_names, 1)
+        boolean_function_set2 = tree_to_dnf_pubmed(clf, feature_names, 0)
 
     return {
-        "recall": recall_set1,
-        "accuracy": accuracy,
-        "decision_tree": decision_tree,
-        "boolean_function_set1": tree_to_dnf_pubmed(clf, feature_names, "set1"),
-        "boolean_function_set2": tree_to_dnf_pubmed(clf, feature_names, "set2"),
+        "recall": recall,
+        "precision": precision,
+        "pretty_print": pretty_print,
+        "boolean_function_set1": boolean_function_set1,
+        "boolean_function_set2": boolean_function_set2,
         "model": clf,
         "vectorizer": vectorizer,
         "feature_names": feature_names,
@@ -233,16 +266,19 @@ def tree_to_dnf_pubmed(
 
 
 def plot_tree(model, feature_names, class_names):
-    plt.figure(figsize=(30,10), facecolor ='k')#create the tree plot
-    a = tree.plot_tree(model,
-                    #use the feature names stored
-                    feature_names = feature_names,
-                    #use the class names stored
-                    class_names = class_names,
-                    rounded = True,
-                    filled = True,
-                    fontsize=14)#show the plot
+    plt.figure(figsize=(30, 10), facecolor="k")  # create the tree plot
+    a = tree.plot_tree(
+        model,
+        # use the feature names stored
+        feature_names=feature_names,
+        # use the class names stored
+        class_names=class_names,
+        rounded=True,
+        filled=True,
+        fontsize=14,
+    )  # show the plot
     plt.show()
+
 
 # Example usage
 if __name__ == "__main__":
@@ -251,15 +287,15 @@ if __name__ == "__main__":
     # print(semantic_map)
 
     set1 = [
-        "car.",
-        "automobile",
-        "auto",
+        "car mobile auto.",
+        "mobile auto",
+        "auto mobile",
     ]
     set2 = [
-        "flora",
+        "flora auto",
         "vegetation.",
         "greenery.",
-        "seedling.",
+        "seedling. mobile",
         "sapling.",
         "herb.",
         "shrub.",
@@ -267,10 +303,27 @@ if __name__ == "__main__":
         "plant.",
     ]
 
-    result = train_text_classifier(set1, set2)
-    print("Accuracy:", result["accuracy"])
+    result = train_text_classifier(
+        # DecisionTreeClassifier(
+        #     max_depth=5,
+        #     random_state=42,
+        #     # min_samples_split=min_samples_split,
+        #     class_weight="balanced",
+        #     # min_samples_leaf=min_samples_leaf,
+        # ),
+        SkopeRulesClassifier(
+            n_estimators=1000,
+            precision_min=0.1,
+            recall_min=0.1,
+        ),
+        set1,
+        set2,
+    )
+    print("Recall:", result["recall"])
+    print("Precision:", result["precision"])
     print()
-    print(result["decision_tree"])
+    # Access raw rules with metrics
+    print(result["pretty_print"])
     print()
     print(result["boolean_function_set1"])
     print()

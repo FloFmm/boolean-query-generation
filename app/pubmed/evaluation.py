@@ -1,5 +1,6 @@
 import json
 import time
+import os
 from pathlib import Path
 from tqdm import tqdm
 from Bio import Entrez
@@ -7,6 +8,9 @@ from app.pubmed.retrieval import classify_by_mesh
 from app.tree_learning.logical_query_generation import train_text_classifier, build_semantic_map, map_synonyms, build_synonym_map
 import pandas as pd
 import matplotlib.pyplot as plt
+from imodels import SkopeRulesClassifier, DecisionTreeClassifier
+from typing import List
+
 
 def load_completed_mesh_terms(jsonl_path: Path):
     """Load already processed MeSH terms from JSONL to skip duplicates."""
@@ -23,21 +27,22 @@ def load_completed_mesh_terms(jsonl_path: Path):
     return completed
 
 
-def train_all_mesh_terms_jsonl(baseline_folder: str, output_path: str = "mesh_results.jsonl", max_mesh_terms=None, skip_existing=False, n_docs=1_000_000, max_depths=[3,5,7,10,15,100]):
+def train_all_mesh_terms_jsonl(model, baseline_folder: str = "./data/pubmed/baseline", output_path: str = "data/pubmed/statistics/classifier_learning/", max_mesh_terms=None, mesh_terms: List[str] = None, skip_existing=False, n_docs=1_000_000):
     """
     Train text classifiers for all MeSH terms and save results incrementally as JSONL.
     Skips terms already in the output file.
     """
-    output_path = Path(output_path)
+    output_path = Path(os.path.join(output_path, f"{model}_{n_docs/1_000:.0f}k.jsonl"))
     if skip_existing:
         completed_mesh = load_completed_mesh_terms(output_path)
         print(f"Already computed {len(completed_mesh)} MeSH terms, skipping those...")
 
     docs_by_pmid, pmids_by_mesh = classify_by_mesh(baseline_folder, n_docs)
-    mesh_terms = list(pmids_by_mesh.keys())
+    if not mesh_terms:
+        mesh_terms = list(pmids_by_mesh.keys())
+
     if max_mesh_terms:
         mesh_terms = mesh_terms[:max_mesh_terms]
-
 
     unique_words = set(
         word
@@ -53,37 +58,38 @@ def train_all_mesh_terms_jsonl(baseline_folder: str, output_path: str = "mesh_re
         for mesh in tqdm(mesh_terms, desc="Training classifiers per MeSH term"):
             if skip_existing and mesh in completed_mesh:
                 continue
-
             relevant_ids = pmids_by_mesh[mesh]
+            if not relevant_ids:
+                print(f"Skipping {mesh}, because it does not occur in any doc")
+                continue
+            
             relevant_records = [docs_by_pmid[pmid] for pmid in relevant_ids if "bag_of_words_synonyms" in docs_by_pmid[pmid]]
 
             negative_ids = list(set(docs_by_pmid.keys()) - set(relevant_ids))
             negative_records = [docs_by_pmid[pmid] for pmid in negative_ids if "bag_of_words_synonyms" in docs_by_pmid[pmid]]
 
             start_time = time.time()
-            for max_depth in max_depths:
-                result = train_text_classifier(
-                    [r["bag_of_words_synonyms"] for r in relevant_records],
-                    [r["bag_of_words_synonyms"] for r in negative_records],
-                    max_depth = max_depth,
-                )
-                duration = time.time() - start_time
+            result = train_text_classifier(
+                model,
+                [r["bag_of_words_synonyms"] for r in relevant_records],
+                [r["bag_of_words_synonyms"] for r in negative_records],
+            )
+            duration = time.time() - start_time
 
-                record = {
-                    "mesh_term": mesh,
-                    "max_depth": max_depth,
-                    "num_positive": len(relevant_records),
-                    "num_negative": len(negative_records),
-                    "accuracy": result["accuracy"],
-                    "recall": result["recall"],
-                    "boolean_function_set1": result["boolean_function_set1"],
-                    "boolean_function_set2": result["boolean_function_set2"],
-                    "decision_tree": result["decision_tree"],
-                    "time_seconds": duration,
-                }
+            record = {
+                "mesh_term": mesh,
+                "num_positive": len(relevant_records),
+                "num_negative": len(negative_records),
+                "precision": result["precision"],
+                "recall": result["recall"],
+                "boolean_function_set1": result["boolean_function_set1"],
+                "boolean_function_set2": result["boolean_function_set2"],
+                "pretty_print": result["pretty_print"],
+                "time_seconds": duration,
+            }
 
-                out_f.write(json.dumps(record, ensure_ascii=False) + "\n")
-                out_f.flush()  # ensures progress is safely written
+            out_f.write(json.dumps(record, ensure_ascii=False) + "\n")
+            out_f.flush()  # ensures progress is safely written
     print(f"✅ Completed training for {output_path}")
 
 def plot_metrics_from_jsonl(path: str):
@@ -243,6 +249,29 @@ def plot_metrics_vs_class_ratio(path: str):
     plt.show()
 
 if __name__ == "__main__":
-    # train_all_mesh_terms_jsonl("./data/pubmed/baseline", output_path="data/pubmed/statistics/mesh_results_semantic_synonym.jsonl", skip_existing=True, n_docs=1_000_000)
-    plot_metrics_from_jsonl("data/pubmed/statistics/mesh_results_330k.jsonl")
-    plot_metrics_vs_class_ratio("data/pubmed/statistics/mesh_results_330k.jsonl")
+    models = [
+        # SkopeRulesClassifier(
+        #     n_estimators=10,
+        #     precision_min=0.01,
+        #     recall_min=0.05,
+        # ),
+        DecisionTreeClassifier(
+            max_depth=5,
+            random_state=42,
+            # min_samples_split=min_samples_split,
+            class_weight="balanced",
+            # min_samples_leaf=min_samples_leaf,
+        ),
+    ]
+    for model in models:
+        args = {
+            "model": model,
+            "baseline_folder":"./data/pubmed/baseline", 
+            "output_path":"data/pubmed/statistics/classifier_learning/", 
+            "skip_existing":True, 
+            "n_docs":1_000_000,
+            "mesh_terms": ["Endometriosis", "Rectal Neoplasms", "Fluorodeoxyglucose F18", "Cholelithiasis", "Antigens, Helminth", "Down Syndrome", "Antigens, Protozoan", "Urinary Tract Infections", "Chromosome Aberrations", "Streptococcal Infections", "Kidney Transplantation", "Cognition Disorders", "Alzheimer Disease", "Pregnancy"]
+        }
+        train_all_mesh_terms_jsonl(**args)
+    # plot_metrics_from_jsonl("data/pubmed/statistics/mesh_results_330k.jsonl")
+    # plot_metrics_vs_class_ratio("data/pubmed/statistics/mesh_results_330k.jsonl")
