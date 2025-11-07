@@ -11,6 +11,7 @@ from sklearn.cluster import AgglomerativeClustering
 from tqdm import tqdm
 from imodels import SkopeRulesClassifier, DecisionTreeClassifier, Rule
 import re
+from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 
 nlp = spacy.load("en_core_web_lg")
 
@@ -113,6 +114,8 @@ def train_text_classifier(
 
     if isinstance(clf, SkopeRulesClassifier):
         X = X.toarray()
+    if isinstance(clf, GreedyORDecisionTree):
+        labels = np.array(labels)
     # Train classifier
     clf.fit(X, labels)
 
@@ -153,6 +156,10 @@ def train_text_classifier(
         boolean_function_set2 = (
             "boolean_function_set2 not available for SkopeRulesClassifier"
         )
+    elif isinstance(clf, GreedyORDecisionTree):
+        pretty_print = clf.export_tree(feature_names=list(feature_names))
+        boolean_function_set1 = ""
+        boolean_function_set2 = ""
     else:
         pretty_print = export_text(clf, feature_names=list(feature_names))
         boolean_function_set1 = tree_to_dnf_pubmed(clf, feature_names, 1)

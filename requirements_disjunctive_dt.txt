@@ -1,0 +1,6 @@
+biopython
+tqdm
+transformers
+torch
+matplotlib
+spacy

@@ -6,10 +6,13 @@ from tqdm import tqdm
 from Bio import Entrez
 from app.pubmed.retrieval import classify_by_mesh
 from app.tree_learning.logical_query_generation import train_text_classifier, build_semantic_map, map_synonyms, build_synonym_map
+from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 import pandas as pd
 import matplotlib.pyplot as plt
-from imodels import SkopeRulesClassifier, DecisionTreeClassifier
+# from imodels import SkopeRulesClassifier, DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier
 from typing import List
+
 
 
 def load_completed_mesh_terms(jsonl_path: Path):
@@ -25,7 +28,6 @@ def load_completed_mesh_terms(jsonl_path: Path):
             except json.JSONDecodeError:
                 continue
     return completed
-
 
 def train_all_mesh_terms_jsonl(model, baseline_folder: str = "./data/pubmed/baseline", output_path: str = "data/pubmed/statistics/classifier_learning/", max_mesh_terms=None, mesh_terms: List[str] = None, skip_existing=False, n_docs=1_000_000):
     """
@@ -255,13 +257,14 @@ if __name__ == "__main__":
         #     precision_min=0.01,
         #     recall_min=0.05,
         # ),
-        DecisionTreeClassifier(
-            max_depth=5,
-            random_state=42,
-            # min_samples_split=min_samples_split,
-            class_weight="balanced",
-            # min_samples_leaf=min_samples_leaf,
-        ),
+        # DecisionTreeClassifier(
+        #     max_depth=5,
+        #     random_state=42,
+        #     # min_samples_split=min_samples_split,
+        #     class_weight="balanced",
+        #     # min_samples_leaf=min_samples_leaf,
+        # ),
+        GreedyORDecisionTree(max_depth=4, min_impurity_decrease=0.01, verbose=True)
     ]
     for model in models:
         args = {
@@ -269,7 +272,7 @@ if __name__ == "__main__":
             "baseline_folder":"./data/pubmed/baseline", 
             "output_path":"data/pubmed/statistics/classifier_learning/", 
             "skip_existing":True, 
-            "n_docs":1_000_000,
+            "n_docs":1_000,
             "mesh_terms": ["Endometriosis", "Rectal Neoplasms", "Fluorodeoxyglucose F18", "Cholelithiasis", "Antigens, Helminth", "Down Syndrome", "Antigens, Protozoan", "Urinary Tract Infections", "Chromosome Aberrations", "Streptococcal Infections", "Kidney Transplantation", "Cognition Disorders", "Alzheimer Disease", "Pregnancy"]
         }
         train_all_mesh_terms_jsonl(**args)
