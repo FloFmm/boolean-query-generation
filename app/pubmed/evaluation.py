@@ -5,14 +5,19 @@ from pathlib import Path
 from tqdm import tqdm
 from Bio import Entrez
 from app.pubmed.retrieval import classify_by_mesh
-from app.tree_learning.logical_query_generation import train_text_classifier, build_semantic_map, map_synonyms, build_synonym_map
+from app.tree_learning.logical_query_generation import (
+    train_text_classifier,
+    build_semantic_map,
+    map_synonyms,
+    build_synonym_map,
+)
 from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 import pandas as pd
 import matplotlib.pyplot as plt
+
 # from imodels import SkopeRulesClassifier, DecisionTreeClassifier
 from sklearn.tree import DecisionTreeClassifier
 from typing import List
-
 
 
 def load_completed_mesh_terms(jsonl_path: Path):
@@ -29,12 +34,24 @@ def load_completed_mesh_terms(jsonl_path: Path):
                 continue
     return completed
 
-def train_all_mesh_terms_jsonl(model, baseline_folder: str = "./data/pubmed/baseline", output_path: str = "data/pubmed/statistics/classifier_learning/", max_mesh_terms=None, mesh_terms: List[str] = None, skip_existing=False, n_docs=1_000_000):
+
+def train_all_mesh_terms_jsonl(
+    model,
+    baseline_folder: str = "./data/pubmed/baseline",
+    output_path: str = "data/pubmed/statistics/classifier_learning/",
+    max_mesh_terms=None,
+    mesh_terms: List[str] = None,
+    skip_existing=False,
+    n_docs=1_000_000,
+    n_words=100_000,
+):
     """
     Train text classifiers for all MeSH terms and save results incrementally as JSONL.
     Skips terms already in the output file.
     """
-    output_path = Path(os.path.join(output_path, f"{model}_{n_docs/1_000:.0f}k.jsonl"))
+    output_path = Path(
+        os.path.join(output_path, f"{model}_n_docs={n_docs / 1_000:.0f}_n_words={n_words / 1_000:.0f}.jsonl")
+    )
     if skip_existing:
         completed_mesh = load_completed_mesh_terms(output_path)
         print(f"Already computed {len(completed_mesh)} MeSH terms, skipping those...")
@@ -47,9 +64,7 @@ def train_all_mesh_terms_jsonl(model, baseline_folder: str = "./data/pubmed/base
         mesh_terms = mesh_terms[:max_mesh_terms]
 
     unique_words = set(
-        word
-        for doc in docs_by_pmid.values()
-        for word in doc["bag_of_words"].split()
+        word for doc in docs_by_pmid.values() for word in doc["bag_of_words"].split()
     )
     synonym_map = build_synonym_map(list(unique_words))
     for doc in docs_by_pmid.values():
@@ -64,17 +79,26 @@ def train_all_mesh_terms_jsonl(model, baseline_folder: str = "./data/pubmed/base
             if not relevant_ids:
                 print(f"Skipping {mesh}, because it does not occur in any doc")
                 continue
-            
-            relevant_records = [docs_by_pmid[pmid] for pmid in relevant_ids if "bag_of_words_synonyms" in docs_by_pmid[pmid]]
+
+            relevant_records = [
+                docs_by_pmid[pmid]
+                for pmid in relevant_ids
+                if "bag_of_words_synonyms" in docs_by_pmid[pmid]
+            ]
 
             negative_ids = list(set(docs_by_pmid.keys()) - set(relevant_ids))
-            negative_records = [docs_by_pmid[pmid] for pmid in negative_ids if "bag_of_words_synonyms" in docs_by_pmid[pmid]]
+            negative_records = [
+                docs_by_pmid[pmid]
+                for pmid in negative_ids
+                if "bag_of_words_synonyms" in docs_by_pmid[pmid]
+            ]
 
             start_time = time.time()
             result = train_text_classifier(
                 model,
                 [r["bag_of_words_synonyms"] for r in relevant_records],
                 [r["bag_of_words_synonyms"] for r in negative_records],
+                n_words=n_words,
             )
             duration = time.time() - start_time
 
@@ -94,6 +118,7 @@ def train_all_mesh_terms_jsonl(model, baseline_folder: str = "./data/pubmed/base
             out_f.flush()  # ensures progress is safely written
     print(f"✅ Completed training for {output_path}")
 
+
 def plot_metrics_from_jsonl(path: str):
     """
     Reads a JSONL file and plots average recall, accuracy, and time_seconds
@@ -108,12 +133,14 @@ def plot_metrics_from_jsonl(path: str):
         for line in f:
             try:
                 obj = json.loads(line)
-                data.append({
-                    "max_depth": obj.get("max_depth"),
-                    "recall": obj.get("recall"),
-                    "accuracy": obj.get("accuracy"),
-                    "time_seconds": obj.get("time_seconds")
-                })
+                data.append(
+                    {
+                        "max_depth": obj.get("max_depth"),
+                        "recall": obj.get("recall"),
+                        "accuracy": obj.get("accuracy"),
+                        "time_seconds": obj.get("time_seconds"),
+                    }
+                )
             except json.JSONDecodeError:
                 continue
 
@@ -142,30 +169,57 @@ def plot_metrics_from_jsonl(path: str):
 
     ax1.set_xlabel("max_depth")
     ax1.set_ylabel("Recall", color=color1)
-    ax1.plot(x_positions, grouped_mean.loc[x_labels, "recall"], color=color1, marker="o", label="Recall (avg)")
-    ax1.fill_between(x_positions,
-                     grouped_min.loc[x_labels, "recall"],
-                     grouped_max.loc[x_labels, "recall"],
-                     color=color1, alpha=0.15)
+    ax1.plot(
+        x_positions,
+        grouped_mean.loc[x_labels, "recall"],
+        color=color1,
+        marker="o",
+        label="Recall (avg)",
+    )
+    ax1.fill_between(
+        x_positions,
+        grouped_min.loc[x_labels, "recall"],
+        grouped_max.loc[x_labels, "recall"],
+        color=color1,
+        alpha=0.15,
+    )
     ax1.tick_params(axis="y", labelcolor=color1)
 
     ax2 = ax1.twinx()
     ax2.set_ylabel("Accuracy", color=color2)
-    ax2.plot(x_positions, grouped_mean.loc[x_labels, "accuracy"], color=color2, marker="s", label="Accuracy (avg)")
-    ax2.fill_between(x_positions,
-                     grouped_min.loc[x_labels, "accuracy"],
-                     grouped_max.loc[x_labels, "accuracy"],
-                     color=color2, alpha=0.15)
+    ax2.plot(
+        x_positions,
+        grouped_mean.loc[x_labels, "accuracy"],
+        color=color2,
+        marker="s",
+        label="Accuracy (avg)",
+    )
+    ax2.fill_between(
+        x_positions,
+        grouped_min.loc[x_labels, "accuracy"],
+        grouped_max.loc[x_labels, "accuracy"],
+        color=color2,
+        alpha=0.15,
+    )
     ax2.tick_params(axis="y", labelcolor=color2)
 
     ax3 = ax1.twinx()
     ax3.spines["right"].set_position(("outward", 60))
     ax3.set_ylabel("Time (s)", color=color3)
-    ax3.plot(x_positions, grouped_mean.loc[x_labels, "time_seconds"], color=color3, marker="^", label="Time (avg)")
-    ax3.fill_between(x_positions,
-                     grouped_min.loc[x_labels, "time_seconds"],
-                     grouped_max.loc[x_labels, "time_seconds"],
-                     color=color3, alpha=0.15)
+    ax3.plot(
+        x_positions,
+        grouped_mean.loc[x_labels, "time_seconds"],
+        color=color3,
+        marker="^",
+        label="Time (avg)",
+    )
+    ax3.fill_between(
+        x_positions,
+        grouped_min.loc[x_labels, "time_seconds"],
+        grouped_max.loc[x_labels, "time_seconds"],
+        color=color3,
+        alpha=0.15,
+    )
     ax3.tick_params(axis="y", labelcolor=color3)
 
     # Set categorical x-axis
@@ -176,9 +230,12 @@ def plot_metrics_from_jsonl(path: str):
     ax2.set_ylim(0, None)
     ax3.set_ylim(0, None)
 
-    plt.title("Average Recall, Accuracy, and Time vs. max_depth (with min/max deviation)")
+    plt.title(
+        "Average Recall, Accuracy, and Time vs. max_depth (with min/max deviation)"
+    )
     fig.tight_layout()
     plt.show()
+
 
 def plot_metrics_vs_class_ratio(path: str):
     """
@@ -198,11 +255,13 @@ def plot_metrics_vs_class_ratio(path: str):
                     neg = obj["num_negative"]
                     ratio = pos / (pos + neg) if (pos + neg) > 0 else None
                     if ratio is not None:
-                        data.append({
-                            "class_ratio": ratio,
-                            "recall": obj.get("recall"),
-                            "accuracy": obj.get("accuracy")
-                        })
+                        data.append(
+                            {
+                                "class_ratio": ratio,
+                                "recall": obj.get("recall"),
+                                "accuracy": obj.get("accuracy"),
+                            }
+                        )
             except json.JSONDecodeError:
                 continue
 
@@ -227,20 +286,30 @@ def plot_metrics_vs_class_ratio(path: str):
 
     ax1.set_xlabel("Positive Class Ratio")
     ax1.set_ylabel("Recall", color=color1)
-    ax1.plot(x_values, grouped_mean["recall"], color=color1, marker="o", label="Recall (avg)")
-    ax1.fill_between(x_values,
-                     grouped_min["recall"],
-                     grouped_max["recall"],
-                     color=color1, alpha=0.15)
+    ax1.plot(
+        x_values, grouped_mean["recall"], color=color1, marker="o", label="Recall (avg)"
+    )
+    ax1.fill_between(
+        x_values, grouped_min["recall"], grouped_max["recall"], color=color1, alpha=0.15
+    )
     ax1.tick_params(axis="y", labelcolor=color1)
 
     ax2 = ax1.twinx()
     ax2.set_ylabel("Accuracy", color=color2)
-    ax2.plot(x_values, grouped_mean["accuracy"], color=color2, marker="s", label="Accuracy (avg)")
-    ax2.fill_between(x_values,
-                     grouped_min["accuracy"],
-                     grouped_max["accuracy"],
-                     color=color2, alpha=0.15)
+    ax2.plot(
+        x_values,
+        grouped_mean["accuracy"],
+        color=color2,
+        marker="s",
+        label="Accuracy (avg)",
+    )
+    ax2.fill_between(
+        x_values,
+        grouped_min["accuracy"],
+        grouped_max["accuracy"],
+        color=color2,
+        alpha=0.15,
+    )
     ax2.tick_params(axis="y", labelcolor=color2)
 
     ax1.set_ylim(0, 1)
@@ -249,6 +318,7 @@ def plot_metrics_vs_class_ratio(path: str):
     plt.title("Recall and Accuracy vs. Positive Class Ratio (with min/max deviation)")
     fig.tight_layout()
     plt.show()
+
 
 if __name__ == "__main__":
     models = [
@@ -264,16 +334,38 @@ if __name__ == "__main__":
         #     class_weight="balanced",
         #     # min_samples_leaf=min_samples_leaf,
         # ),
-        GreedyORDecisionTree(max_depth=4, min_impurity_decrease=0.01, verbose=True)
+        GreedyORDecisionTree(
+            max_depth=4,
+            min_samples_split=5,
+            min_impurity_decrease_range=[0.01,0.03],
+            top_k_or_candidates=500,
+            verbose=True,
+        )
     ]
     for model in models:
         args = {
             "model": model,
-            "baseline_folder":"./data/pubmed/baseline", 
-            "output_path":"data/pubmed/statistics/classifier_learning/", 
-            "skip_existing":True, 
-            "n_docs":1_000,
-            "mesh_terms": ["Endometriosis", "Rectal Neoplasms", "Fluorodeoxyglucose F18", "Cholelithiasis", "Antigens, Helminth", "Down Syndrome", "Antigens, Protozoan", "Urinary Tract Infections", "Chromosome Aberrations", "Streptococcal Infections", "Kidney Transplantation", "Cognition Disorders", "Alzheimer Disease", "Pregnancy"]
+            "baseline_folder": "./data/pubmed/baseline",
+            "output_path": "data/pubmed/statistics/classifier_learning/",
+            "skip_existing": False,
+            "n_docs": 1_000_000,
+            "n_words": 100_000,
+            "mesh_terms": [
+                "Endometriosis",
+                "Rectal Neoplasms",
+                "Fluorodeoxyglucose F18",
+                "Cholelithiasis",
+                "Antigens, Helminth",
+                "Down Syndrome",
+                "Antigens, Protozoan",
+                "Urinary Tract Infections",
+                "Chromosome Aberrations",
+                "Streptococcal Infections",
+                "Kidney Transplantation",
+                "Cognition Disorders",
+                "Alzheimer Disease",
+                "Pregnancy",
+            ],
         }
         train_all_mesh_terms_jsonl(**args)
     # plot_metrics_from_jsonl("data/pubmed/statistics/mesh_results_330k.jsonl")

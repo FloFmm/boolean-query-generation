@@ -83,6 +83,7 @@ def train_text_classifier(
     clf,
     set1,
     set2,
+    n_words
 ):
     # class_weight = {"set1": int(len(set2)/len(set1)*4.0), "set2": 1}
     """
@@ -108,9 +109,17 @@ def train_text_classifier(
     labels = [1] * len(set1) + [0] * len(set2)
 
     # Vectorizer: binary presence, remove stopwords
-    vectorizer = CountVectorizer(binary=True)  # , stop_words="english")
+    vectorizer = CountVectorizer(binary=True, max_features=n_words, stop_words="english")
     X = vectorizer.fit_transform(texts)
     feature_names = vectorizer.get_feature_names_out()
+
+    #debug
+    word_counts = np.asarray(X.sum(axis=0)).flatten()
+    least_common_count = np.min(word_counts)
+
+    print(f"Number of features (words): {len(feature_names)}")
+    print(f"Least common word count: {least_common_count}")
+    #debug
 
     if isinstance(clf, SkopeRulesClassifier):
         X = X.toarray()

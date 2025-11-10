@@ -8,33 +8,18 @@ import itertools
 import math
 import time
 import json
-
-def gini_impurity(y):
-    """Compute Gini impurity."""
-    if len(y) == 0:
-        return 0
-    counts = np.bincount(y)
-    probs = counts / len(y)
-    return 1 - np.sum(probs**2)
+from tqdm import tqdm
 
 
-def fast_gini(mask, y_true):
-    if not np.any(mask):
-        return 0.0
-    p = np.mean(y_true[mask])
-    print("new", np.sum(y_true[mask], dtype=np.float64)/mask.sum())
-    print("old", np.mean(y_true[mask]))
-    return 2 * p * (1 - p)
-
-def fast_gini_both(mask, y_true):
+def fast_gini_both(mask, y_true, min_samples_split):
     """Compute Gini impurity for mask and its complement in one pass."""
     n_total = len(y_true)
 
     # Left side
     n_left = mask.sum()
-    if n_left == 0 or n_left == n_total:
-        # One side empty → impurity 0 for both
-        return 0.0
+    if n_left < min_samples_split or n_left > n_total - min_samples_split:
+        # return high impuriy to avoid useless splits
+        return 1.0, False
 
     sum_left = np.sum(y_true[mask], dtype=np.float64)  # sum of positives on left
     p_left = sum_left / n_left
@@ -46,45 +31,45 @@ def fast_gini_both(mask, y_true):
     p_right = sum_right / n_right
     right_imp = 2 * p_right * (1 - p_right)
 
-    return (n_left * left_imp + n_right * right_imp) / n_total
+    return (n_left * left_imp + n_right * right_imp) / n_total, True
 
 
-def best_split(X, y, features):
+def best_split(X, y, features, min_samples_split):
     """Find best split feature (sparse version, optimized with fast_gini)."""
     if not features:
-        return None, (None, None), 0.0
+        return None, 0.0, []
 
     best_feature = None
     best_impurity = 1.0
 
     # Compute current impurity once
     p_total = np.mean(y)
-    current_impurity = 2 * p_total * (1 - p_total)
+    initial_impurity = 2 * p_total * (1 - p_total)
 
     improvements = []
+    invalid_features = []
     for f in features:
         # Sparse column slice
         col = X[:, f]
         mask = col.getnnz(axis=1) > 0  # rows where feature is present
 
-        weighted = fast_gini_both(mask, y)
-        if weighted == 0:
+        weighted, valid_split = fast_gini_both(mask, y, min_samples_split)
+        if not valid_split:
+            invalid_features.append(f)
             continue
-        improvements.append((f, current_impurity - weighted))
+        improvements.append((f, initial_impurity - weighted))
 
         if weighted < best_impurity:
             best_impurity = weighted
             best_feature = f
 
     # Sort features by improvement (descending)
-    sorted_features = sorted(improvements, key=lambda x: x[1], reverse=True)        
+    best_sorted_features = sorted(improvements, key=lambda x: x[1], reverse=True)
 
-    improvement = current_impurity - best_impurity
-    return best_feature, improvement, sorted_features
-
+    return best_feature, best_impurity, initial_impurity, best_sorted_features, invalid_features
 
 
-def greedy_or_expand(X, y, base_features, candidate_features, min_impurity_decrease):
+def greedy_or_expand(X, y, base_features, candidate_features, current_impurity, min_impurity_decrease, min_samples_split):
     """
     Try adding features with OR (sparse version, fully vectorized).
 
@@ -107,18 +92,13 @@ def greedy_or_expand(X, y, base_features, candidate_features, min_impurity_decre
         Selected OR features after greedy expansion.
     """
     n_samples = X.shape[0]
-
     # Compute initial combined mask
     if base_features:
         combined_mask = X[:, base_features].getnnz(axis=1) > 0
     else:
         combined_mask = np.zeros(n_samples, dtype=bool)
 
-    # Initial weighted impurity
-    best_impurity = (
-        len(y[combined_mask]) * gini_impurity(y[combined_mask])
-        + len(y[~combined_mask]) * gini_impurity(y[~combined_mask])
-    ) / n_samples
+    best_impurity = current_impurity
 
     col_masks = {f: (X[:, f].getnnz(axis=1) > 0) for f in candidate_features}
     improved = True
@@ -138,23 +118,25 @@ def greedy_or_expand(X, y, base_features, candidate_features, min_impurity_decre
         weighted_impurities = []
         for f in candidate_features:
             mask = combined_mask | col_masks[f]
-            weighted = fast_gini_both(mask, y)
-            weighted_impurities.append(weighted)
+            weighted, valid_split = fast_gini_both(mask, y, min_samples_split)
+            if valid_split:
+                weighted_impurities.append(weighted)
 
-        weighted_impurities = np.array(weighted_impurities)
-        improvements = best_impurity - weighted_impurities
+        if weighted_impurities: # found suitable or features
+            weighted_impurities = np.array(weighted_impurities)
+            improvements = best_impurity - weighted_impurities
 
-        # Pick best candidate
-        idx = np.argmax(improvements)
-        if improvements[idx] >= min_impurity_decrease:
-            best_addition = candidate_features[idx]
-            base_features.append(best_addition)
-            candidate_features.remove(best_addition)
-            best_impurity = weighted_impurities[idx]
-            # update combined_mask for next round
-            combined_mask = combined_mask | (X[:, best_addition].getnnz(axis=1) > 0)
-            improved = True
-            print("added OR feature", best_addition)
+            # Pick best candidate
+            idx = np.argmax(improvements)
+            if improvements[idx] >= min_impurity_decrease:
+                best_addition = candidate_features[idx]
+                base_features.append(best_addition)
+                candidate_features.remove(best_addition)
+                best_impurity = weighted_impurities[idx]
+                # update combined_mask for next round
+                combined_mask = combined_mask | (X[:, best_addition].getnnz(axis=1) > 0)
+                improved = True
+                # print("added OR feature", best_addition)
 
     return base_features
 
@@ -164,79 +146,104 @@ class GreedyORDecisionTree:
         self,
         max_depth=3,
         min_samples_split=2,
-        min_impurity_decrease=0.01,
+        min_impurity_decrease_range=[0.01,0.03],
+        top_k_or_candidates=500,
         verbose=False,
     ):
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
-        self.min_impurity_decrease = min_impurity_decrease
-        self.tree = None
-        self.verbose = verbose
+        self.min_impurity_decrease_range = min_impurity_decrease_range
+        self.top_k_or_candidates = top_k_or_candidates
+        self._tree = None
+        self._verbose = verbose
         self._grow_counter = 0
-        self._grow_total = 2**(max_depth)-1
+        self._grow_total = 2 ** (max_depth) - 1
+        self._total_docs = -1
 
     def fit(self, X, y, feature_names=None):
+        self._total_docs = X.shape[0]
         self._grow_counter = 0
         self.feature_names = (
             feature_names.tolist()
             if feature_names is not None
             else [f"f{i}" for i in range(X.shape[1])]
         )
+
+        # Initialize tqdm progress bar
+        if self._verbose:
+            self._pbar = tqdm(
+                total=2 ** (self.max_depth) - 1, desc="Growing Tree", ncols=80
+            )
+        else:
+            self._pbar = None
+
         # Convert X to CSC once for fast column access
-        self.tree = self._grow(X.tocsc(), y, depth=0, features=list(range(X.shape[1])))
+        self._tree = self._grow(X.tocsc(), y, depth=0, features=list(range(X.shape[1])))
+
+        self._prune_pure_subtrees()
 
     def _grow(self, X, y, depth, features):
         node = {}
         if (
             depth >= self.max_depth
-            or len(np.unique(y)) == 1
             or len(y) < self.min_samples_split
+            or len(np.unique(y)) == 1
         ):
             node["type"] = "leaf"
             counts = Counter(y)
             total = len(y)
             # Store both predicted class and probability distribution
             node["class"] = counts.most_common(1)[0][0]
+            node["counts"] = counts
             node["prob"] = {cls: count / total for cls, count in counts.items()}
             return node
-        
-        if self.verbose:
+
+        # if self._verbose:
+        #     self._grow_counter += 1
+        #     progress = 100 * self._grow_counter / self._grow_total
+        #     print(
+        #         f"GROWING NODE {self._grow_counter}/{self._grow_total} ({progress:.1f}%) at depth {depth}"
+        #     )
+        if self._verbose and hasattr(self, "_pbar") and self._pbar is not None:
             self._grow_counter += 1
-            progress = 100 * self._grow_counter / self._grow_total
-            print(
-                f"GROWING NODE {self._grow_counter}/{self._grow_total} ({progress:.1f}%) at depth {depth}"
-            )
+            self._pbar.update(1)
+            self._pbar.set_postfix(depth=depth)
 
-        best_f, improvement, sorted_features = best_split(X, y, features)
-    
+        best_feature, best_impurity, initial_impurity, best_sorted_features, invalid_features = best_split(X, y, features, self.min_samples_split)
 
-        if best_f is None or improvement <= 0:
+        if best_feature is None or initial_impurity - best_impurity <= 0:
             node["type"] = "leaf"
             counts = Counter(y)
             total = len(y)
             # Store both predicted class and probability distribution
             node["class"] = counts.most_common(1)[0][0]
+            node["counts"] = counts
             node["prob"] = {cls: count / total for cls, count in counts.items()}
             return node
 
         # Take top-k features to try for OR expansion
-        top_k = 500  # for example
-        top_candidates = [f for f, imp in sorted_features[:top_k] if f != best_f]
+        top_candidates = [
+            f for f, imp in best_sorted_features[: self.top_k_or_candidates] if f != best_feature
+        ]
 
         # Expand with OR combinations
         or_features = greedy_or_expand(
             X,
             y,
-            [best_f],
+            [best_feature],
             top_candidates,
-            min_impurity_decrease=self.min_impurity_decrease,
+            current_impurity=best_impurity,
+            min_impurity_decrease=self.scaled_min_impurity_decrease(X.shape[0]), # min_impurity_decrease scales inversely with number of remaining docs
+            min_samples_split=self.min_samples_split,
+            
         )
         # Update for child nodes
-        new_features = [f for f in features if f not in or_features]
+        new_features = [f for f in features if f not in (or_features + invalid_features)]
         combined_mask = X[:, or_features].getnnz(axis=1) > 0
 
         node["type"] = "node"
         node["features"] = [self.feature_names[f] for f in or_features]
+        node["feature_indices"] = or_features
         node["left"] = self._grow(
             X[combined_mask],
             y[combined_mask],
@@ -251,28 +258,112 @@ class GreedyORDecisionTree:
         )
         return node
 
-    def predict_one(self, x, node=None):
+    def scaled_min_impurity_decrease(self, n_samples):
         """
-        Predict a single sample for a sparse row vector x (csr_matrix, shape 1×n_features).
+        Scale min_impurity_decrease linearly between given bounds.
+
+        Parameters
+        ----------
+        n_samples : int
+            Number of samples in the current node.
+        n_total : int
+            Total number of samples at the root.
+        min_impurity_decrease_range : [float, float]
+            [min_value_at_root, max_value_at_small_nodes]
+
+        Returns
+        -------
+        float
+            Scaled min_impurity_decrease for this node.
         """
-        node = node or self.tree
-        if node["type"] == "leaf":
-            return node["class"]
-
-        # Get feature indices in the node
-        feature_indices = [self.feature_names.index(f) for f in node["features"]]
-
-        # Check OR condition over sparse features
-        # x[0, feature_indices] gives a sparse slice
-        if x[0, feature_indices].sum() > 0:
-            return self.predict_one(x, node["left"])
-        else:
-            return self.predict_one(x, node["right"])
+        min_val, max_val = self.min_impurity_decrease_range
+        # Linear interpolation: goes from min_val (root) → max_val (deep)
+        fraction = 1 - (n_samples / self._total_docs)
+        return min_val + (max_val - min_val) * fraction
 
     def predict(self, X):
-        return np.array([self.predict_one(x) for x in X])
+        """Vectorized prediction for sparse CSR matrix X."""
+        n_samples = X.shape[0]
+        preds = np.empty(n_samples, dtype=int)
 
-    def export_tree(self, format="pretty", feature_names=None):
+        # Stack for DFS traversal: (node, sample_indices)
+        stack = [(self._tree, np.arange(n_samples))]
+
+        while stack:
+            node, idx = stack.pop()
+
+            if node["type"] == "leaf":
+                preds[idx] = node["class"]
+                continue
+
+            # Extract precomputed indices
+            feature_indices = node["feature_indices"]
+
+            # Compute OR condition efficiently for all rows in this subset
+            # X[idx][:, feature_indices] is a sparse submatrix
+            mask = X[idx][:, feature_indices].getnnz(axis=1) > 0
+
+            # Send samples left or right
+            if mask.any():
+                stack.append((node["left"], idx[mask]))
+            if (~mask).any():
+                stack.append((node["right"], idx[~mask]))
+
+        return preds
+
+    def _prune_pure_subtrees(self):
+        """
+        Remove unnecessary decision nodes where all descendant leaves
+        predict the same class. This simplifies the tree without changing
+        its predictions.
+
+        After pruning, leaf counts and probabilities are recalculated
+        from all descendant leaves.
+        """
+        if self._tree is None:
+            raise ValueError("Tree has not been trained yet. Call fit() first.")
+
+        def aggregate_counts(node):
+            """
+            Recursively aggregate class counts for a node.
+            Returns a Counter of class counts under this node.
+            """
+            if node["type"] == "leaf":
+                return Counter(node["counts"])
+            left_counts = aggregate_counts(node["left"])
+            right_counts = aggregate_counts(node["right"])
+            return left_counts + right_counts
+
+        def prune(node):
+            """
+            Recursively prune pure subtrees.
+            Returns (is_pure, pure_class).
+            """
+            if node["type"] == "leaf":
+                return True, node["class"]
+
+            left_pure, left_class = prune(node["left"])
+            right_pure, right_class = prune(node["right"])
+
+            # If both subtrees pure and of same class → collapse
+            if left_pure and right_pure and left_class == right_class:
+                # Aggregate counts from children
+                total_counts = aggregate_counts(node)
+                total = sum(total_counts.values())
+                probs = {cls: count / total for cls, count in total_counts.items()}
+
+                node.clear()
+                node["type"] = "leaf"
+                node["class"] = left_class
+                node["counts"] = total_counts
+                node["prob"] = probs
+                return True, left_class
+
+            return False, None
+
+        prune(self._tree)
+
+    def export_tree(self, format="pretty", feature_names=None, verbose=False):
         """
         Export the trained tree.
 
@@ -289,7 +380,7 @@ class GreedyORDecisionTree:
         -------
         str or dict
         """
-        if self.tree is None:
+        if self._tree is None:
             raise ValueError("Tree has not been trained yet. Call fit() first.")
 
         # Helper to map internal names to user-provided names
@@ -303,15 +394,20 @@ class GreedyORDecisionTree:
                 return f
 
         if format == "dict":
-            return self.tree
+            return self._tree
         elif format == "json":
-            return json.dumps(self.tree, indent=4)
+            return json.dumps(self._tree, indent=4)
         elif format == "pretty":
             lines = []
 
             def recurse(node, indent=""):
                 if node["type"] == "leaf":
-                    lines.append(f"{indent}class: {node['class']} ({node['prob'][node['class']]:.2f})")
+                    leaf_text = f"{indent}class: {node['class']}"
+                    if verbose:
+                        leaf_text += f" ({node['prob'][node['class']]:.6g}, {node['counts']})"
+                    lines.append(
+                        leaf_text
+                    )
                 else:
                     features = " OR ".join(get_name(f) for f in node["features"])
                     lines.append(f"{indent}if ({features}):")
@@ -319,21 +415,17 @@ class GreedyORDecisionTree:
                     lines.append(f"{indent}else:")
                     recurse(node["right"], indent + "    ")
 
-            recurse(self.tree)
+            recurse(self._tree)
             return "\n".join(lines)
         else:
             raise ValueError(f"Unknown export format '{format}'")
 
-def print_tree(node, indent=""):
-    """Pretty-print the decision tree."""
-    if node["type"] == "leaf":
-        print(f"{indent}class: {node['class']} ({node['prob'][node['class']]:.2f})")
-        return
-    features = " OR ".join(node["features"])
-    print(f"{indent}if ({features}):")
-    print_tree(node["left"], indent + "    ")
-    print(f"{indent}else:")
-    print_tree(node["right"], indent + "    ")
+    def __repr__(self):
+        params = []
+        for k, v in self.__dict__.items():
+            if not k.startswith("_"):  # skip hidden
+                params.append(f"{k}={v!r}")
+        return f"{self.__class__.__name__}({', '.join(params)})"
 
 
 def generate_texts_from_boolean(
@@ -418,23 +510,24 @@ def generate_texts_from_boolean(
     return new_texts, labels
 
 
-# --- Example Usage ---
 # if __name__ == "__main__":
 def main():
-    f = (
-        lambda d: not (d["cats"] or d["dogs"] or d["mice"])
-        and (d["house"] or d["wohnung"])
-        and (d["bowl"] or d["box"])
-    )
+    def f(d):
+        return (
+            not (d["cats"] or d["dogs"] or d["mice"])
+            and (d["house"] or d["wohnung"])
+            and (d["bowl"] or d["box"])
+        )
+
     variables = ["cats", "dogs", "mice", "house", "wohnung", "bowl", "box"]
     texts, labels = generate_texts_from_boolean(
         func=f,
         variables=variables,
         error=0.1,
-        completeness=0.7,
+        completeness=0.9,
         seed=42,
-        doc_count=1_000_000,
-        word_pool_size=400_000,
+        doc_count=1_000_0,
+        word_pool_size=400_0,
         average_doc_length=30,
     )
 
@@ -453,31 +546,48 @@ def main():
     vectorizer = CountVectorizer(binary=True)
     X = vectorizer.fit_transform(texts)
 
-    tree = GreedyORDecisionTree(max_depth=3, min_impurity_decrease=0.01, verbose=True)
+    tree = GreedyORDecisionTree(
+        max_depth=4,
+        min_impurity_decrease_range=[0.01, 0.03],
+        top_k_or_candidates=500,
+        verbose=True,
+        min_samples_split=5,
+    )
     start_time = time.time()
     tree.fit(X, np.array(labels), feature_names=vectorizer.get_feature_names_out())
     end_time = time.time()
 
-    from pprint import pprint
+    print()
+    print(tree.export_tree(feature_names=vectorizer.get_feature_names_out()))
+    preds = tree.predict(X)
+    true_preds = np.array(
+        [f({var: int(var in text.split()) for var in variables}) for text in texts]
+    )
+    precision = precision_score(true_preds, preds)
+    recall = recall_score(true_preds, preds)
+    print()
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall:    {recall:.4f}")
+    print(f"Fit time: {end_time - start_time:.4f} seconds")
 
-    pprint(tree.tree)
+    X_test = vectorizer.transform(
+        [
+            "bowl house",
+            "bowl wohnung house",
+            "bowl wohnung",
+            "cats bowl house",
+            "cats mice",
+            "hello",
+        ]
+    )
+    print("result", tree.predict(X_test))
 
-    # preds = tree.predict(X)
-    # true_preds = np.array(
-    #     [f({var: int(var in text.split()) for var in variables}) for text in texts]
-    # )
-    # precision = precision_score(true_preds, preds)
-    # recall = recall_score(true_preds, preds)
-    print_tree(tree.tree)
-    # print()
-    # print(f"Precision: {precision:.4f}")
-    # print(f"Recall:    {recall:.4f}")
-    print(f"Prediction time: {end_time - start_time:.4f} seconds")
 
 from line_profiler import LineProfiler
+
 if __name__ == "__main__":
     lp = LineProfiler()
-    lp.add_function(best_split)
+    lp.add_function(GreedyORDecisionTree.fit)
 
-    lp.run('main()')
+    lp.run("main()")
     lp.print_stats()
