@@ -83,7 +83,7 @@ def train_text_classifier(
     clf,
     set1,
     set2,
-    n_words
+    min_f_occ,
 ):
     # class_weight = {"set1": int(len(set2)/len(set1)*4.0), "set2": 1}
     """
@@ -109,15 +109,36 @@ def train_text_classifier(
     labels = [1] * len(set1) + [0] * len(set2)
 
     # Vectorizer: binary presence, remove stopwords
-    vectorizer = CountVectorizer(binary=True, max_features=n_words, stop_words="english")
+    vectorizer = CountVectorizer(binary=True, stop_words="english")
     X = vectorizer.fit_transform(texts)
     feature_names = vectorizer.get_feature_names_out()
+    print(f"Number of features (words): {len(feature_names)}")
+    if min_f_occ:
+        # Compute per-class feature counts
+        X_set1 = X[:len(set1)]
+        X_set2 = X[len(set1):]
+
+        counts_1 = np.asarray(X_set1.sum(axis=0)).ravel()
+        counts_0 = np.asarray(X_set2.sum(axis=0)).ravel()
+
+        # Keep features that meet the per-class min frequency criteria
+        keep_mask = (counts_1 >= min_f_occ[1]) | (counts_0 >= min_f_occ[0])
+        kept_features = feature_names[keep_mask]
+
+        # Re-vectorize using only kept features
+        vectorizer = CountVectorizer(
+            binary=True, 
+            stop_words="english",
+            vocabulary=kept_features
+        )
+        X = vectorizer.fit_transform(texts)
+        feature_names = kept_features
 
     #debug
     word_counts = np.asarray(X.sum(axis=0)).flatten()
     least_common_count = np.min(word_counts)
 
-    print(f"Number of features (words): {len(feature_names)}")
+    print(f"Number of remaining features (words): {len(feature_names)}")
     print(f"Least common word count: {least_common_count}")
     #debug
 
