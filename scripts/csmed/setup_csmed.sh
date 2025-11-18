@@ -58,9 +58,9 @@ $CSMED_PY -m pip install -r requirements.txt
 playwright install
 echo "=== Converting datasets ==="
 cd scripts
-# $CSMED_PY convert_tar_dataset.py
-# $CSMED_PY convert_sigir2017_dataset.py
-# $CSMED_PY convert_sr_updates_dataset.py
+$CSMED_PY convert_tar_dataset.py
+$CSMED_PY convert_sigir2017_dataset.py
+$CSMED_PY convert_sr_updates_dataset.py
 
 cd ..
 cd ..
