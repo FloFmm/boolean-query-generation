@@ -51,3 +51,5 @@ cd scripts
 $CSMED_PY convert_tar_dataset.py
 $CSMED_PY convert_sigir2017_dataset.py
 $CSMED_PY convert_sr_updates_dataset.py
+
+$CSMED_PY ../../CSMeD-baselines/experiments/csmed_cochrane/csmed_cochrane_retrieval.py
