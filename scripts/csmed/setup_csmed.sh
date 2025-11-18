@@ -34,8 +34,8 @@ cd systematic-review-datasets
 if [ ! -d "./csmed_conda" ]; then
     conda create --prefix ./csmed_conda python=3.10 -y
 fi
-# conda activate ./csmed_conda
-# Use the Python inside the environment explicitly
+
+# Use the Python inside the environment explicitly (instead of conda activate ./csmed_conda)
 CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
 
 $CSMED_PY -m pip install --upgrade pip setuptools wheel
@@ -48,8 +48,8 @@ $CSMED_PY -m pip install -r requirements.txt
 playwright install
 echo "=== Converting datasets ==="
 cd scripts
-$CSMED_PY convert_tar_dataset.py
-$CSMED_PY convert_sigir2017_dataset.py
-$CSMED_PY convert_sr_updates_dataset.py
+# $CSMED_PY convert_tar_dataset.py
+# $CSMED_PY convert_sigir2017_dataset.py
+# $CSMED_PY convert_sr_updates_dataset.py
 
 $CSMED_PY ../../CSMeD-baselines/experiments/csmed_cochrane/csmed_cochrane_retrieval.py
