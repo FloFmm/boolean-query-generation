@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Function to clone or update a repo
 update_repo() {
     local repo_url=$1
@@ -13,6 +15,10 @@ update_repo() {
     fi
 }
 
+# Load Anaconda / Python module
+ml release/23.04
+ml Anaconda3/2022.05
+
 # clone/update code repos
 update_repo git@github.com:FloFmm/systematic-review-datasets.git systematic-review-datasets
 update_repo git@github.com:FloFmm/CSMeD-baselines.git CSMeD-baselines
@@ -24,13 +30,11 @@ update_repo https://github.com/Amal-Alharbi/Systematic_Reviews_Update.git System
 
 # conda env set up
 echo "=== Setting up environment ==="
-conda init bash
-source ~/.bashrc
 cd systematic-review-datasets
 if [ ! -d "./csmed" ]; then
     conda create --prefix ./csmed python=3.10
 fi
-conda activate csmed
+conda activate ./csmed
 pip install -r requirements.txt
 pip install -r experiment_requirements.txt
 
