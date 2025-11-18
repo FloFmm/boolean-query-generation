@@ -610,14 +610,14 @@ if __name__ == "__main__":
     )
     print(df)
 
-    # analyze_and_plot_best_files_from_df(
-    #     df,
-    #     top_n=10,
-    # )
-    # exit(0)
-
-    df = analyze_dataframe_results(df)
+    analyze_and_plot_best_files_from_df(
+        df,
+        top_n=10,
+    )
     exit(0)
+
+    # df = analyze_dataframe_results(df)
+    # exit(0)
     models = [
         # SkopeRulesClassifier(
         #     n_estimators=10,
