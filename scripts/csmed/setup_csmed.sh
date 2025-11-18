@@ -31,10 +31,10 @@ update_repo https://github.com/Amal-Alharbi/Systematic_Reviews_Update.git System
 # conda env set up
 echo "=== Setting up environment ==="
 cd systematic-review-datasets
-if [ ! -d "./csmed" ]; then
-    conda create --prefix ./csmed python=3.10
+if [ ! -d "./csmed_conda" ]; then
+    conda create --prefix ./csmed_conda python=3.10 -y
 fi
-conda activate ./csmed
+conda activate ./csmed_conda
 pip install -r requirements.txt
 pip install -r experiment_requirements.txt
 
