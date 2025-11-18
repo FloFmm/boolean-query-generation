@@ -42,7 +42,7 @@ $CSMED_PY -m pip install --upgrade pip setuptools wheel
 $CSMED_PY -m pip install pystemmer==3.0.0
 $CSMED_PY -m pip install --no-deps retriv~=0.2.3
 $CSMED_PY -m pip install -r requirements.txt
-$CSMED_PY -m pip install -r experiment_requirements.txt
+# $CSMED_PY -m pip install -r experiment_requirements.txt
 
 # get review details from cochrane
 playwright install
