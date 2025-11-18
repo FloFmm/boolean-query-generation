@@ -39,8 +39,9 @@ fi
 CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
 
 $CSMED_PY -m pip install --upgrade pip setuptools wheel
-$CSMED_PY -m pip install pystemmer==3.0.0
-$CSMED_PY -m pip install --no-deps retriv~=0.2.3
+pip install pystemmer==2.0.1 --no-build-isolation
+# $CSMED_PY -m pip install pystemmer==3.0.0
+# $CSMED_PY -m pip install --no-deps retriv~=0.2.3
 $CSMED_PY -m pip install -r requirements.txt
 # $CSMED_PY -m pip install -r experiment_requirements.txt
 
