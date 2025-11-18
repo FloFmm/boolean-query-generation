@@ -1,4 +1,12 @@
 #!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --tasks-per-node=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=24:00:00
+#SBATCH --mail-type=end
+#SBATCH --mail-user=florian_maurus.mueller@mailbox.tu-dresden.de
+
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 # Function to clone or update a repo
 update_repo() {
@@ -18,7 +26,7 @@ update_repo() {
 # Load Anaconda / Python module
 ml release/23.04
 ml Anaconda3/2022.05
-ml GCC/13.2.0
+ml GCC/11.3.0
 
 # clone/update code repos
 update_repo git@github.com:FloFmm/systematic-review-datasets.git systematic-review-datasets
@@ -45,7 +53,6 @@ pip install pystemmer==2.0.1 --no-build-isolation
 # $CSMED_PY -m pip install pystemmer==3.0.0
 # $CSMED_PY -m pip install --no-deps retriv~=0.2.3
 $CSMED_PY -m pip install -r requirements.txt
-# $CSMED_PY -m pip install -r experiment_requirements.txt
 
 # get review details from cochrane
 playwright install
