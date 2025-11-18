@@ -18,6 +18,7 @@ update_repo() {
 # Load Anaconda / Python module
 ml release/23.04
 ml Anaconda3/2022.05
+ml GCC/13.2.0
 
 # clone/update code repos
 update_repo git@github.com:FloFmm/systematic-review-datasets.git systematic-review-datasets
@@ -39,6 +40,7 @@ fi
 CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
 
 $CSMED_PY -m pip install --upgrade pip setuptools wheel
+pip install cython
 pip install pystemmer==2.0.1 --no-build-isolation
 # $CSMED_PY -m pip install pystemmer==3.0.0
 # $CSMED_PY -m pip install --no-deps retriv~=0.2.3
