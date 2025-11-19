@@ -119,10 +119,11 @@ def train_all_mesh_terms_jsonl(
                     "threshold": model._optimal_threshold
                     if model._optimal_threshold
                     else "",
+                    "time_seconds": duration,
                     "boolean_function_set1": result["boolean_function_set1"],
                     "boolean_function_set2": result["boolean_function_set2"],
                     "pretty_print": result["pretty_print"],
-                    "time_seconds": duration,
+                    "obj": result["obj"],
                 }
 
                 out_f.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -542,7 +543,6 @@ def analyze_and_plot_best_files_from_df(df, top_n=10):
     for file in list(top_df["file"]):
         print(i, file)
         i += 1
-        
 
     # Left axis: precision/recall/F1
     ax1.plot(x, top_df["precision"], marker="o", label="Precision", color="tab:blue")
@@ -602,22 +602,28 @@ def analyze_and_plot_best_files_from_df(df, top_n=10):
     return top_df
 
 
-if __name__ == "__main__":
+def visualize_results(
+    folder="data/pubmed/statistics/classifier_learning",
+    model="GreedyORDecisionTree",
+    filter_vars={"n_docs": "50k"},
+):
     df = load_experiment_data(
-        folder="data/pubmed/statistics/classifier_learning",
-        model="GreedyORDecisionTree",
-        filter_vars={"n_docs": "50k"},
+        folder=folder,
+        model=model,
+        filter_vars=filter_vars,
     )
-    print(df)
 
     analyze_and_plot_best_files_from_df(
         df,
         top_n=10,
     )
-    exit(0)
 
-    # df = analyze_dataframe_results(df)
-    # exit(0)
+    df = analyze_dataframe_results(df)
+
+
+if __name__ == "__main__":
+    # visualize_results()
+
     models = [
         # SkopeRulesClassifier(
         #     n_estimators=10,
@@ -646,7 +652,7 @@ if __name__ == "__main__":
         for min_impurity_d_start in [0.01, 0.1, 0.001]:
             for min_impurity_d_end in [0.03, 0.3, 0.003]:
                 for top_k_or_candidates in [100, 500, 1000]:
-                    for class_weight in ["balanced", {1: 1, 0: 1}, {1: 2, 0: 1}]:
+                    for class_weight in ["balanced", {1: 1, 0: 1}, {1: 2, 0: 1}, {1: 3, 0: 1}, {1: 4, 0: 1}, {1: 5, 0: 1}, {1: 6, 0: 1}, {1: 3, 0: 0.5}, {1: 500, 0: 0.5}]:
                         models.append(
                             GreedyORDecisionTree(
                                 max_depth=4,

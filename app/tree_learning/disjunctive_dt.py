@@ -8,8 +8,10 @@ import itertools
 import math
 import time
 import json
+import inspect
+import jsonpickle
 from tqdm import tqdm
-
+from copy import deepcopy
 
 def fast_gini_both(mask, y_true, min_samples_split, class_weight):
     """Compute Gini impurity for mask and its complement in one pass."""
@@ -192,7 +194,6 @@ class GreedyORDecisionTree:
         self._grow_counter = 0
         self._grow_total = 2 ** (max_depth) - 1
         self._n_samples = -1
-        self._balance_calss_weight = True
         self._optimal_threshold = 0.5
         self._optimal_metric = None
         self._optimal_score = None
@@ -214,11 +215,11 @@ class GreedyORDecisionTree:
             return
         if self.class_weight == "balanced":
             self.class_weight  = {
-                0: int(100*self._n_samples / (2 * n_class_0)),
-                1: int(100*self._n_samples / (2 * n_class_1)),
+                0: self._n_samples / (2 * n_class_0),
+                1: self._n_samples / (2 * n_class_1),
             }
-        elif self.class_weight  is None:
-            self.class_weight  = {0: 1.0, 1: 1.0}
+        elif self.class_weight is None:
+            self.class_weight  = {0: 1, 1: 1}
 
         # Initialize tqdm progress bar
         if self._verbose:
@@ -241,19 +242,23 @@ class GreedyORDecisionTree:
 
         # self._prune_pure_subtrees()
 
+    def _calc_node_stats(self, y):
+        n_class_1 = int(np.sum(y))
+        n_class_0 = int((len(y) - n_class_1))
+        weighted_class_1 = n_class_1 * self.class_weight[1]
+        weighted_class_0 = n_class_0 * self.class_weight[0]
+        counts = {0: n_class_0, 1: n_class_1}
+        total_weight = weighted_class_0 + weighted_class_1
+        prob_class_1 = weighted_class_1 / total_weight
+        return counts, prob_class_1
+
     def _create_leaf(self, y):
         node = {}
         node["type"] = "leaf"
-        n_class_1 = np.sum(y)
-        n_class_0 = (len(y) - n_class_1)
-        weighted_class_1 = n_class_1 * self.class_weight[1]
-        weighted_class_0 = n_class_0 * self.class_weight[0]
-
-        # node["class"] = int(weighted_class_1 >= weighted_class_0)
-        node["counts"] = {0: n_class_0, 1:n_class_1}
-        total_weight = weighted_class_0 + weighted_class_1
-        node["prob_class_1"] = weighted_class_1 / total_weight
-        self._possible_thresholds.add(node["prob_class_1"])
+        counts, prob_class_1 = self._calc_node_stats(y)
+        node["counts"] = counts
+        node["prob_class_1"] = prob_class_1
+        self._possible_thresholds.add(prob_class_1)
         return node
 
     def _grow(self, X, y, depth, features):
@@ -309,6 +314,9 @@ class GreedyORDecisionTree:
         combined_mask = X[:, or_features].getnnz(axis=1) > 0
 
         node["type"] = "node"
+        counts, prob_class_1 = self._calc_node_stats(y)
+        node["counts"] = counts
+        node["prob_class_1"] = prob_class_1
         node["features"] = [self._feature_names[f] for f in or_features]
         node["feature_indices"] = or_features
         node["left"] = self._grow(
@@ -494,22 +502,52 @@ class GreedyORDecisionTree:
         self._optimal_score = best_score
         return best_threshold, best_score
 
-    def export_tree(self, format="pretty", feature_names=None, verbose=False):
+
+    def to_json(self) -> str:
         """
-        Export the trained tree.
+        Export the tree to a JSON string, removing non-serializable attributes.
+        """
+        # Create a shallow copy of the object's __dict__
+        tree_copy = self.__dict__.copy()
+
+        # Remove attributes that are not serializable (like tqdm progress bars)
+        for attr in ["_feature_names", "_possible_thresholds", "_pbar"]:
+            tree_copy.pop(attr, None)
+
+        # Encode the cleaned dictionary using jsonpickle
+        return jsonpickle.encode(tree_copy, unpicklable=True)
+
+    @classmethod
+    def from_json(cls, json_input: str):
+        """
+        Load a GreedyORDecisionTree from a JSON string exported by to_json().
+        """
+        # Decode JSON into a dict of attributes
+        data_dict = jsonpickle.decode(json_input)
+
+        # Create an empty instance
+        tree = cls.__new__(cls)
+
+        # Restore all attributes
+        for k, v in data_dict.items():
+            setattr(tree, k, v)
+
+        return tree
+
+    def pretty_print(self, feature_names=None, verbose=False, prune=False):
+        """
+        Prints _tree.
 
         Parameters
         ----------
-        format : str
-            "pretty"  -> human-readable text (like print_tree)
-            "dict"    -> nested dictionary
-            "json"    -> JSON string
         feature_names : list[str] or None
             If provided, use these names in pretty-print instead of internal names.
+        prune : bool
+            If True, merge nodes where all descendants have the same class.
 
         Returns
         -------
-        str or dict
+        str
         """
         if self._tree is None:
             raise ValueError("Tree has not been trained yet. Call fit() first.")
@@ -524,32 +562,47 @@ class GreedyORDecisionTree:
             except:
                 return f
 
-        if format == "dict":
-            return self._tree
-        elif format == "json":
-            return json.dumps(self._tree, indent=4)
-        elif format == "pretty":
-            lines = []
+        # Helper to determine the class of a node
+        def node_class(node):
+            return int(node['prob_class_1'] > self._optimal_threshold - 1e-8)
 
-            def recurse(node, indent=""):
-                if node["type"] == "leaf":
-                    leaf_text = f"{indent}class: {int(node['prob_class_1']>self._optimal_threshold - 1e-8)}"
+        # Helper to check if all descendants have the same class
+        def all_same_class(node):
+            if node["type"] == "leaf":
+                return node_class(node)
+            left_class = all_same_class(node["left"])
+            right_class = all_same_class(node["right"])
+            if left_class == right_class:
+                return left_class
+            return None  # Mixed classes
+
+        lines = []
+
+        def recurse(node, indent=""):
+            if prune:
+                same_class = all_same_class(node)
+                if same_class is not None:
+                    # Merge node into a leaf
+                    leaf_text = f"{indent}class: {same_class}"
                     if verbose:
-                        leaf_text += (
-                            f" ({node['prob_class_1']:.4f}>={self._optimal_threshold:.4f}), {node['counts']})"
-                        )
+                        leaf_text += f" ({node['prob_class_1']:.4f}>={self._optimal_threshold:.4f}), {node['counts']})"
                     lines.append(leaf_text)
-                else:
-                    features = " OR ".join(get_name(f) for f in node["features"])
-                    lines.append(f"{indent}if ({features}):")
-                    recurse(node["left"], indent + "    ")
-                    lines.append(f"{indent}else:")
-                    recurse(node["right"], indent + "    ")
+                    return
 
-            recurse(self._tree)
-            return "\n".join(lines)
-        else:
-            raise ValueError(f"Unknown export format '{format}'")
+            if node["type"] == "leaf":
+                leaf_text = f"{indent}class: {node_class(node)}"
+                if verbose:
+                    leaf_text += f" ({node['prob_class_1']:.4f}>={self._optimal_threshold:.4f}), {node['counts']})"
+                lines.append(leaf_text)
+            else:
+                features = " OR ".join(get_name(f) for f in node["features"])
+                lines.append(f"{indent}if ({features}):")
+                recurse(node["left"], indent + "    ")
+                lines.append(f"{indent}else:")
+                recurse(node["right"], indent + "    ")
+
+        recurse(self._tree)
+        return "\n".join(lines)
 
     def __repr__(self):
         params = []
@@ -696,7 +749,7 @@ def main():
     end_time = time.time()
 
     print()
-    print(tree.export_tree(feature_names=vectorizer.get_feature_names_out(), verbose=True))
+    print(tree.pretty_print(verbose=True, prune=True))
     preds = tree.predict(X)
     true_preds = np.array(
         [f({var: int(var in text.split()) for var in variables}) for text in texts]
@@ -722,6 +775,12 @@ def main():
     )
     print("result", tree.predict(X_test))
 
+    tree_json = tree.to_json()
+    print("tree_json", tree_json)
+    tree_loaded = GreedyORDecisionTree.from_json(tree_json)
+    print("tree_loaded", tree_loaded)
+    print(tree_loaded.pretty_print(verbose=True, prune=True))
+    print("result tree_loaded", tree_loaded.predict(X_test))
 
 from line_profiler import LineProfiler
 

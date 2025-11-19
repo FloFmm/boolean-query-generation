@@ -186,14 +186,17 @@ def train_text_classifier(
         boolean_function_set2 = (
             "boolean_function_set2 not available for SkopeRulesClassifier"
         )
+        obj = ""
     elif isinstance(clf, GreedyORDecisionTree):
-        pretty_print = clf.export_tree(feature_names=list(feature_names))
+        pretty_print = clf.pretty_print(feature_names=list(feature_names), prune = True)
         boolean_function_set1 = ""
         boolean_function_set2 = ""
+        obj = clf.to_json()
     else:
         pretty_print = export_text(clf, feature_names=list(feature_names))
         boolean_function_set1 = tree_to_dnf_pubmed(clf, feature_names, 1)
         boolean_function_set2 = tree_to_dnf_pubmed(clf, feature_names, 0)
+        obj = ""
 
     return {
         "recall": recall,
@@ -204,7 +207,7 @@ def train_text_classifier(
         "model": clf,
         "vectorizer": vectorizer,
         "feature_names": feature_names,
-        "class_names": ["set1", "set2"],
+        "obj": obj
     }
     # from nltk.corpus import wordnet as wn
 
