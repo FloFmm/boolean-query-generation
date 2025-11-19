@@ -8,34 +8,13 @@
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-# Function to clone or update a repo
-update_repo() {
-    local repo_url=$1
-    local folder_name=$2
-    if [ -d "$folder_name" ]; then
-        echo "=== Updating $folder_name ==="
-        cd "$folder_name"
-        git pull
-        cd ..
-    else
-        echo "=== Cloning $folder_name ==="
-        git clone "$repo_url" "$folder_name"
-    fi
-}
-
 # Load Anaconda / Python module
 ml release/23.04
 ml Anaconda3/2022.05
 ml GCC/11.3.0
 
-# clone/update code repos
-update_repo git@github.com:FloFmm/systematic-review-datasets.git systematic-review-datasets
-update_repo git@github.com:FloFmm/CSMeD-baselines.git CSMeD-baselines
-
-# clone/update data repos
-update_repo https://github.com/ielab/SIGIR2017-SysRev-Collection.git SIGIR2017-SysRev-Collection
-update_repo https://github.com/CLEF-TAR/tar.git tar
-update_repo https://github.com/Amal-Alharbi/Systematic_Reviews_Update.git Systematic_Reviews_Update
+chmod +x ./boolean-query-generation/scripts/csmed/update_repos.sh
+./boolean-query-generation/scripts/csmed/update_repos.sh
 
 # conda env set up
 echo "=== Setting up environment ==="
