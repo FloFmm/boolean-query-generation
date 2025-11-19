@@ -652,7 +652,7 @@ if __name__ == "__main__":
         for min_impurity_d_start in [0.01, 0.1, 0.001]:
             for min_impurity_d_end in [0.03, 0.3, 0.003]:
                 for top_k_or_candidates in [100, 500, 1000]:
-                    for class_weight in ["balanced", {1: 1, 0: 1}, {1: 2, 0: 1}, {1: 3, 0: 1}, {1: 4, 0: 1}, {1: 5, 0: 1}, {1: 6, 0: 1}, {1: 3, 0: 0.5}, {1: 500, 0: 0.5}]:
+                    for class_weight in ["balanced", {1: 1, 0: 1}, {1: 2, 0: 1}, {1: 3, 0: 1}, {1: 4, 0: 1}, {1: 5, 0: 1}, {1: 6, 0: 1}, {1: 3, 0: 0.5}, {1: 500, 0: 0.5}, {1: 500, 0: 1}]:
                         models.append(
                             GreedyORDecisionTree(
                                 max_depth=4,
