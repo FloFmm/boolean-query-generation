@@ -50,7 +50,7 @@ def train_all_mesh_terms_jsonl(
     Train text classifiers for all MeSH terms and save results incrementally as JSONL.
     Skips terms already in the output file.
     """
-
+    Path(output_path).mkdir(parents=True, exist_ok=True)
     docs_by_pmid, pmids_by_mesh = classify_by_mesh(baseline_folder, n_docs)
     if not mesh_terms:
         mesh_terms = list(pmids_by_mesh.keys())

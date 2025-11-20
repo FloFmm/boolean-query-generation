@@ -9,11 +9,12 @@ import spacy
 from nltk.corpus import wordnet as wn
 from sklearn.cluster import AgglomerativeClustering
 from tqdm import tqdm
-from imodels import SkopeRulesClassifier, DecisionTreeClassifier, Rule
+# from imodels import SkopeRulesClassifier, DecisionTreeClassifier, Rule
+SkopeRulesClassifier, DecisionTreeClassifier = None, None
 import re
 from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 
-nlp = spacy.load("en_core_web_lg")
+nlp = spacy.load("../systematic-review-datasets/data/spacy/en_core_web_lg-3.7.1/en_core_web_lg/en_core_web_lg-3.7.1")
 
 
 def lemmatize_text(text):
