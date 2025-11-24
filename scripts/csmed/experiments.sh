@@ -15,6 +15,7 @@ chmod +x ./boolean-query-generation/scripts/csmed/update_repos.sh
 CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
 
 cd systematic-review-datasets
-$CSMED_PY csmed/experiments/csmed_cochrane_retrieval.py
+# $CSMED_PY csmed/experiments/csmed_cochrane_retrieval.py
+$CSMED_PY csmed/experiments/build_bag_of_words_csmed.py
 
-/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python csmed/experiments/csmed_cochrane_retrieval.py
+# /data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python csmed/experiments/csmed_cochrane_retrieval.py

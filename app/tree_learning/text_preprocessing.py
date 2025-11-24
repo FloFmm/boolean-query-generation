@@ -2,9 +2,9 @@ import json
 from pathlib import Path
 from tqdm import tqdm
 import spacy
-from pubmed.mesh_term import expand_mesh_terms
+from app.pubmed.mesh_term import expand_mesh_terms
 # Load spaCy model (English, small is usually enough)
-nlp = spacy.load("en_core_web_sm", disable=["ner", "parser"])
+nlp = spacy.load("../systematic-review-datasets/data/spacy/en_core_web_lg-3.7.1/en_core_web_lg/en_core_web_lg-3.7.1", disable=["ner", "parser"])
 
 def lemmatize_unique(text: str):
     """Return a set of unique lemmatized words (lowercased, alphabetic only)."""

@@ -4,7 +4,7 @@ def expand_mesh_terms(mesh_list):
     'Down Syndrome/blood/*prevention & control'
     into full term combinations.
     """
-    expanded = {}
+    expanded = set()
     for mesh_str in mesh_list:
         mesh_str = mesh_str.replace('&', 'and')
         mesh_str = mesh_str.replace('*', '')
