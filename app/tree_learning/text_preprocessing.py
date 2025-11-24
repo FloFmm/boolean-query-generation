@@ -2,14 +2,39 @@ import json
 from pathlib import Path
 from tqdm import tqdm
 import spacy
-
+from pubmed.mesh_term import expand_mesh_terms
 # Load spaCy model (English, small is usually enough)
 nlp = spacy.load("en_core_web_sm", disable=["ner", "parser"])
 
 def lemmatize_unique(text: str):
     """Return a set of unique lemmatized words (lowercased, alphabetic only)."""
     doc = nlp(text)
-    return list({token.lemma_.lower() for token in doc if not token.is_stop and not token.is_punct})
+    return list({
+        token.lemma_.lower()
+        for token in doc
+        if not token.is_stop and not token.is_punct and token.lemma_.isalpha()
+    })
+
+
+def bag_of_words(text: str, mesh_terms: list[str]):
+    """
+    Create a bag-of-words containing:
+    - Lemmatized words from text
+    - Normalized MeSH terms (not lemmatized)
+    """
+    expanded_mesh = expand_mesh_terms(mesh_terms)
+    
+    # BOW from text
+    bow_words = lemmatize_unique(text)
+
+    # BOW from MeSH terms
+    bow_mesh = [f'"{term}"[mh]' for term in expanded_mesh]
+
+    # Combine both with uniqueness
+    bag = sorted(bow_words) + sorted(bow_mesh)
+
+    return bag
+
 
 def process_jsonl_file(file_path: Path, skip_existing: bool):
     # Read all lines

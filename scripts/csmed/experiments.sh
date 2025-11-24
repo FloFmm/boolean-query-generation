@@ -1,5 +1,6 @@
 #!/bin/bash
 #SBATCH --nodes=1
+#SBATCH --gpus=1
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=24:00:00
@@ -13,5 +14,7 @@ chmod +x ./boolean-query-generation/scripts/csmed/update_repos.sh
 
 CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
 
-cd CSMeD-baselines
-$CSMED_PY experiments/csmed_cochrane/csmed_cochrane_retrieval.py
+cd systematic-review-datasets
+$CSMED_PY csmed/experiments/csmed_cochrane_retrieval.py
+
+/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python csmed/experiments/csmed_cochrane_retrieval.py
