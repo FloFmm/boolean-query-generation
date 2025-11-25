@@ -18,7 +18,7 @@ update_repo() {
 # clone/update code repos
 update_repo git@github.com:FloFmm/boolean-query-generation.git boolean-query-generation
 update_repo git@github.com:FloFmm/systematic-review-datasets.git systematic-review-datasets
-update_repo git@github.com:FloFmm/CSMeD-baselines.git CSMeD-baselines
+# update_repo git@github.com:FloFmm/CSMeD-baselines.git CSMeD-baselines
 
 # clone/update data repos
 update_repo https://github.com/ielab/SIGIR2017-SysRev-Collection.git SIGIR2017-SysRev-Collection

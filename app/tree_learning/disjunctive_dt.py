@@ -502,7 +502,6 @@ class GreedyORDecisionTree:
         self._optimal_score = best_score
         return best_threshold, best_score
 
-
     def to_json(self) -> str:
         """
         Export the tree to a JSON string, removing non-serializable attributes.
@@ -534,6 +533,20 @@ class GreedyORDecisionTree:
 
         return tree
 
+    def _node_class(self, node):
+        # Helper to determine the class of a node
+        return int(node['prob_class_1'] > self._optimal_threshold - 1e-8)
+    
+    def _all_same_class(self, node):
+        # Helper to check if all descendants have the same class
+        if node["type"] == "leaf":
+            return self._node_class(node)
+        left_class = self._all_same_class(node["left"])
+        right_class = self._all_same_class(node["right"])
+        if left_class == right_class:
+            return left_class
+        return None  # Mixed classes
+
     def pretty_print(self, feature_names=None, verbose=False, prune=False):
         """
         Prints _tree.
@@ -562,25 +575,10 @@ class GreedyORDecisionTree:
             except:
                 return f
 
-        # Helper to determine the class of a node
-        def node_class(node):
-            return int(node['prob_class_1'] > self._optimal_threshold - 1e-8)
-
-        # Helper to check if all descendants have the same class
-        def all_same_class(node):
-            if node["type"] == "leaf":
-                return node_class(node)
-            left_class = all_same_class(node["left"])
-            right_class = all_same_class(node["right"])
-            if left_class == right_class:
-                return left_class
-            return None  # Mixed classes
-
         lines = []
-
         def recurse(node, indent=""):
             if prune:
-                same_class = all_same_class(node)
+                same_class = self._all_same_class(node)
                 if same_class is not None:
                     # Merge node into a leaf
                     leaf_text = f"{indent}class: {same_class}"
@@ -590,7 +588,7 @@ class GreedyORDecisionTree:
                     return
 
             if node["type"] == "leaf":
-                leaf_text = f"{indent}class: {node_class(node)}"
+                leaf_text = f"{indent}class: {self._node_class(node)}"
                 if verbose:
                     leaf_text += f" ({node['prob_class_1']:.4f}>={self._optimal_threshold:.4f}), {node['counts']})"
                 lines.append(leaf_text)
@@ -610,6 +608,78 @@ class GreedyORDecisionTree:
             if not k.startswith("_"):  # skip hidden
                 params.append(f"{k}={v!r}")
         return f"{self.__class__.__name__}({', '.join(params)})"
+
+    def _expand_term(self, term_expansions, feature):
+        # Helper: get PubMed-safe name for a feature, expand terms
+        terms = term_expansions.get(feature, [feature])
+        if len(terms) <= 1:
+            return feature
+        return "(" + " OR ".join(terms) + ")"
+
+    def pubmed_query(self, term_expansions: dict = None):
+        """
+        Converts a GreedyORDecisionTree into a PubMed DNF boolean query.
+        - Left child = NOT feature (omitted if NOT at root of clause)
+        - Right child = feature present
+        - Skips paths that lead only to negative class
+        - Expands each term using term_expansions dict
+        """
+        if self._tree is None:
+            raise ValueError("Tree not trained. Call fit() first.")
+
+        # Traverse recursively
+        def recurse(node, path_terms=None):
+            if path_terms is None:
+                path_terms = []
+
+            # Early stop if subtree pure
+            same_class = self._all_same_class(node)
+            if same_class is not None:
+                if same_class == 1:  # positive leaf
+                    return [path_terms]  # return current path
+                else:
+                    return []  # skip paths leading to negative class only
+
+            if node["type"] == "leaf":
+                if node["prob_class_1"] >= self._optimal_threshold - 1e-8:
+                    return [path_terms]
+                else:
+                    return []
+
+            clauses = []
+
+            # Right child = feature present
+            for f in node["features"]:
+                right_terms = path_terms + [self._expand_term(term_expansions, f)]
+                clauses.extend(recurse(node["right"], right_terms))
+
+            # Left child = NOT of feature
+            for f in node["features"]:
+                left_terms = path_terms + [f"NOT {self._expand_term(term_expansions, f)}"]
+                clauses.extend(recurse(node["left"], left_terms))
+
+            return clauses
+
+        # Collect all DNF clauses
+        dnf_clauses = recurse(self._tree)
+
+        # Combine with OR for PubMed query
+        query_clauses = []
+        for clause in dnf_clauses:
+            # Split into positive and negative terms
+            pos_terms = [t for t in clause if not t.startswith("NOT ")]
+            not_terms = [t for t in clause if t.startswith("NOT ")]
+
+            # Skip clauses that are all NOT
+            if len(pos_terms) == 0:
+                continue
+
+            # Reorder: positive terms first, NOT terms last
+            query_clauses.append(f"({' AND '.join(pos_terms)} {' '.join(not_terms)})")
+
+        # Combine all clauses with OR
+        query = " OR ".join(query_clauses)
+        return query
 
 
 def generate_texts_from_boolean(
@@ -781,6 +851,7 @@ def main():
     print("tree_loaded", tree_loaded)
     print(tree_loaded.pretty_print(verbose=True, prune=True))
     print("result tree_loaded", tree_loaded.predict(X_test))
+    print("pubmed", tree_loaded.pubmed_query({"dogs": ["dogs", "dog"]}))
 
 from line_profiler import LineProfiler
 

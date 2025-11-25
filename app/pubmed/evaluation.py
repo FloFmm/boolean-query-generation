@@ -35,7 +35,6 @@ def load_completed_mesh_terms(jsonl_path: Path):
                 continue
     return completed
 
-
 def train_all_mesh_terms_jsonl(
     models,
     baseline_folder: str = "./data/pubmed/baseline",
@@ -129,7 +128,6 @@ def train_all_mesh_terms_jsonl(
                 out_f.write(json.dumps(record, ensure_ascii=False) + "\n")
                 out_f.flush()  # ensures progress is safely written
         print(f"✅ Completed training for {output_path}")
-
 
 def plot_metrics_from_jsonl(path: str):
     """

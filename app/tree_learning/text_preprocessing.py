@@ -12,7 +12,7 @@ def lemmatize_unique(text: str):
     return list({
         token.lemma_.lower()
         for token in doc
-        if not token.is_stop and not token.is_punct and token.lemma_.isalpha()
+        if not token.is_stop and not token.is_punct
     })
 
 

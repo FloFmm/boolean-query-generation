@@ -9,9 +9,88 @@ import random
 import json
 import os
 import torch
-
-
+import subprocess
+import json
+import time
 Entrez.email = "florian_maurus.mueller@mailbox.tu-dresden.de"
+
+Entrez.tool = "YearMonthSplitter"
+
+def fetch_pmids(query, mindate=None, maxdate=None):
+    """Fetch PMIDs for a query with date range (max 9999)."""
+    handle = Entrez.esearch(
+        db="pubmed",
+        term=query,
+        mindate=mindate,
+        maxdate=maxdate,
+        datetype="pdat",
+        retmax=1000000,
+    )
+    record = Entrez.read(handle)
+    handle.close()
+    return record["IdList"]
+
+def search_pubmed_year_month(query, start_year=1800, end_year=2025):
+    """Retrieve all PMIDs by splitting per year and month if needed."""
+    all_pmids = set()
+    handle = Entrez.esearch(db="pubmed", term=query)
+    record = Entrez.read(handle)
+    handle.close()
+    expected_pmids = int(record["Count"])
+    all_pmids = set(record["IdList"])
+    print(f"expected PMIDs: {expected_pmids}")
+    if expected_pmids == len(all_pmids):
+        print(f"retrived PMIDs: {len(all_pmids)}")
+        return all_pmids
+    
+    last = False
+    for year in range(end_year, start_year - 1, -1):
+        count_remaining = expected_pmids - len(all_pmids)
+        print("reamining:", count_remaining)
+        if count_remaining == 0:
+            break
+        if count_remaining < 9999:
+            last = True
+            mindate = f"{start_year}/01/01"
+        else:
+            mindate = f"{year}/01/01"
+        maxdate = f"{year}/12/31"
+
+        pmids = fetch_pmids(query, mindate, maxdate)
+        count_year = len(pmids)
+        print(f"{mindate}-{maxdate}: {count_year} results")
+
+        # If year contains <10k, retrieve directly
+        if count_year < 9999:
+            all_pmids.update(pmids)
+            if last:
+                print(f"expected PMIDs: {expected_pmids} retrived PMIDs: {len(all_pmids)}")
+                return all_pmids
+            time.sleep(0.34)  # NCBI polite limit
+            continue
+
+        # Split into months if year has 10k results
+        print(f" Splitting year {year} into months...")
+        for month in range(1, 13):
+            mindate = f"{year}/{month:02d}/01"
+            if month == 12:
+                maxdate = f"{year}/12/31"
+            else:
+                maxdate = f"{year}/{month+1:02d}/01"
+
+            month_pmids = fetch_pmids(query, mindate, maxdate)
+            print("month", len(month_pmids))
+            if len(month_pmids) >= 9995:
+                exit(0)
+            all_pmids.update(month_pmids)
+            time.sleep(0.34)
+
+    # Deduplicate (some overlap may happen)
+    all_pmids = list(dict.fromkeys(all_pmids))
+    print(f"expected PMIDs: {expected_pmids} retrived PMIDs: {len(all_pmids)}")
+
+
+    return all_pmids
 
 def search_pubmed(term, retmax=1000):
     """Search PubMed for a term and return a list of PubMed IDs."""

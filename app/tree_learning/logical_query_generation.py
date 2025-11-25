@@ -10,7 +10,7 @@ from nltk.corpus import wordnet as wn
 from sklearn.cluster import AgglomerativeClustering
 from tqdm import tqdm
 # from imodels import SkopeRulesClassifier, DecisionTreeClassifier, Rule
-SkopeRulesClassifier, DecisionTreeClassifier = None, None
+SkopeRulesClassifier, DecisionTreeClassifier = (int, str), (int, str)
 import re
 from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 
@@ -145,10 +145,12 @@ def train_text_classifier(
 
     if isinstance(clf, SkopeRulesClassifier):
         X = X.toarray()
+        # Train classifier
+        clf.fit(X, labels)
     if isinstance(clf, GreedyORDecisionTree):
         labels = np.array(labels)
-    # Train classifier
-    clf.fit(X, labels)
+        # Train classifier
+        clf.fit(X, labels, feature_names=feature_names)
 
     # Accuracy on the same data
     if isinstance(clf, SkopeRulesClassifier):

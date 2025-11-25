@@ -9,13 +9,12 @@
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-chmod +x ./boolean-query-generation/scripts/csmed/update_repos.sh
-./boolean-query-generation/scripts/csmed/update_repos.sh
+chmod +x ./boolean-query-generation/scripts/update_repos.sh
+./boolean-query-generation/scripts/update_repos.sh
 
 CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
 
 cd systematic-review-datasets
-# $CSMED_PY csmed/experiments/csmed_cochrane_retrieval.py
-$CSMED_PY csmed/experiments/build_bag_of_words_csmed.py
+$CSMED_PY csmed/experiments/csmed_cochrane_retrieval.py
 
 # /data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python csmed/experiments/csmed_cochrane_retrieval.py

@@ -13,8 +13,8 @@ ml release/23.04
 ml Anaconda3/2022.05
 ml GCC/11.3.0
 
-chmod +x ./boolean-query-generation/scripts/csmed/update_repos.sh
-./boolean-query-generation/scripts/csmed/update_repos.sh
+chmod +x ./boolean-query-generation/scripts/update_repos.sh
+./boolean-query-generation/scripts/update_repos.sh
 
 # conda env set up
 echo "=== Setting up environment ==="
