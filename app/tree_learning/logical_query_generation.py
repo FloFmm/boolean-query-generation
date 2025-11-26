@@ -16,12 +16,6 @@ from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 
 nlp = spacy.load("../systematic-review-datasets/data/spacy/en_core_web_lg-3.7.1/en_core_web_lg/en_core_web_lg-3.7.1")
 
-
-def lemmatize_text(text):
-    doc = nlp(text)
-    return " ".join([token.lemma_ for token in doc if not token.is_stop])
-
-
 def build_semantic_map(words, similarity_threshold=0.7):
     """
     Group words by semantic similarity and assign each cluster a canonical lemmatized word.
@@ -58,13 +52,11 @@ def build_semantic_map(words, similarity_threshold=0.7):
 
     return semantic_map
 
-
 def map_synonyms(text, synonym_map):
     """
     Replace words in the text with their canonical synonym.
     """
     return " ".join([synonym_map.get(word, word) for word in text.split()])
-
 
 def build_synonym_map(words):
     """
@@ -79,35 +71,23 @@ def build_synonym_map(words):
             synonym_map[word] = canonical
     return synonym_map
 
-
-def train_text_classifier(
-    clf,
-    set1,
-    set2,
-    min_f_occ,
-):
-    # class_weight = {"set1": int(len(set2)/len(set1)*4.0), "set2": 1}
+def vectorize_texts(set1, set2, min_f_occ=None):
     """
-    Train a decision tree classifier to distinguish between two sets of texts,
-    and evaluate on the same dataset (no train/test split).
+    Vectorize two sets of texts with optional per-class minimum frequency filtering.
 
     Args:
-        set1 (list[str]): First set of texts.
-        set2 (list[str]): Second set of texts.
-        max_depth (int): Maximum depth of the decision tree.
-        random_state (int): Random state for reproducibility.
+        set1 (list[str]): First set of texts (label 1)
+        set2 (list[str]): Second set of texts (label 0)
+        min_f_occ (tuple[int, int], optional): Minimum occurrence per class (set1, set2). Defaults to None.
 
     Returns:
-        dict: {
-            "accuracy": float,
-            "rules": str,
-            "model": DecisionTreeClassifier,
-            "vectorizer": CountVectorizer
-        }
+        X (scipy.sparse.csr_matrix): Binary feature matrix
+        feature_names (np.ndarray or list[str]): List of feature names (words)
+        labels (list[int]): Corresponding labels for each text
     """
     # Combine texts and create labels
     texts = set1 + set2
-    labels = [1] * len(set1) + [0] * len(set2)
+    labels = np.array([1] * len(set1) + [0] * len(set2))
 
     # Vectorizer: binary presence, remove stopwords
     vectorizer = CountVectorizer(binary=True, stop_words="english")
@@ -135,20 +115,46 @@ def train_text_classifier(
         X = vectorizer.fit_transform(texts)
         feature_names = kept_features
 
-    #debug
     word_counts = np.asarray(X.sum(axis=0)).flatten()
     least_common_count = np.min(word_counts)
 
     print(f"Number of remaining features (words): {len(feature_names)}")
     print(f"Least common word count: {least_common_count}")
-    #debug
+    return X, feature_names, labels
+
+def train_text_classifier(
+    clf,
+    set1,
+    set2,
+    min_f_occ,
+):
+    # class_weight = {"set1": int(len(set2)/len(set1)*4.0), "set2": 1}
+    """
+    Train a decision tree classifier to distinguish between two sets of texts,
+    and evaluate on the same dataset (no train/test split).
+
+    Args:
+        set1 (list[str]): First set of texts.
+        set2 (list[str]): Second set of texts.
+        max_depth (int): Maximum depth of the decision tree.
+        random_state (int): Random state for reproducibility.
+
+    Returns:
+        dict: {
+            "accuracy": float,
+            "rules": str,
+            "model": DecisionTreeClassifier,
+            "vectorizer": CountVectorizer
+        }
+    """
+    X, feature_names, labels = vectorize_texts(set1, set2, min_f_occ=min_f_occ)
 
     if isinstance(clf, SkopeRulesClassifier):
+        labels = labels.tolist()
         X = X.toarray()
         # Train classifier
         clf.fit(X, labels)
     if isinstance(clf, GreedyORDecisionTree):
-        labels = np.array(labels)
         # Train classifier
         clf.fit(X, labels, feature_names=feature_names)
 
@@ -208,7 +214,6 @@ def train_text_classifier(
         "boolean_function_set1": boolean_function_set1,
         "boolean_function_set2": boolean_function_set2,
         "model": clf,
-        "vectorizer": vectorizer,
         "feature_names": feature_names,
         "obj": obj
     }

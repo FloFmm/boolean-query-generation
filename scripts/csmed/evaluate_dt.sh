@@ -15,8 +15,8 @@ chmod +x ./boolean-query-generation/scripts/update_repos.sh
 CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
 
 cd boolean-query-generation
-# $CSMED_PY -m app.experiments.evaluate_dt_csmed
-$CSMED_PY -m app.experiments.evaluate_pubmed_query
+$CSMED_PY -m app.experiments.evaluate_dt_csmed
+# $CSMED_PY -m app.experiments.evaluate_pubmed_query
 # $CSMED_PY -m app.tree_learning.disjunctive_dt
 
 # /data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python app/experiments/evaluate_dt_csmed.py

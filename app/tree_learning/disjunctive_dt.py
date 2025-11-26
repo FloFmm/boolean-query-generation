@@ -240,8 +240,6 @@ class GreedyORDecisionTree:
             constraint_value=0.7,
         )
 
-        # self._prune_pure_subtrees()
-
     def _calc_node_stats(self, y):
         n_class_1 = int(np.sum(y))
         n_class_0 = int((len(y) - n_class_1))
@@ -535,7 +533,7 @@ class GreedyORDecisionTree:
 
     def _node_class(self, node):
         # Helper to determine the class of a node
-        return int(node['prob_class_1'] > self._optimal_threshold - 1e-8)
+        return int(node["prob_class_1"] >= self._optimal_threshold - 1e-8)
     
     def _all_same_class(self, node):
         # Helper to check if all descendants have the same class
@@ -605,8 +603,9 @@ class GreedyORDecisionTree:
     def __repr__(self):
         params = []
         for k, v in self.__dict__.items():
-            if not k.startswith("_"):  # skip hidden
-                params.append(f"{k}={v!r}")
+            if not k.startswith('_'):  # skip hidden
+                abrevation = ''.join(w[0] for w in k.split('_'))
+                params.append(f"{abrevation}={v!r}")
         return f"{self.__class__.__name__}({', '.join(params)})"
 
     def _expand_term(self, term_expansions, feature):
@@ -614,7 +613,7 @@ class GreedyORDecisionTree:
         terms = term_expansions.get(feature, [feature])
         if len(terms) <= 1:
             return feature
-        return "(" + " OR ".join(terms) + ")"
+        return " OR ".join(terms)
 
     def pubmed_query(self, term_expansions: dict = None):
         """
@@ -641,22 +640,29 @@ class GreedyORDecisionTree:
                     return []  # skip paths leading to negative class only
 
             if node["type"] == "leaf":
-                if node["prob_class_1"] >= self._optimal_threshold - 1e-8:
+                if self._node_class(node):
                     return [path_terms]
                 else:
                     return []
 
             clauses = []
 
+            addition = " OR ".join(self._expand_term(term_expansions, f) for f in node["features"])
             # Right child = feature present
-            for f in node["features"]:
-                right_terms = path_terms + [self._expand_term(term_expansions, f)]
-                clauses.extend(recurse(node["right"], right_terms))
+            left_addition = addition
+            if "OR" in left_addition:
+                left_addition = "(" + left_addition + ")"
+            left_terms = path_terms + [left_addition]
+            clauses.extend(recurse(node["left"], left_terms))
 
             # Left child = NOT of feature
-            for f in node["features"]:
-                left_terms = path_terms + [f"NOT {self._expand_term(term_expansions, f)}"]
-                clauses.extend(recurse(node["left"], left_terms))
+            right_addition = addition
+            if "OR" in right_addition:
+                right_addition = "NOT (" + right_addition + ")"
+            else:
+                right_addition = "NOT " + right_addition
+            right_terms = path_terms + [right_addition]
+            clauses.extend(recurse(node["right"], right_terms))
 
             return clauses
 

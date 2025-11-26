@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from tqdm import tqdm
+from collections import defaultdict
 import spacy
 from app.pubmed.mesh_term import expand_mesh_terms
 # Load spaCy model (English, small is usually enough)
@@ -15,6 +16,26 @@ def lemmatize_unique(text: str):
         if not token.is_stop and not token.is_punct
     })
 
+def lemmatize_with_synonyms(text: str):
+    """
+    Return:
+      - unique lemmas
+      - lemma -> set(original forms)
+    """
+    doc = nlp(text)
+
+    lemma_to_synonyms = defaultdict(set)
+
+    for token in doc:
+        if token.is_stop or token.is_punct:
+            continue
+
+        lemma = token.lemma_.lower()
+        synonym = token.text.lower()
+        lemma_to_synonyms[lemma].add(synonym)
+
+    return lemma_to_synonyms
+
 
 def bag_of_words(text: str, mesh_terms: list[str]):
     """
@@ -25,7 +46,8 @@ def bag_of_words(text: str, mesh_terms: list[str]):
     expanded_mesh = expand_mesh_terms(mesh_terms)
     
     # BOW from text
-    bow_words = lemmatize_unique(text)
+    synonym_map = lemmatize_with_synonyms(text)
+    bow_words = list(synonym_map.keys())
 
     # BOW from MeSH terms
     bow_mesh = [f'"{term}"[mh]' for term in expanded_mesh]
@@ -33,7 +55,7 @@ def bag_of_words(text: str, mesh_terms: list[str]):
     # Combine both with uniqueness
     bag = sorted(bow_words) + sorted(bow_mesh)
 
-    return bag
+    return bag, synonym_map
 
 
 def process_jsonl_file(file_path: Path, skip_existing: bool):

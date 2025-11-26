@@ -5,6 +5,7 @@ os.environ["HF_HOME"] = CUSTOM_HF_PATH # has to be up here
 import sys
 import os
 import json
+from collections import defaultdict
 from app.tree_learning.text_preprocessing import bag_of_words
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
@@ -19,14 +20,18 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
    
     os.makedirs(output_dir, exist_ok=True)
 
-    output_path = os.path.join(
+    bow_output_path = os.path.join(
         output_dir,
         f"bag_of_words_docs={len(global_corpus)}.jsonl"
     )
+    synonym_map_output_path = os.path.join(
+        output_dir,
+        f"synonym_map_docs={len(global_corpus)}.jsonl"
+    )
 
     doc_ids = set()
-
-    with open(output_path, "w", encoding="utf-8") as f:
+    global_synonym_map = defaultdict(set)
+    with open(bow_output_path, "w", encoding="utf-8") as f:
         for split, reviews in dataset.items():
             for review_name, review_data in reviews.items():
                 for split_name in review_data["data"].keys():  # train/val/test
@@ -41,7 +46,9 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
                         text = doc["title"] + "\n\n" + doc["abstract"]
                         mesh_terms = doc["mesh_terms"]
 
-                        bow = bag_of_words(text, mesh_terms)
+                        bow, synonym_map = bag_of_words(text, mesh_terms)
+                        for lemma, synonym in synonym_map.items():
+                            global_synonym_map[lemma].update(synonym)
 
                         record = {
                             "id": doc_id,
@@ -52,34 +59,16 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
 
                         f.write(json.dumps(record) + "\n")
 
-    return output_path
+     # Convert sets to sorted lists
+    global_synonym_map = {
+        lemma: sorted(list(forms))
+        for lemma, forms in global_synonym_map.items()
+    }
 
-
-def extract_unique_words(bow_file_path):
-    """Reads the bag-of-words file and extracts all unique words into a separate file."""
-    
-    unique_words = set()
-
-    with open(bow_file_path, "r", encoding="utf-8") as f:
-        for line in f:
-            entry = json.loads(line)
-            unique_words |= set(entry["bow"])
-
-    # Output file
-    output_dir = os.path.dirname(bow_file_path)
-
-    base = os.path.basename(bow_file_path)            # e.g. "bag_of_words_docs=12345.jsonl"
-    new_base = base.replace("bag_of_words", "unique_words")
-
-    output_path = os.path.join(output_dir, new_base)
-
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(sorted(unique_words), f)
-
-    return output_path
+    with open(synonym_map_output_path, "w", encoding="utf-8") as f:
+        json.dump(global_synonym_map, f, indent=2)
 
 
 if __name__ == "__main__":
     output_dir = "../systematic-review-datasets/data/bag_of_words/"
-    # bow_file_path = create_bow_file(output_dir)
-    extract_unique_words(bow_file_path="/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/data/bag_of_words/bag_of_words_docs=433660.jsonl")
+    create_bow_file(output_dir)
