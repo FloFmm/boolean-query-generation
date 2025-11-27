@@ -87,10 +87,8 @@ def vectorize_texts(set1, set2, min_f_occ=None):
     """
     # Combine texts and create labels
     texts = set1 + set2
-    labels = np.array([1] * len(set1) + [0] * len(set2))
-
     # Vectorizer: binary presence, remove stopwords
-    vectorizer = CountVectorizer(binary=True, stop_words="english")
+    vectorizer = CountVectorizer(binary=True, stop_words="english", min_df=10, max_df=0.6)
     X = vectorizer.fit_transform(texts)
     feature_names = vectorizer.get_feature_names_out()
     print(f"Number of features (words): {len(feature_names)}")
@@ -120,13 +118,15 @@ def vectorize_texts(set1, set2, min_f_occ=None):
 
     print(f"Number of remaining features (words): {len(feature_names)}")
     print(f"Least common word count: {least_common_count}")
+
+    labels = np.array([1] * len(set1) + [0] * len(set2))
     return X, feature_names, labels
 
 def train_text_classifier(
     clf,
-    set1,
-    set2,
-    min_f_occ,
+    X,
+    feature_names,
+    labels,
 ):
     # class_weight = {"set1": int(len(set2)/len(set1)*4.0), "set2": 1}
     """
@@ -147,7 +147,6 @@ def train_text_classifier(
             "vectorizer": CountVectorizer
         }
     """
-    X, feature_names, labels = vectorize_texts(set1, set2, min_f_occ=min_f_occ)
 
     if isinstance(clf, SkopeRulesClassifier):
         labels = labels.tolist()

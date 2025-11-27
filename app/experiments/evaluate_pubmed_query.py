@@ -8,24 +8,24 @@ from sklearn.metrics import recall_score, precision_score
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset
-from app.dataset.utils import load_completed, load_qrels_from_rankings, load_synonym_map
+from app.dataset.utils import load_completed, load_qrels_from_rankings, load_synonym_map, statistics_base_path
 
 if __name__ == "__main__":
     total_docs = 433660
     dataset = load_dataset()
     eval_reviews = dataset["EVAL"]
-    input_folder = Path("data/statistics/classifier_learning/csmed")
-    output_folder = input_folder  # save in same folder
+    input_folder = statistics_base_path()
 
     # Term expansions dictionary (replace with your real expansions)
     synonym_map = load_synonym_map(total_docs)
 
     # Loop through all JSONL files
-    for jsonl_file in input_folder.glob("*.jsonl"):
-        if f"docs={total_docs}" not in jsonl_file.name or jsonl_file.name.endswith("_PubMed.jsonl"):
-            print("skipping file", jsonl_file.name)
-            continue  # skip already processed files
-        output_file = output_folder / f"{jsonl_file.name}".replace(".jsonl", "_PubMed.jsonl")
+    for jsonl_file in input_folder.glob("*/results_dt.jsonl"):
+        if f"d={total_docs}" not in str(jsonl_file.parent):
+            print("skipping file", jsonl_file)
+            continue 
+        print("Processing", jsonl_file)
+        output_file = jsonl_file.parent / "results_pubmed.jsonl"
 
         with jsonl_file.open("r", encoding="utf-8") as f_in, \
             output_file.open("w", encoding="utf-8") as f_out:
