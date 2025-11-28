@@ -97,7 +97,9 @@ def search_pubmed(term, retmax=1000):
     handle = Entrez.esearch(db="pubmed", term=term, retmax=retmax)
     record = Entrez.read(handle)
     handle.close()
-    return record["IdList"]
+    return record
+
+
 
 def fetch_pubmed_records(id_list):
     """Fetch PubMed records (title, abstract, MeSH) given a list of IDs."""
@@ -125,7 +127,7 @@ def get_random_pubmed_documents(search_term, n=9999):
     """
     Fetch n random PubMed documents from the corpus.
     """
-    id_list = search_pubmed(search_term, retmax=1_000_000) # return 9999 ids at most (capped by pubmed)
+    id_list = search_pubmed(search_term, retmax=1_000_000)["IdList"] # return 9999 ids at most (capped by pubmed)
     random_ids = random.sample(id_list, n)
 
     # Fetch article details in MEDLINE format

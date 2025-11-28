@@ -6,12 +6,11 @@ import numpy as np
 from pathlib import Path
 from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 from app.tree_learning.logical_query_generation import train_text_classifier
-from app.dataset.utils import load_completed, load_qrels_from_rankings, load_bow, statistics_sub_folder_path, load_vectors
+from app.dataset.utils import load_completed, load_qrels_from_rankings, generate_labels, load_bow, statistics_sub_folder_path, load_vectors
 
 def evaluate_dt_csmed(
-    models,
+    model_args,
     skip_existing=False,
-    min_f_occ={0: 20, 1: 3},
     positive_selection_conf: dict = {
         "type": "abs", # "rel" or "rank"
         "num_pos": 100, # "f": lambda x: max(50,2x)
@@ -41,7 +40,8 @@ def evaluate_dt_csmed(
     qrels_by_query_id = load_qrels_from_rankings(ranking_files, positive_selection_conf=positive_selection_conf)
 
     
-    for model in models:
+    for m_args in model_args:
+        model = GreedyORDecisionTree(**m_args)
         folder_path = statistics_sub_folder_path(
             model=model, 
             total_docs=total_docs, 
@@ -52,6 +52,20 @@ def evaluate_dt_csmed(
         )
         os.makedirs(folder_path, exist_ok=True)
         file_path = Path(os.path.join(folder_path, "results_dt.jsonl"))
+        conf_file_path = Path(os.path.join(folder_path, "config.json"))
+        conf = {
+            "model_args":m_args,
+            "skip_existing":skip_existing,
+            "positive_selection_conf":positive_selection_conf,
+            "total_docs":total_docs,
+            "ret_config":ret_config,
+            "data_base_path":data_base_path,
+            "min_df":min_df,
+            "max_df":max_df,
+            "mesh":mesh
+        }
+        with conf_file_path.open("w", encoding="utf-8") as f:
+            json.dump(conf, f, indent=4)
         
         if skip_existing:
             completed = load_completed(file_path)
@@ -64,19 +78,8 @@ def evaluate_dt_csmed(
             for query_id, qrels in qrels_by_query_id.items():
                 if skip_existing and query_id in completed:
                     continue
-                keep_indices = []
-                labels = []
-                num_pos = 0
-                for i, pmid in enumerate(ordered_pmids):
-                    if pmid in qrels["neutral"]:
-                        continue
-                    if pmid in qrels["pos"]:
-                        labels.append(1)
-                        num_pos += 1
-                    else:
-                        labels.append(0)
-                    keep_indices.append(i)
-                    
+                
+                keep_indices, labels = generate_labels(qrels, ordered_pmids)
                 start_time = time.time()
                 result = train_text_classifier(
                     clf=model,
@@ -85,7 +88,7 @@ def evaluate_dt_csmed(
                     labels=np.array(labels),
                 )
                 duration = time.time() - start_time
-
+                num_pos = sum(labels)
                 record = {
                     "query_id": query_id,
                     "num_positive": num_pos,
@@ -107,30 +110,29 @@ def evaluate_dt_csmed(
         print(f"✅ Completed training for {file_path}")
 
 if __name__ == "__main__":
-    models = []
+    model_args = []
     for min_samples_split in [2, 5, 10]:
         for min_impurity_d_start in [0.2, 0.1, 0.01, 0.001]:
             for min_impurity_d_end in [0.2, 0.1, 0.01, 0.001]:
                 for top_k_or_candidates in [100, 500, 1000]:
                     for class_weight in ["balanced", {1: 1, 0: 1}, {1: 2, 0: 1}, {1: 3, 0: 1}, {1: 4, 0: 1}, {1: 5, 0: 1}, {1: 6, 0: 1}, {1: 3, 0: 0.5}, {1: 500, 0: 0.5}, {1: 500, 0: 1}]:
-                        models.append(
-                            GreedyORDecisionTree(
-                                max_depth=5,
-                                min_samples_split=min_samples_split,
-                                min_impurity_decrease_range=[
+                        model_args.append(
+                            {
+                                "max_depth":5,
+                                "min_samples_split":min_samples_split,
+                                "min_impurity_decrease_range":[
                                     min_impurity_d_start,
                                     min_impurity_d_end,
                                 ],
-                                top_k_or_candidates=top_k_or_candidates,
-                                class_weight=class_weight,  # "balanced",
-                                verbose=True,
-                            )
+                                "top_k_or_candidates":top_k_or_candidates,
+                                "class_weight":class_weight,  # "balanced",
+                                "verbose":True,
+                            }
                         )
 
     args = {
-        "models": models,
+        "model_args": model_args,
         "skip_existing": True,
-        "min_f_occ": {0: 10, 1: 2},
         "total_docs": 433660,
         "positive_selection_conf":{
             "type": "abs", # "rel" or "rank"

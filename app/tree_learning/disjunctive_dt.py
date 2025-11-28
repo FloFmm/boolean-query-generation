@@ -6,12 +6,15 @@ from scipy.sparse import csr_matrix
 import random
 import itertools
 import math
+import re
 import time
 import json
 import inspect
 import jsonpickle
 from tqdm import tqdm
 from copy import deepcopy
+
+from app.pubmed.retrieval import search_pubmed
 
 def fast_gini_both(mask, y_true, min_samples_split, class_weight):
     """Compute Gini impurity for mask and its complement in one pass."""
@@ -232,13 +235,13 @@ class GreedyORDecisionTree:
         # Convert X to CSC once for fast column access
         self._tree = self._grow(X.tocsc(), y, depth=0, features=list(range(X.shape[1])))
 
-        self._find_optimal_threshold(
-            X,
-            y,
-            metric="fbeta",
-            constraint="recall",
-            constraint_value=0.7,
-        )
+        # self._find_optimal_threshold(
+        #     X,
+        #     y,
+        #     metric="f2",
+        #     constraint="recall",
+        #     constraint_value=0.7,
+        # )
 
     def _calc_node_stats(self, y):
         n_class_1 = int(np.sum(y))
@@ -463,6 +466,7 @@ class GreedyORDecisionTree:
         metric="precision",
         constraint=None,
         constraint_value=None,
+        term_expansions=None,
     ):
         """
         Find the probability threshold maximizing the chosen metric.
@@ -474,22 +478,52 @@ class GreedyORDecisionTree:
         probs = self.predict_proba(X)
         best_threshold = 0.5
         best_score = -1.0
-        def get_metric(y_true, y_pred, name):
-            if name == "precision":
+
+        def pubmed_precision(y_true, y_pred, term_expansions):
+            """Compute precision using PubMed-derived FP count."""
+            tp = int(((y_true == 1) & (y_pred == 1)).sum())
+            # Query PubMed for these predicted positives
+            pubmed_query = self.pubmed_query(term_expansions)
+            if not pubmed_query:
+                return 0.0
+            count_retrived = int(search_pubmed(pubmed_query)["Count"])
+            if count_retrived == 0:
+                return 0.0
+            return tp / count_retrived
+
+        def get_metric(y_true, y_pred, name, term_expansions):
+            if name == "pubmed_precision":
+                return pubmed_precision(y_true, y_pred, term_expansions)
+            if name == "pubmed_count":
+                pubmed_query = self.pubmed_query(term_expansions)
+                if not pubmed_query:
+                    return 0
+                return -1 * int(search_pubmed(pubmed_query)["Count"])
+            elif name.startswith("pubmed_f"):
+                prec = pubmed_precision(y_true, y_pred, term_expansions)
+                match = re.match(r"pubmed_f(\d+(\.\d+)?)", name)
+                beta = float(match.group(1))
+                recall = recall_score(y_true, y_pred, zero_division=0)
+                if prec + recall == 0:
+                    return 0.0
+                return (1 + beta**2) * (prec * recall) / (beta**2 * prec + recall)
+            elif name == "precision":
                 return precision_score(y_true, y_pred, zero_division=0)
             elif name == "recall":
                 return recall_score(y_true, y_pred, zero_division=0)
-            elif name == "fbeta":
-                return fbeta_score(y_true, y_pred, beta=1, zero_division=0)
+            elif name.startswith("f"):
+                match = re.match(r"f(\d+(\.\d+)?)", name)
+                beta = float(match.group(1))
+                return fbeta_score(y_true, y_pred, beta=beta, zero_division=0)
             else:
                 raise ValueError(f"Unsupported metric: {name}")
 
         for t in self._possible_thresholds:
+            self._optimal_threshold = t # just temporary for calculations
             y_pred = (probs >= t - 1e-8).astype(int)
-            main_score = get_metric(y_true, y_pred, metric)
-            
+            main_score = get_metric(y_true, y_pred, metric, term_expansions)
             if constraint:
-                constraint_score = get_metric(y_true, y_pred, constraint)
+                constraint_score = get_metric(y_true, y_pred, constraint, term_expansions)
                 if constraint_score < constraint_value:
                     continue  # doesn’t satisfy constraint
             if main_score > best_score:
@@ -514,6 +548,20 @@ class GreedyORDecisionTree:
         # Encode the cleaned dictionary using jsonpickle
         return jsonpickle.encode(tree_copy, unpicklable=True)
 
+    def _recompute_possible_thresholds(self):
+        """Rebuilds the set of possible thresholds from all leaf nodes."""
+        thresholds = set()
+
+        def recurse(node):
+            thresholds.add(node["prob_class_1"])
+            if node["type"] == "leaf":
+                return
+            recurse(node["left"])
+            recurse(node["right"])
+
+        recurse(self._tree)
+        return thresholds
+
     @classmethod
     def from_json(cls, json_input: str):
         """
@@ -528,6 +576,9 @@ class GreedyORDecisionTree:
         # Restore all attributes
         for k, v in data_dict.items():
             setattr(tree, k, v)
+
+        if not hasattr(tree, "_possible_thresholds") or tree._possible_thresholds is None:
+            tree._possible_thresholds = tree._recompute_possible_thresholds()
 
         return tree
 

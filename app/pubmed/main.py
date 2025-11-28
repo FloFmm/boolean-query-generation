@@ -10,10 +10,10 @@ Entrez.email = "florian_maurus.mueller@mailbox.tu-dresden.de"
 start_time = time.time()
 # Using Keywords
 search_term = '"Neoplasms by Histologic Type"[MeSH]'
-relevant_ids = search_pubmed(search_term, retmax=1000)
+relevant_ids = search_pubmed(search_term, retmax=1000)["IdList"]
 relevant_records = [entry for entry in fetch_pubmed_records(relevant_ids) if entry["abstract"]]
 negative_search_term = '"Diseases"[MeSH] NOT "Neoplasms by Histologic Type"[MeSH]'
-negative_ids = search_pubmed(search_term, retmax=10000)
+negative_ids = search_pubmed(search_term, retmax=10000)["IdList"]
 hard_negative_records = [entry for entry in fetch_pubmed_records(negative_ids) if entry["abstract"]]
 
 

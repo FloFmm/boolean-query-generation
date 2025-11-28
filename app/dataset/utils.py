@@ -5,6 +5,29 @@ import pickle
 from pathlib import Path
 from sklearn.feature_extraction.text import CountVectorizer
 
+ABBREVIATIONS = {
+    "total_docs": "d",
+    "min_df": "mindf",
+    "max_df": "maxdf",
+    "positive_selection_conf": "psc",
+    "mesh": "mesh",
+    "optimization_metric": "om", 
+    "constraint_metric": "cm", 
+    "constraint_value": "cv"
+}
+ABBREVIATIONS_REV = {v: k for k, v in ABBREVIATIONS.items()}
+
+def abbreviate_params(**kwargs) -> str:
+    """
+    Converts keyword parameters into the "key=value" format
+    using the ABBREVIATIONS dict.
+    """
+    parts = []
+    for full, value in kwargs.items():
+        abbr = ABBREVIATIONS.get(full, full)  # fallback: keep same
+        parts.append(f"{abbr}={value}")
+    return ",".join(parts)
+
 def data_base_path():
     return "../systematic-review-datasets/data"
 
@@ -12,25 +35,29 @@ def statistics_base_path():
     return Path("../boolean-query-generation/data/statistics/csmed")
 
 def bag_of_words_path(total_docs):
-    return Path(f"{data_base_path()}/bag_of_words/bag_of_words_docs={total_docs}.jsonl")
+    return Path(f"{data_base_path()}/bag_of_words/bag_of_words,{abbreviate_params(total_docs=total_docs)}.jsonl")
 
 def synonym_map_path(total_docs):
-    return Path(f"../systematic-review-datasets/data/bag_of_words/synonym_map_docs={total_docs}.jsonl")
+    return Path(f"../systematic-review-datasets/data/bag_of_words/synonym_map,{abbreviate_params(total_docs=total_docs)}.jsonl")
 
-def statistics_sub_folder_path(model, total_docs, min_df, max_df, positive_selection_conf, mesh):
+def statistics_sub_folder_path(model, **args):
+    """params: model, total_docs, min_df, max_df, positive_selection_conf, mesh"""
+    params = abbreviate_params(**args)
     path = Path(
         os.path.join(
                 statistics_base_path(),
-                f"{str(model).replace(' ', '')},d={total_docs},mindf={min_df},maxdf={max_df},psc={positive_selection_conf},mesh={mesh}".replace(' ', ''),
+                f"{str(model).replace(' ', '')},{params}".replace(' ', ''),
             )
         )
     return path
 
-def faeature_names_path(total_docs, min_df, max_df, mesh):
-    return Path(f"{data_base_path()}/bag_of_words/feature_names_docs={total_docs}_min_df={min_df}_max_df={max_df}_mesh={mesh}.pkl")
+def faeature_names_path(**args):
+    """params: total_docs, min_df, max_df, mesh"""
+    return Path(f"{data_base_path()}/bag_of_words/feature_names,{abbreviate_params(**args)}.pkl")
 
-def vectors_path(total_docs, min_df, max_df, mesh):
-    return Path(f"{data_base_path()}/bag_of_words/vectors_docs={total_docs}_min_df={min_df}_max_df={max_df}_mesh={mesh}.pkl")
+def vectors_path(**args):
+    """params: total_docs, min_df, max_df, mesh"""
+    return Path(f"{data_base_path()}/bag_of_words/vectors,{abbreviate_params(**args)}.pkl")
 
 def load_synonym_map(total_docs):
     with open(synonym_map_path(total_docs), "r", encoding="utf-8") as f:
@@ -52,8 +79,8 @@ def load_completed(jsonl_path: Path):
     return completed
 
 def load_vectors(total_docs: int, min_df: int, max_df: int, mesh: bool):
-    X_path = vectors_path(total_docs, min_df, max_df, mesh)
-    features_path = faeature_names_path(total_docs, min_df, max_df, mesh)
+    X_path = vectors_path(total_docs=total_docs, min_df=min_df, max_df=max_df, mesh=mesh)
+    features_path = faeature_names_path(total_docs=total_docs, min_df=min_df, max_df=max_df, mesh=mesh)
     
     bow = load_bow(total_docs=total_docs, mesh=mesh)
     ordered_pmids = list(bow.keys())
@@ -124,6 +151,19 @@ def load_qrels_from_rankings(ranking_files, positive_selection_conf):
         else:
             raise NotImplementedError("Not implemented yet. positive_selection_conf['type']=", positive_selection_conf["type"])
     return qrels_by_query_id
+
+def generate_labels(qrels, ordered_pmids):
+    keep_indices = []
+    labels = []
+    for i, pmid in enumerate(ordered_pmids):
+        if pmid in qrels["neutral"]:
+            continue
+        if pmid in qrels["pos"]:
+            labels.append(1)
+        else:
+            labels.append(0)
+        keep_indices.append(i)
+    return keep_indices, labels
 
 def load_bow(total_docs: int, mesh: bool = True):
     bow_by_pmid = {}
