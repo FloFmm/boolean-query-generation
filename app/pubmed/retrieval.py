@@ -32,6 +32,10 @@ def fetch_pmids(query, mindate=None, maxdate=None):
 
 def search_pubmed_year_month(query, start_year=1800, end_year=2025):
     """Retrieve all PMIDs by splitting per year and month if needed."""
+    if not query or not str(query).strip():
+        print("Empty query — nothing to search.")
+        return set()
+    
     all_pmids = set()
     handle = Entrez.esearch(db="pubmed", term=query)
     record = Entrez.read(handle)

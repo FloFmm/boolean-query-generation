@@ -27,10 +27,21 @@ def evaluate_pubmed_query(
     last_conf = None
     for jsonl_file in input_folder.glob("*/results_dt.jsonl"):
         print("Processing", jsonl_file)
-        output_file = jsonl_file.parent / f"pubmed_query,{abbreviate_params(optimization_metric=optimization_metric, constraint_metric=constraint_metric, constraint_value=constraint_value)}.jsonl"
-        if skip_existing and output_file.exists():
-            print(f"Output file{output_file} already exists. Skipping...")
-            continue
+        conf = {
+            "optimization_metric":optimization_metric,
+            "constraint_metric":constraint_metric,
+            "constraint_value":constraint_value,
+        }
+        
+        folder_path = jsonl_file.parent / f"{abbreviate_params(**conf)}"
+        output_file = Path(os.path.join(folder_path, "results_qg.json"))
+        conf_file_path = Path(os.path.join(folder_path, "config.json"))
+        
+        with conf_file_path.open("w", encoding="utf-8") as f:
+            json.dump(conf, f, indent=4)
+            
+        if skip_existing:
+            completed = load_completed(output_file)
             
         config_file = jsonl_file.parent / "config.json"
         with config_file.open("r", encoding="utf-8") as f:
@@ -60,11 +71,13 @@ def evaluate_pubmed_query(
         
 
         with jsonl_file.open("r", encoding="utf-8") as f_in, \
-            output_file.open("w", encoding="utf-8") as f_out:
+            output_file.open("a", encoding="utf-8") as f_out:
 
             for line in f_in:
                 data = json.loads(line)
                 query_id = data["query_id"]
+                if query_id in completed:
+                    print(f"skipping {query_id} since already present")
                 tree_obj_json = data["obj"]
 
                 # Load GreedyORDecisionTree
@@ -83,27 +96,41 @@ def evaluate_pubmed_query(
                 # Generate PubMed query
                 pubmed_query_str = tree.pubmed_query(term_expansions=synonym_map)
 
-                # search pubmed
+                # evaluate on pubmed
                 print(pubmed_query_str)
-                relevant_ids = search_pubmed_year_month(pubmed_query_str)
-
-                # evaluate
-                retrieved = set(str(x) for x in relevant_ids) # retrieved PMIDs
+                retrieved = search_pubmed_year_month(pubmed_query_str)
+                retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
                 positives = set([str(doc["pmid"]) for doc in eval_reviews[query_id]["data"]["train"] if int(doc["label"])==1])         # relevant PMIDs
                 TP = len(retrieved & positives)
                 precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0
                 recall = TP / len(positives) if len(positives) > 0 else 0.0
 
-                print(f"Precision: {precision:.10f}")
-                print(f"Recall: {recall:.10f}")
+                print(f"Pubmed precision: {precision:.10f}")
+                print(f"Pubmed Recall: {recall:.10f}")
+
+                # evaluate on local subset
+                subset_preds = tree.predict(X)
+                ground_truth = []
+                for pmid in ordered_pmids:
+                    for doc in eval_reviews[query_id]["data"]["train"]:
+                        if pmid == doc["id"]:
+                            ground_truth.append(int(doc["label"]))
+                subset_precision = precision_score(ground_truth, subset_preds)
+                subset_recall = recall_score(ground_truth, subset_preds)
+                print(f"Subset precision: {subset_precision:.10f}")
+                print(f"Subset Recall: {subset_recall:.10f}")
 
                 # Write to new JSONL
                 out_record = {
                     "query_id": query_id,
-                    "precision": precision,
-                    "recall": recall, 
+                    "tp": len(positives),
+                    "pubmed_retrieved": len(retrieved),
+                    "pubmed_precision": precision,
+                    "pubmed_recall": recall, 
+                    "subset_precision": subset_precision,
+                    "subset_recall": subset_recall,
                     "pubmed_query": pubmed_query_str,
-                    "num_positives": len(relevant_ids),
+                    
                 }
                 f_out.write(json.dumps(out_record, ensure_ascii=False) + "\n")
 

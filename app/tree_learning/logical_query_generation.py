@@ -196,7 +196,7 @@ def train_text_classifier(
         )
         obj = ""
     elif isinstance(clf, GreedyORDecisionTree):
-        pretty_print = clf.pretty_print(feature_names=list(feature_names), prune = True)
+        pretty_print = ""#clf.pretty_print(feature_names=list(feature_names), prune = True)
         boolean_function_set1 = ""
         boolean_function_set2 = ""
         obj = clf.to_json()
@@ -213,7 +213,6 @@ def train_text_classifier(
         "boolean_function_set1": boolean_function_set1,
         "boolean_function_set2": boolean_function_set2,
         "model": clf,
-        "feature_names": feature_names,
         "obj": obj
     }
     # from nltk.corpus import wordnet as wn

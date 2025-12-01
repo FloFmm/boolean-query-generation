@@ -1,6 +1,8 @@
 import json
 import os
 import numpy as np
+import re
+import pandas as pd
 import pickle
 from pathlib import Path
 from sklearn.feature_extraction.text import CountVectorizer
@@ -13,7 +15,8 @@ ABBREVIATIONS = {
     "mesh": "mesh",
     "optimization_metric": "om", 
     "constraint_metric": "cm", 
-    "constraint_value": "cv"
+    "constraint_value": "cv",
+    "ret_config": "rc",
 }
 ABBREVIATIONS_REV = {v: k for k, v in ABBREVIATIONS.items()}
 
@@ -49,6 +52,7 @@ def statistics_sub_folder_path(model, **args):
                 f"{str(model).replace(' ', '')},{params}".replace(' ', ''),
             )
         )
+    
     return path
 
 def faeature_names_path(**args):
@@ -73,7 +77,7 @@ def load_completed(jsonl_path: Path):
         for line in f:
             try:
                 record = json.loads(line)
-                completed.add(record["id"])
+                completed.add(record["query_id"])
             except json.JSONDecodeError:
                 continue
     return completed
@@ -176,3 +180,70 @@ def load_bow(total_docs: int, mesh: bool = True):
             else:
                 bow_by_pmid[pmid] = [w for w in entry["bow"] if not "[mh]" in w]
     return bow_by_pmid
+
+def load_statistics_data(filter_vars=None):
+    """
+    Load and aggregate JSONL experiment results by file.
+
+    Args:
+        folder (str): Path containing JSONL result files.
+        model (str): Model name to filter filenames, e.g., "GreedyORDecisionTree".
+        filter_vars (dict, optional): Example: {'n_docs': '50k'} to filter filenames.
+
+    Returns:
+        pd.DataFrame: Averaged metrics per file and associated hyperparameters.
+    """
+    input_folder = statistics_base_path()
+    records = []
+    for jsonl_file in input_folder.glob("*/results_dt.jsonl"):
+        config_file = jsonl_file.parent / "config.json"
+        with config_file.open("r", encoding="utf-8") as f:
+            conf = json.load(f)
+
+
+        params = {
+            "file": str(jsonl_file.parent.name),
+            "max_depth": int(conf["model_args"]["max_depth"]),
+            "min_samples_split": int(conf["model_args"]["min_samples_split"]),
+            "min_impurity_decrease_start": int(conf["model_args"]["min_impurity_decrease_range"][0]),
+            "min_impurity_decrease_end": int(conf["model_args"]["min_impurity_decrease_range"][1]),
+            "top_k_or_candidates": int(conf["model_args"]["top_k_or_candidates"]),
+            "class_weight": str(conf["model_args"]["class_weight"]),
+            "total_docs": int(conf["total_docs"]),
+            "min_df": int(conf["min_df"]),
+            "max_df": float(conf["max_df"]),
+            "mesh": bool(conf["mesh"]),
+        }
+
+        # Optional filter for other parameters in filename
+        if filter_vars and not all(conf[k] == v for k, v in filter_vars.items()):
+            continue
+
+        file_records = []
+        with jsonl_file.open("r", encoding="utf-8") as f:
+            for line in f:
+                data = json.loads(line)
+                file_records.append(data)
+                data["f1"] = (
+                    2
+                    * data["precision"]
+                    * data["recall"]
+                    / (data["precision"] + data["recall"])
+                )
+                pretty = data.get("pretty_print", "")
+                data["leafs"] = pretty.count("class")
+                data["ORs"] = pretty.count("OR")
+                data["IFs"] = pretty.count("if")
+
+        if not file_records:
+            continue
+
+        df_file = pd.DataFrame(file_records)
+        mean_metrics = df_file.mean(numeric_only=True).to_dict()
+        records.append({**params, **mean_metrics})
+
+    if not records:
+        print("No matching files or records found.")
+        return pd.DataFrame()
+
+    return pd.DataFrame(records)
