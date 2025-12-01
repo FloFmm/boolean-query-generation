@@ -78,6 +78,9 @@ def evaluate_dt_csmed(
     with file_path.open("a", encoding="utf-8") as out_f:
 
         for query_id, qrels in qrels_by_query_id.items():
+            if query_id not in ["CD011602", "CD011926", "CD010225", "CD003137", "CD002069", "CD011724", "CD010633", "CD007497", "CD011549", "CD007103", "CD010411", "CD011447", "CD009925", "CD000384", "CD009669", "CD009780", "CD010387", "CD010653", "CD004288", "CD011732", "CD007379", "CD010139", "CD011472", "CD012009", "CD012216", "CD008366", "CD003344", "CD006342", "CD010685", "CD005055", "CD010226", "CD008760", "CD008170", "CD002898", "CD006995", "CD011515", "CD009782", "CD006839", "CD002115", "CD009784"]:
+                print("skipping not included id")
+                continue
             if skip_existing and query_id in completed:
                 continue
             

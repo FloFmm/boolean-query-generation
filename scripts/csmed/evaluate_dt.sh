@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=1
 #SBATCH --time=24:00:00
-#SBATCH --array=0-1500
+#SBATCH --array=0-1500%512
 #SBATCH --mail-type=end
 #SBATCH --mail-user=florian_maurus.mueller@mailbox.tu-dresden.de
 #SBATCH --output=logs/out_%A_%a.txt
