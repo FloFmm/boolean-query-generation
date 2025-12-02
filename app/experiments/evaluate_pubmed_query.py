@@ -2,23 +2,24 @@ import json
 import sys
 import os
 import numpy as np
+from itertools import product
 from pathlib import Path
+from sklearn.metrics import recall_score, precision_score
 from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 from app.pubmed.retrieval import search_pubmed_year_month
-from sklearn.metrics import recall_score, precision_score
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset
-from app.dataset.utils import abbreviate_params, load_completed, load_qrels_from_rankings, generate_labels, load_synonym_map, statistics_base_path, load_vectors
+from app.dataset.utils import abbreviate_params, load_completed, load_qrels_from_rankings, generate_labels, load_synonym_map, statistics_base_path, load_vectors, EVAL_QUERY_IDS
 
 
 def evaluate_pubmed_query(
     optimization_metric,
-    constraint_metric,
-    constraint_value,
-    skip_existing=False,
+    constraint= {"metric": "pubmed_count", "value": -1 * 50_000},
+    skip_existing=True,
     data_base_path="../systematic-review-datasets/data",
 ):
+    
     dataset = load_dataset()
     eval_reviews = dataset["EVAL"]
     input_folder = statistics_base_path()
@@ -29,12 +30,12 @@ def evaluate_pubmed_query(
         print("Processing", jsonl_file)
         conf = {
             "optimization_metric":optimization_metric,
-            "constraint_metric":constraint_metric,
-            "constraint_value":constraint_value,
+            "constraint":constraint,
         }
         
         folder_path = jsonl_file.parent / f"{abbreviate_params(**conf)}"
-        output_file = Path(os.path.join(folder_path, "results_qg.json"))
+        os.makedirs(folder_path, exist_ok=True)
+        output_file = Path(os.path.join(folder_path, "results_qg.jsonl"))
         conf_file_path = Path(os.path.join(folder_path, "config.json"))
         
         with conf_file_path.open("w", encoding="utf-8") as f:
@@ -76,25 +77,29 @@ def evaluate_pubmed_query(
             for line in f_in:
                 data = json.loads(line)
                 query_id = data["query_id"]
-                if query_id in completed:
+                if query_id not in EVAL_QUERY_IDS:
+                    print("skipping not included id")
+                    continue
+                
+                if skip_existing and query_id in completed:
                     print(f"skipping {query_id} since already present")
+                    continue
+                print("Processing query id", query_id)
                 tree_obj_json = data["obj"]
 
                 # Load GreedyORDecisionTree
                 tree = GreedyORDecisionTree.from_json(tree_obj_json)
-                
                 keep_indices, labels = generate_labels(qrels_by_query_id[query_id], ordered_pmids)
                 num_pos = sum(labels)
-                tree._find_optimal_threshold(
+                best_threshold, best_score, final_constraint_score = tree._find_optimal_threshold(
                     X[keep_indices],
                     np.array(labels),
                     metric=optimization_metric,#"pubmed_f2",
-                    constraint=constraint_metric,#"pubmed_count",
-                    constraint_value=constraint_value,#-1 * 50_000,#num_pos*50,
+                    constraint=constraint,#"pubmed_count",-1 * 50_000,#num_pos*50,
                     term_expansions=synonym_map
                 )
                 # Generate PubMed query
-                pubmed_query_str = tree.pubmed_query(term_expansions=synonym_map)
+                pubmed_query_str, query_size = tree.pubmed_query(term_expansions=synonym_map)
 
                 # evaluate on pubmed
                 print(pubmed_query_str)
@@ -110,16 +115,25 @@ def evaluate_pubmed_query(
 
                 # evaluate on local subset
                 subset_preds = tree.predict(X)
-                ground_truth = []
-                for pmid in ordered_pmids:
-                    for doc in eval_reviews[query_id]["data"]["train"]:
-                        if pmid == doc["id"]:
-                            ground_truth.append(int(doc["label"]))
+                
+                # print("tp subest:", [pmid for pmid, pred in zip(ordered_pmids, subset_preds) if pred == 1 and pmid in positives])
+                # print("tp_pubmed:", retrieved & positives)
+                # print(subset_preds)
+                # print("tree._optimal_threshold", tree._optimal_threshold)
+                label_lookup = {doc["pmid"]: int(doc["label"]) for doc in eval_reviews[query_id]["data"]["train"]}
+                ground_truth = [label_lookup.get(pmid, 0) for pmid in ordered_pmids]
+                # print("pubmed_retrieved", len(retrieved))
+                # print("pubmed_groundtruth", len(positives), positives)
+                # print("subset_retrieved", subset_preds.sum())
+                # p2 = [x for x,l in label_lookup.items() if l]
+                # print("subset_groundtruth", len(p2), p2)
+                # print(len(ground_truth), len(subset_preds))
+                
                 subset_precision = precision_score(ground_truth, subset_preds)
                 subset_recall = recall_score(ground_truth, subset_preds)
                 print(f"Subset precision: {subset_precision:.10f}")
                 print(f"Subset Recall: {subset_recall:.10f}")
-
+                # print(tree.pretty_print(verbose=True))
                 # Write to new JSONL
                 out_record = {
                     "query_id": query_id,
@@ -127,21 +141,36 @@ def evaluate_pubmed_query(
                     "pubmed_retrieved": len(retrieved),
                     "pubmed_precision": precision,
                     "pubmed_recall": recall, 
+                    "subset_retrieved": int(subset_preds.sum()),
                     "subset_precision": subset_precision,
                     "subset_recall": subset_recall,
+                    "threshold": best_threshold,
+                    "optimization_score": best_score,
+                    "constraint_score": final_constraint_score,
+                    "query_size": query_size,
                     "pubmed_query": pubmed_query_str,
                     
                 }
                 f_out.write(json.dumps(out_record, ensure_ascii=False) + "\n")
-
         print(f"✅ Processed {jsonl_file.name} → {output_file.name}")
 
 
 if __name__ == "__main__":
-    args = {
-        "skip_existing": True,
-        "optimization_metric": "pubmed_f3",
-        "constraint_metric": "pubmed_count",
-        "constraint_value": -1 * 50_000,
+    optimization_metric = ["pubmed_f3", "f3"]
+    constraint = [None, {"metric": "pubmed_count", "value": -1 * 50_000}]
+    
+    args = [
+        {
+        "skip_existing": False,
+        "optimization_metric": om,
+        "constraint": c
     }
-    evaluate_pubmed_query(**args)
+    for c, om in product(
+            constraint,
+            optimization_metric,
+        )
+    ]
+    
+    job_idx = int(sys.argv[1])
+    if job_idx < len(args):
+        evaluate_pubmed_query(**args[job_idx])

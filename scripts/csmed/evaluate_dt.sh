@@ -2,12 +2,12 @@
 #SBATCH --nodes=1
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --time=24:00:00
+#SBATCH --time=12:00:00
 #SBATCH --array=0-1500%512
 #SBATCH --mail-type=end
 #SBATCH --mail-user=florian_maurus.mueller@mailbox.tu-dresden.de
-#SBATCH --output=logs/out_%A_%a.txt
-#SBATCH --error=logs/err_%A_%a.txt
+#SBATCH --output=logs/%A/out_%A_%a.txt
+#SBATCH --error=logs/%A/err_%A_%a.txt
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 

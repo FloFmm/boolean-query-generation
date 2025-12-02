@@ -32,7 +32,7 @@ def analyze_dataframe_results(df):
         "max_df",
         "mesh",
     ]
-    metrics = ["precision", "recall", "f1", "time_seconds", "ORs", "IFs", "threshold"]
+    metrics = ["precision", "recall", "f1", "time_seconds", "ORs", "IFs"]
 
     for var in variables:
         if var not in df.columns:
@@ -90,13 +90,13 @@ def analyze_dataframe_results(df):
             color="tab:brown",
             linestyle=":",
         )
-        ax1.plot(
-            grouped[var],
-            grouped["threshold"],
-            marker="v",
-            label="Threshold",
-            color="tab:pink",
-        )
+        # ax1.plot(
+        #     grouped[var],
+        #     grouped["threshold"],
+        #     marker="v",
+        #     label="Threshold",
+        #     color="tab:pink",
+        # )
         ax2.set_ylabel("Time / OR count / IF count")
         ax2.tick_params(axis="y", labelcolor="tab:green")
 
@@ -109,8 +109,8 @@ def analyze_dataframe_results(df):
         plt.grid(True, linestyle="--", alpha=0.6)
         plt.tight_layout()
         # plt.show()
-        out_path = statistics_base_path() / "images" / f"effects_of_{var}.png"
-        os.makedirs(statistics_base_path() / "images", exist_ok=True)
+        out_path = statistics_base_path() / "../images" / f"effects_of_{var}.png"
+        os.makedirs(statistics_base_path() / "../images", exist_ok=True)
         plt.savefig(out_path, dpi=200)
         plt.close()
         print(f"Saved plot: {out_path}")
@@ -146,7 +146,7 @@ def analyze_and_plot_best_files_from_df(df, top_n=10):
     ax1.plot(x, top_df["precision"], marker="o", label="Precision", color="tab:blue")
     ax1.plot(x, top_df["recall"], marker="s", label="Recall", color="tab:orange")
     ax1.plot(x, top_df["f1"], marker="D", label="F1", color="tab:purple")
-    ax1.plot(x, top_df["threshold"], marker="v", label="Threshold", color="tab:pink")
+    # ax1.plot(x, top_df["threshold"], marker="v", label="Threshold", color="tab:pink")
     ax1.set_ylabel("Precision / Recall / F1")
     ax1.tick_params(axis="y", labelcolor="black")
 
@@ -190,8 +190,8 @@ def analyze_and_plot_best_files_from_df(df, top_n=10):
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.tight_layout()
     # plt.show()
-    out_path = statistics_base_path() / "images" / f"analyze_and_plot_best_files_from_df.png"
-    os.makedirs(statistics_base_path() / "images", exist_ok=True)
+    out_path = statistics_base_path() / "../images" / f"analyze_and_plot_best_files_from_df.png"
+    os.makedirs(statistics_base_path() / "../images", exist_ok=True)
     plt.savefig(out_path, dpi=200)
     plt.close()
     print(f"Saved plot: {out_path}")

@@ -363,13 +363,13 @@ class GreedyORDecisionTree:
         preds = np.empty(n_samples, dtype=float)
 
         # Stack for DFS traversal: (node, sample_indices)
-        stack = [(self._tree, np.arange(n_samples))]
+        stack = [(self._tree, np.arange(n_samples), True)]
 
         while stack:
-            node, idx = stack.pop()
+            node, idx, always_right = stack.pop()
 
             if node["type"] == "leaf":
-                preds[idx] = node["prob_class_1"]
+                preds[idx] = 0.0 if always_right else node["prob_class_1"]
                 continue
 
             # Extract precomputed indices
@@ -381,9 +381,9 @@ class GreedyORDecisionTree:
 
             # Send samples left or right
             if mask.any():
-                stack.append((node["left"], idx[mask]))
+                stack.append((node["left"], idx[mask], always_right & False))
             if (~mask).any():
-                stack.append((node["right"], idx[~mask]))
+                stack.append((node["right"], idx[~mask], always_right & True))
 
         return preds
 
@@ -465,7 +465,6 @@ class GreedyORDecisionTree:
         y_true,
         metric="precision",
         constraint=None,
-        constraint_value=None,
         term_expansions=None,
     ):
         """
@@ -478,29 +477,33 @@ class GreedyORDecisionTree:
         probs = self.predict_proba(X)
         best_threshold = 0.5
         best_score = -1.0
+        final_constraint_score = None
 
         def pubmed_precision(y_true, y_pred, term_expansions):
             """Compute precision using PubMed-derived FP count."""
             tp = int(((y_true == 1) & (y_pred == 1)).sum())
             # Query PubMed for these predicted positives
-            pubmed_query = self.pubmed_query(term_expansions)
+            pubmed_query, query_size = self.pubmed_query(term_expansions)
             if not pubmed_query:
                 return 0.0
-            count_retrived = int(search_pubmed(pubmed_query)["Count"])
-            if count_retrived == 0:
+            count_retrieved = int(search_pubmed(pubmed_query)["Count"])
+            if count_retrieved == 0:
                 return 0.0
-            return tp / count_retrived
+            # print("count_retrieved", count_retrieved)
+            # print("query size", len(pubmed_query))
+            return tp / count_retrieved
 
         def get_metric(y_true, y_pred, name, term_expansions):
             if name == "pubmed_precision":
                 return pubmed_precision(y_true, y_pred, term_expansions)
             if name == "pubmed_count":
-                pubmed_query = self.pubmed_query(term_expansions)
+                pubmed_query, query_size = self.pubmed_query(term_expansions)
                 if not pubmed_query:
                     return 0
                 return -1 * int(search_pubmed(pubmed_query)["Count"])
             elif name.startswith("pubmed_f"):
                 prec = pubmed_precision(y_true, y_pred, term_expansions)
+                # print("prec", prec)
                 match = re.match(r"pubmed_f(\d+(\.\d+)?)", name)
                 beta = float(match.group(1))
                 recall = recall_score(y_true, y_pred, zero_division=0)
@@ -518,21 +521,29 @@ class GreedyORDecisionTree:
             else:
                 raise ValueError(f"Unsupported metric: {name}")
 
-        for t in self._possible_thresholds:
+
+        for t in sorted(self._possible_thresholds):
             self._optimal_threshold = t # just temporary for calculations
             y_pred = (probs >= t - 1e-8).astype(int)
             main_score = get_metric(y_true, y_pred, metric, term_expansions)
             if constraint:
-                constraint_score = get_metric(y_true, y_pred, constraint, term_expansions)
-                if constraint_score < constraint_value:
+                constraint_score = get_metric(y_true, y_pred, constraint["metric"], term_expansions)
+                if constraint_score < constraint["value"]:
                     continue  # doesn’t satisfy constraint
+            # print(self.pretty_print(verbose=True))
+            # print("t", t)
+            # print("mainscore", main_score)
+            # print("y_pred.sum()", y_pred.sum())
+            # print()
             if main_score > best_score:
                 best_score = main_score
+                if constraint:
+                    final_constraint_score = constraint_score
                 best_threshold = t
         self._optimal_threshold = best_threshold
         self._optimal_metric = metric
         self._optimal_score = best_score
-        return best_threshold, best_score
+        return best_threshold, best_score, final_constraint_score
 
     def to_json(self) -> str:
         """
@@ -632,14 +643,14 @@ class GreedyORDecisionTree:
                     # Merge node into a leaf
                     leaf_text = f"{indent}class: {same_class}"
                     if verbose:
-                        leaf_text += f" ({node['prob_class_1']:.4f}>={self._optimal_threshold:.4f}), {node['counts']})"
+                        leaf_text += f" ({node['prob_class_1']:.10f}>={self._optimal_threshold:.10f}), {node['counts']})"
                     lines.append(leaf_text)
                     return
 
             if node["type"] == "leaf":
                 leaf_text = f"{indent}class: {self._node_class(node)}"
                 if verbose:
-                    leaf_text += f" ({node['prob_class_1']:.4f}>={self._optimal_threshold:.4f}), {node['counts']})"
+                    leaf_text += f" ({node['prob_class_1']:.10f}>={self._optimal_threshold:.10f}), {node['counts']})"
                 lines.append(leaf_text)
             else:
                 features = " OR ".join(get_name(f) for f in node["features"])
@@ -662,6 +673,8 @@ class GreedyORDecisionTree:
     def _expand_term(self, term_expansions, feature):
         # Helper: get PubMed-safe name for a feature, expand terms
         terms = term_expansions.get(feature, [feature])
+        # TODO remove [tiab] title abstract. but needed since NOT diagnsosi matches mesh term diagnsos otherwise
+        terms = [f + "[tiab]" if not f.endswith("[mh]") else f for f in terms]
         if len(terms) <= 1:
             return feature
         return " OR ".join(terms)
@@ -678,7 +691,10 @@ class GreedyORDecisionTree:
             raise ValueError("Tree not trained. Call fit() first.")
 
         # Traverse recursively
+        added_ORs = 0
+        synonym_ORs = 0
         def recurse(node, path_terms=None):
+            nonlocal added_ORs, synonym_ORs
             if path_terms is None:
                 path_terms = []
 
@@ -699,6 +715,8 @@ class GreedyORDecisionTree:
             clauses = []
 
             addition = " OR ".join(self._expand_term(term_expansions, f) for f in node["features"])
+            added_ORs += len(node["features"]) - 1
+            synonym_ORs += addition.count("OR") - added_ORs
             # Right child = feature present
             left_addition = addition
             if "OR" in left_addition:
@@ -722,6 +740,7 @@ class GreedyORDecisionTree:
 
         # Combine with OR for PubMed query
         query_clauses = []
+        path_lens = []
         for clause in dnf_clauses:
             # Split into positive and negative terms
             pos_terms = [t for t in clause if not t.startswith("NOT ")]
@@ -733,10 +752,20 @@ class GreedyORDecisionTree:
 
             # Reorder: positive terms first, NOT terms last
             query_clauses.append(f"({' AND '.join(pos_terms)} {' '.join(not_terms)})")
-
+            path_lens.append(len(pos_terms) + len(not_terms))
         # Combine all clauses with OR
         query = " OR ".join(query_clauses)
-        return query
+        avg_path_len = sum(path_lens) / len(path_lens) if path_lens else 0
+        query_size = {
+            "paths": len(query_clauses), 
+            "avg_path_len": avg_path_len, 
+            "ANDs": query.count('AND'),
+            "NOTs": query.count('NOT'),
+            "added_ORs": added_ORs,
+            "synonym_ORs": synonym_ORs,
+            "ORs": query.count('OR'),
+        }
+        return query, query_size
 
 
 def generate_texts_from_boolean(

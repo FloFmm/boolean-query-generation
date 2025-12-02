@@ -96,12 +96,31 @@ def search_pubmed_year_month(query, start_year=1800, end_year=2025):
 
     return all_pmids
 
-def search_pubmed(term, retmax=1000):
-    """Search PubMed for a term and return a list of PubMed IDs."""
-    handle = Entrez.esearch(db="pubmed", term=term, retmax=retmax)
-    record = Entrez.read(handle)
-    handle.close()
-    return record
+def search_pubmed(term, retmax=1000, retries=50):
+    """
+    Search PubMed with retry/backoff on ANY exception.
+    Retries even on HTTPError 500, timeouts, network errors, etc.
+    """
+    for attempt in range(1, retries + 1):
+        try:
+            handle = Entrez.esearch(db="pubmed", term=term, retmax=retmax)
+            record = Entrez.read(handle)
+            handle.close()
+            return record
+
+        except Exception as e:
+            wait = min(60, 2 ** min(attempt, 8)) + random.random()
+            print(
+                f"[PubMed ERROR] attempt {attempt}/{retries} "
+                f"for query '{term[:80]}...' → {e}\n"
+                f"Retrying in {wait:.2f} seconds..."
+            )
+            time.sleep(wait)
+
+    # If we reach here, ALL retries failed
+    raise RuntimeError(
+        f"search_pubmed() failed after {retries} attempts for query:\n{term}"
+    )
 
 
 

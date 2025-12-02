@@ -2,7 +2,7 @@
 # #SBATCH --nodes=1
 # #SBATCH --tasks-per-node=1
 # #SBATCH --cpus-per-task=1
-# #SBATCH --time=24:00:00
+# #SBATCH --time=00:10:00
 # #SBATCH --mail-type=end
 # #SBATCH --mail-user=florian_maurus.mueller@mailbox.tu-dresden.de
 
