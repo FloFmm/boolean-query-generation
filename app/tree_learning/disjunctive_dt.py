@@ -822,7 +822,7 @@ def generate_texts_from_boolean(
     for comb in all_combinations:
         mapping = dict(zip(variables, comb))
         label = int(bool(func(mapping)))
-        texts.append(" ".join(var for var, val in mapping.items() if val))
+        texts.append([var for var, val in mapping.items() if val])
         labels.append(label)
 
     if word_pool_size > len(variables):
@@ -845,7 +845,7 @@ def generate_texts_from_boolean(
                 extra_words = word_pool
             else:
                 extra_words = random.sample(word_pool, n_extra)
-            new_text = f"{text} {' '.join(extra_words)}".strip()
+            new_text = text + extra_words
             new_texts.append(new_text)
         texts = new_texts
 
@@ -862,12 +862,12 @@ def generate_texts_from_boolean(
 def main():
     def f(d):
         return (
-            not (d["cats"] or d["dogs"] or d["mice"]) and
+            not (d["cats"] or d["dogs"] or d["mice[mh]"]) and
             (d["house"] or d["wohnung"])
             and (d["bowl"] or d["box"])  
         )
 
-    variables = ["cats", "dogs", "mice", "house", "wohnung", "bowl", "box"]
+    variables = ["cats", "dogs", "mice[mh]", "house", "wohnung", "bowl", "box"]
     texts, labels = generate_texts_from_boolean(
         func=f,
         variables=variables,
@@ -881,17 +881,27 @@ def main():
 
     # --- Calculate actual statistics from the result ---
     actual_doc_count = len(texts)
-    all_words = [word for text in texts for word in text.split()]
+    all_words = [word for text in texts for word in text]
     unique_words = set(all_words)
     actual_word_pool_size = len(unique_words)
-    avg_doc_length = sum(len(text.split()) for text in texts) / len(texts)
+    avg_doc_length = sum(len(text) for text in texts) / len(texts)
 
     # --- Print for verification ---
     print("Actual doc_count:", actual_doc_count)
     print("Actual word_pool_size:", actual_word_pool_size)
     print("Actual average_doc_length:", round(avg_doc_length, 2))
 
-    vectorizer = CountVectorizer(binary=True)
+    # vectorizer = CountVectorizer(binary=True)
+    # X = vectorizer.fit_transform(texts)
+    vectorizer = CountVectorizer(
+        tokenizer=lambda x: x, 
+        preprocessor=lambda x: x,
+        token_pattern=None,
+        binary=True,
+        # stop_words="english",
+        # min_df=1,
+        # max_df=0.6
+    )
     X = vectorizer.fit_transform(texts)
 
     tree = GreedyORDecisionTree(
@@ -910,7 +920,7 @@ def main():
     print(tree.pretty_print(verbose=True, prune=True))
     preds = tree.predict(X)
     true_preds = np.array(
-        [f({var: int(var in text.split()) for var in variables}) for text in texts]
+        [f({var: int(var in text) for var in variables}) for text in texts]
     )
     precision = precision_score(true_preds, preds)
     recall = recall_score(true_preds, preds)
