@@ -671,12 +671,14 @@ class GreedyORDecisionTree:
         return f"{self.__class__.__name__}({', '.join(params)})"
 
     def _expand_term(self, term_expansions, feature):
+        if feature.endswith("[mh]"):
+            # mesh terms
+            # TODO maybe only add :noexp on negative meshterms
+            return feature.replace("[mh]", "[mh:noexp]")
         # Helper: get PubMed-safe name for a feature, expand terms
         terms = term_expansions.get(feature, [feature])
-        # TODO remove [tiab] title abstract. but needed since NOT diagnsosi matches mesh term diagnsos otherwise
-        terms = [f + "[tiab]" if not f.endswith("[mh]") else f for f in terms]
-        if len(terms) <= 1:
-            return feature
+        # TODO remove [tiab] title abstract. but needed since NOT diagnsis matches mesh term diagnsos otherwise
+        terms = [f + "[tiab]" for f in terms]
         return " OR ".join(terms)
 
     def pubmed_query(self, term_expansions: dict = None):
