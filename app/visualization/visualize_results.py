@@ -146,6 +146,8 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="f1_dt", metric
     # X-axis: filenames or file identifiers
     # --- Build X-tick labels including DT and QG sample counts ---
     xtick_labels = []
+    print(row["file"])
+    exit(0)
     for _, row in top_df.iterrows():
         file_label = "\n".join(
             row["file"].split(',')
