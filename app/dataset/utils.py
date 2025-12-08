@@ -263,12 +263,12 @@ def load_statistics_data(filter_vars=None, qg=True, metrics=None):
     """
     input_folder = statistics_base_path()
     
-    i = 0
-    for results_file_dt in input_folder.glob("*/results_dt.jsonl"):
-        for results_file_qg in results_file_dt.parent.glob("*/results_qg.jsonl"):
-            i+=1
-    print(i) 
-    exit(0)
+    # i = 0
+    # for results_file_dt in input_folder.glob("*/results_dt.jsonl"):
+    #     for results_file_qg in results_file_dt.parent.glob("*/results_qg.jsonl"):
+    #         i+=1
+    # print(i) 
+    # exit(0)
     records = []
     for results_file_dt in input_folder.glob("*/results_dt.jsonl"):
         
