@@ -182,7 +182,7 @@ def load_bow(total_docs: int, mesh: bool = True):
                 bow_by_pmid[pmid] = [w for w in entry["bow"] if not "[mh]" in w]
     return bow_by_pmid
 
-def load_statistics_data(filter_vars=None):
+def load_statistics_data_dt(filter_vars=None):
     """
     Load and aggregate JSONL experiment results by file.
 
@@ -248,3 +248,100 @@ def load_statistics_data(filter_vars=None):
         return pd.DataFrame()
 
     return pd.DataFrame(records)
+
+def load_statistics_data(filter_vars=None, qg=True):
+    """
+    Load and aggregate JSONL experiment results by file.
+
+    Args:
+        folder (str): Path containing JSONL result files.
+        model (str): Model name to filter filenames, e.g., "GreedyORDecisionTree".
+        filter_vars (dict, optional): Example: {'n_docs': '50k'} to filter filenames.
+
+    Returns:
+        pd.DataFrame: Averaged metrics per file and associated hyperparameters.
+    """
+    input_folder = statistics_base_path()
+    records = []
+    for results_file_dt in input_folder.glob("*/results_dt.jsonl"):
+        print(results_file_dt)
+        config_file_dt = results_file_dt.parent / "config.json"
+        print(config_file_dt)
+        with config_file_dt.open("r", encoding="utf-8") as f_dt:
+            conf_dt = json.load(f_dt)
+            
+        # Optional filter for other parameters in filename
+        if filter_vars and not all(conf_dt.get(k, v) == v for k, v in filter_vars.items()):
+            continue
+            
+        params_dt = {
+            "file": str(results_file_dt.parent.name),
+            "max_depth": int(conf_dt["model_args"]["max_depth"]),
+            "min_samples_split": int(conf_dt["model_args"]["min_samples_split"]),
+            "min_impurity_decrease_start": int(conf_dt["model_args"]["min_impurity_decrease_range"][0]),
+            "min_impurity_decrease_end": int(conf_dt["model_args"]["min_impurity_decrease_range"][1]),
+            "top_k_or_candidates": int(conf_dt["model_args"]["top_k_or_candidates"]),
+            "class_weight": str(conf_dt["model_args"]["class_weight"]),
+            "total_docs": int(conf_dt["total_docs"]),
+            "min_df": int(conf_dt["min_df"]),
+            "max_df": float(conf_dt["max_df"]),
+            "mesh": bool(conf_dt["mesh"]),
+        }
+        
+        file_records_dt = []
+        with results_file_dt.open("r", encoding="utf-8") as f:
+            for line in f:
+                data = json.loads(line)
+                data = {f"{k}_dt" if not k.endswith("_dt") else k: v for k, v in data.items()}
+                file_records_dt.append(data)
+
+        if not file_records_dt:
+            continue
+        df_file_dt = pd.DataFrame(file_records_dt)
+        mean_metrics_dt = df_file_dt.mean(numeric_only=True).to_dict()
+        
+        if qg: 
+            for results_file_qg in results_file_dt.parent.glob("*/results_qg.jsonl"):
+                config_file_qg = results_file_qg.parent / "config.json"
+                with config_file_qg.open("r", encoding="utf-8") as f_qg:
+                    conf_qg = json.load(f_qg)
+                    
+                if filter_vars and not all(conf_qg.get(k, v) == v for k, v in filter_vars.items()):
+                    continue
+                    
+                params_qg = {
+                    "optimization_metric": conf_qg["optimization_metric"],
+                    "constraint": conf_qg["constraint"]#["metric"],
+                    # "constraint_value": conf_qg["constraint"]["value"],
+                }
+                
+                file_records_qg = []
+                with results_file_qg.open("r", encoding="utf-8") as f:
+                    for line in f:
+                        data = json.loads(line)
+                        data = {f"{k}_qg" if not k.endswith("_qg") else k: v for k, v in data.items()}
+                        file_records_qg.append(data)
+                if not file_records_qg:
+                    continue
+                df_file_qg = pd.DataFrame(file_records_qg)
+                mean_metrics_qg = df_file_qg.mean(numeric_only=True).to_dict()
+                
+                records.append({**params_dt, **params_qg, **mean_metrics_qg, **mean_metrics_dt})
+        else:
+            records.append({**params_dt, **mean_metrics_dt})
+
+    if not records:
+        print("No matching files or records found.")
+        return pd.DataFrame()
+
+    df = pd.DataFrame(records)
+    df["f1_dt"] = 2 * df["precision_dt"] * df["recall_dt"] / (df["precision_dt"] + df["recall_dt"])
+    
+    if qg:
+        df["f1_qg"] = 2 * df["precision_pubmed_qg"] * df["recall_pubmed_qg"] / (df["precision_pubmed_qg"] + df["recall_pubmed_qg"])
+
+
+    params = list(params_dt.keys())
+    if qg:
+        params = list(set(params) | set(params_qg.keys()))
+    return df, params

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from app.dataset.utils import load_statistics_data, statistics_base_path
 
-def analyze_dataframe_results(df):
+def analyze_dataframe_results(df, variables, metrics):
     """
     Analyze performance metrics from a preloaded DataFrame.
     Plots Precision, Recall, F1, Time, and counts of OR/if separately for each variable.
@@ -20,85 +20,44 @@ def analyze_dataframe_results(df):
         print("DataFrame is empty.")
         return
     
-    variables = [
-        "max_depth",
-        "min_samples_split",
-        "min_impurity_decrease_start",
-        "min_impurity_decrease_end",
-        "top_k_or_candidates",
-        "class_weight",
-        "n_docs",
-        "min_df",
-        "max_df",
-        "mesh",
-    ]
-    metrics = ["precision", "recall", "f1", "time_seconds", "ORs", "IFs"]
+    # variables = [
+    #     "max_depth",
+    #     "min_samples_split",
+    #     "min_impurity_decrease_start",
+    #     "min_impurity_decrease_end",
+    #     "top_k_or_candidates",
+    #     "class_weight",
+    #     "n_docs",
+    #     "min_df",
+    #     "max_df",
+    #     "mesh",
+    # ]
+    # metrics = ["precision", "recall", "f1", "time_seconds", "ORs", "IFs"]
 
     for var in variables:
         if var not in df.columns:
             continue
-        grouped = df.groupby(var)[metrics].mean().reset_index()
+        grouped = df.groupby(var)[[m[0] for m in metrics]].mean().reset_index()
 
         # --- Dual y-axis plot ---
         fig, ax1 = plt.subplots(figsize=(7, 5))
         ax2 = ax1.twinx()
 
         # Left y-axis (precision, recall, f1)
-        ax1.plot(
-            grouped[var],
-            grouped["precision"],
-            marker="o",
-            label="Precision",
-            color="tab:blue",
-        )
-        ax1.plot(
-            grouped[var],
-            grouped["recall"],
-            marker="s",
-            label="Recall",
-            color="tab:orange",
-        )
-        ax1.plot(
-            grouped[var], grouped["f1"], marker="D", label="F1", color="tab:purple"
-        )
-        ax1.set_xlabel(var)
-        ax1.set_ylabel("Precision / Recall / F1")
+        for m in metrics:
+            if m[4] == "axis1":
+                ax1.plot(grouped[var], grouped[m[0]], marker=m[1], label=m[0], color=m[2], linestyle=m[3])
+            else:
+                ax2.plot(grouped[var], grouped[m[0]], marker=m[1], label=m[0], color=m[2])
+    
+        ax1.set_ylabel(" / ".join([m[0] for m in metrics if m[4] == "axis1"]))
         ax1.tick_params(axis="y", labelcolor="black")
 
-        # Right y-axis (time, OR count, IF count)
-        ax2.plot(
-            grouped[var],
-            grouped["time_seconds"],
-            marker="^",
-            label="Time (s)",
-            color="tab:green",
-            linestyle="--",
-        )
-        ax2.plot(
-            grouped[var],
-            grouped["ORs"],
-            marker="x",
-            label="ORst",
-            color="tab:red",
-            linestyle="-.",
-        )
-        ax2.plot(
-            grouped[var],
-            grouped["IFs"],
-            marker="*",
-            label="IFs",
-            color="tab:brown",
-            linestyle=":",
-        )
-        # ax1.plot(
-        #     grouped[var],
-        #     grouped["threshold"],
-        #     marker="v",
-        #     label="Threshold",
-        #     color="tab:pink",
-        # )
-        ax2.set_ylabel("Time / OR count / IF count")
+        # Right axis: time and size
+        ax2.set_ylabel(" / ".join([m[0] for m in metrics if m[4] == "axis2"]))
         ax2.tick_params(axis="y", labelcolor="tab:green")
+        
+        ax1.set_xlabel(var)
 
         # Combined legend
         lines, labels = ax1.get_legend_handles_labels()
@@ -117,7 +76,7 @@ def analyze_dataframe_results(df):
 
     return df
 
-def analyze_and_plot_best_files_from_df(df, top_n=10):
+def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="f1_dt", metrics=[]):
     """
     Plot the top-performing configurations from an already prepared DataFrame.
 
@@ -130,7 +89,7 @@ def analyze_and_plot_best_files_from_df(df, top_n=10):
         return
 
     # Sort by F1 and take top N
-    df = df.sort_values("f1", ascending=False)
+    df = df.sort_values(opt_metric, ascending=False)
     top_df = df.head(top_n)
 
     # --- Plot ---
@@ -142,28 +101,17 @@ def analyze_and_plot_best_files_from_df(df, top_n=10):
         print(i, file)
         i += 1
 
-    # Left axis: precision/recall/F1
-    ax1.plot(x, top_df["precision"], marker="o", label="Precision", color="tab:blue")
-    ax1.plot(x, top_df["recall"], marker="s", label="Recall", color="tab:orange")
-    ax1.plot(x, top_df["f1"], marker="D", label="F1", color="tab:purple")
-    # ax1.plot(x, top_df["threshold"], marker="v", label="Threshold", color="tab:pink")
-    ax1.set_ylabel("Precision / Recall / F1")
+    for m in metrics:
+        if m[4] == "axis1":
+            ax1.plot(x, top_df[m[0]], marker=m[1], label=m[0], color=m[2], linestyle=m[3])
+        else:
+            ax2.plot(x, top_df[m[0]], marker=m[1], label=m[0], color=m[2])
+    
+    ax1.set_ylabel(" / ".join([m[0] for m in metrics if m[4] == "axis1"]))
     ax1.tick_params(axis="y", labelcolor="black")
 
     # Right axis: time and size
-    ax2.plot(
-        x,
-        top_df["time_seconds"],
-        marker="^",
-        label="Time (s)",
-        color="tab:green",
-        linestyle="--",
-    )
-    ax2.plot(x, top_df["ORs"], marker="x", label="ORs", color="tab:red", linestyle="-.")
-    ax2.plot(
-        x, top_df["IFs"], marker="*", label="IFs", color="tab:brown", linestyle=":"
-    )
-    ax2.set_ylabel("Time (seconds) / ORs / IFs")
+    ax2.set_ylabel(" / ".join([m[0] for m in metrics if m[4] == "axis2"]))
     ax2.tick_params(axis="y", labelcolor="tab:green")
 
     # X-axis: filenames or file identifiers
@@ -201,17 +149,36 @@ def analyze_and_plot_best_files_from_df(df, top_n=10):
 def visualize_results(
     model="GreedyORDecisionTree",
     filter_vars={"total_docs": 433660},
+    qg = False,
 ):
-    df = load_statistics_data(
+    if not qg:
+        metrics = [("precision_dt", "o", "tab:blue", None, "axis1"), 
+                    ("recall_dt", "s", "tab:orange", None, "axis1"), 
+                    ("f1_dt", "D", "tab:purple", None, "axis1"), 
+                    ("time_seconds_dt", "^", "tab:green", "--", "axis2") 
+                    ]
+    else:
+        metrics = [("precision_qg", "o", "tab:blue", None, "axis1"), 
+                  ("recall_dg", "s", "tab:orange", None, "axis1"), 
+                  ("f1_qg", "D", "tab:purple", None, "axis1"), 
+                  ("time_seconds_qg", "^", "tab:green", "--", "axis2"), 
+                  ("size_ORs_qg", "x", "tab:red", "-.", "axis2"), 
+                  ("size_IFs_qg", "*", "tab:brown", ":", "axis2"), 
+                  ]
+    
+    
+    df, params = load_statistics_data(
         filter_vars=filter_vars,
+        qg=qg
     )
 
     analyze_and_plot_best_files_from_df(
         df,
         top_n=10,
+        metrics=metrics,
     )
 
-    df = analyze_dataframe_results(df)
+    df = analyze_dataframe_results(df, variables=params, metrics=metrics)
     
 
 if __name__ == "__main__":
