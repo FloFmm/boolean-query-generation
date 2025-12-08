@@ -177,7 +177,7 @@ def main():
         
 def test():
     optimization_metric = ["f3"]
-    constraint = [None]
+    constraint = [{"metric": "pubmed_count", "value": -1 * 50_000}]
     
     args = [
         {

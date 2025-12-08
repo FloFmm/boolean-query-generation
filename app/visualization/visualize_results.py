@@ -15,6 +15,7 @@ def analyze_dataframe_results(df, variables, metrics):
             - precision, recall, f1, time_seconds, or_count, if_count
             - and hyperparameters: max_depth, min_samples_split, etc.
     """
+    qg = any([m[0].endswith('_qg') for m in metrics])
     
     if df.empty:
         print("DataFrame is empty.")
@@ -37,10 +38,12 @@ def analyze_dataframe_results(df, variables, metrics):
     for var in variables:
         if var not in df.columns:
             continue
+        print(var)
         grouped = df.groupby(var)[[m[0] for m in metrics]].mean().reset_index()
 
         # --- Dual y-axis plot ---
         fig, ax1 = plt.subplots(figsize=(7, 5))
+        ax1.tick_params(axis="x", labelsize=6)
         ax2 = ax1.twinx()
 
         # Left y-axis (precision, recall, f1)
@@ -49,7 +52,15 @@ def analyze_dataframe_results(df, variables, metrics):
                 ax1.plot(grouped[var], grouped[m[0]], marker=m[1], label=m[0], color=m[2], linestyle=m[3])
             else:
                 ax2.plot(grouped[var], grouped[m[0]], marker=m[1], label=m[0], color=m[2])
-    
+
+        # --- X-tick labels with sample counts ---
+        counts = df.groupby(var).size().reindex(grouped[var]).tolist()
+        xtick_labels = [f"{v}\n(samples: {c})" for v, c in zip(grouped[var], counts)]
+
+        ax1.set_xticks(grouped[var])
+        ax1.set_xticklabels(xtick_labels, fontsize=6)
+
+        # --- Dual y-axis plot ---
         ax1.set_ylabel(" / ".join([m[0] for m in metrics if m[4] == "axis1"]))
         ax1.tick_params(axis="y", labelcolor="black")
 
@@ -68,7 +79,7 @@ def analyze_dataframe_results(df, variables, metrics):
         plt.grid(True, linestyle="--", alpha=0.6)
         plt.tight_layout()
         # plt.show()
-        out_path = statistics_base_path() / "../images" / f"effects_of_{var}.png"
+        out_path = statistics_base_path() / "../images" / f"effects_of_{var}_{'qg' if qg else'dt'}.png"
         os.makedirs(statistics_base_path() / "../images", exist_ok=True)
         plt.savefig(out_path, dpi=200)
         plt.close()
@@ -101,11 +112,29 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="f1_dt", metric
         print(i, file)
         i += 1
 
+    # --- Build legend labels with Top-1 values ---
+    top1 = top_df.iloc[0]
+    legend_labels = {}
     for m in metrics:
-        if m[4] == "axis1":
-            ax1.plot(x, top_df[m[0]], marker=m[1], label=m[0], color=m[2], linestyle=m[3])
+        metric_name = m[0]
+        if metric_name in top1:
+            legend_labels[metric_name] = f"{metric_name} ({top1[metric_name]:.3f})"
         else:
-            ax2.plot(x, top_df[m[0]], marker=m[1], label=m[0], color=m[2])
+            legend_labels[metric_name] = metric_name
+
+    # --- Plot lines ---
+    for m in metrics:
+        label = legend_labels[m[0]]
+        if m[4] == "axis1":
+            ax1.plot(
+                x, top_df[m[0]],
+                marker=m[1], label=label, color=m[2], linestyle=m[3]
+            )
+        else:
+            ax2.plot(
+                x, top_df[m[0]],
+                marker=m[1], label=label, color=m[2]
+            )
     
     ax1.set_ylabel(" / ".join([m[0] for m in metrics if m[4] == "axis1"]))
     ax1.tick_params(axis="y", labelcolor="black")
@@ -115,18 +144,30 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="f1_dt", metric
     ax2.tick_params(axis="y", labelcolor="tab:green")
 
     # X-axis: filenames or file identifiers
+    # --- Build X-tick labels including DT and QG sample counts ---
+    xtick_labels = []
+    for _, row in top_df.iterrows():
+        file_label = "\n".join(
+            row["file"].split(',')
+        ).replace("'", "").replace("GreedyORDecisionTree", "")
+
+        # two sample counts (DT + QG)
+        if "samples_qg" in row:
+            samples_label = f"DT:{row['samples_dt']}  QG:{row['samples_qg']}"
+        else:
+            samples_label = f"DT:{row['samples_dt']}"
+
+        xtick_labels.append(file_label + "\n" + samples_label)
+    
+    
     ax1.set_xticks(x)
     ax1.set_xticklabels(
-        [
-            "\n".join(
-                f.split(',')
-            )
-            for f in top_df["file"]
-        ],
+        xtick_labels,
         rotation=0,
         ha="center",
-        fontsize=8,
+        fontsize=6,
     )
+
     ax1.set_xlabel(f"Top {top_n} Files (Configurations)")
 
     # Combined legend
@@ -138,7 +179,7 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="f1_dt", metric
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.tight_layout()
     # plt.show()
-    out_path = statistics_base_path() / "../images" / f"analyze_and_plot_best_files_from_df.png"
+    out_path = statistics_base_path() / "../images" / f"best_{opt_metric}.png"
     os.makedirs(statistics_base_path() / "../images", exist_ok=True)
     plt.savefig(out_path, dpi=200)
     plt.close()
@@ -149,7 +190,7 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="f1_dt", metric
 def visualize_results(
     model="GreedyORDecisionTree",
     filter_vars={"total_docs": 433660},
-    qg = False,
+    qg = True,
 ):
     if not qg:
         metrics = [("precision_dt", "o", "tab:blue", None, "axis1"), 
@@ -158,22 +199,23 @@ def visualize_results(
                     ("time_seconds_dt", "^", "tab:green", "--", "axis2") 
                     ]
     else:
-        metrics = [("precision_qg", "o", "tab:blue", None, "axis1"), 
-                  ("recall_dg", "s", "tab:orange", None, "axis1"), 
-                  ("f1_qg", "D", "tab:purple", None, "axis1"), 
-                  ("time_seconds_qg", "^", "tab:green", "--", "axis2"), 
-                  ("size_ORs_qg", "x", "tab:red", "-.", "axis2"), 
-                  ("size_IFs_qg", "*", "tab:brown", ":", "axis2"), 
+        metrics = [("pubmed_precision_qg", "o", "tab:blue", None, "axis1"), 
+                  ("pubmed_recall_qg", "s", "tab:orange", None, "axis1"), 
+                  ("pubmed_f1_qg", "D", "tab:purple", None, "axis1"), 
+                  ("query_size_ANDs_qg", "x", "tab:red", "-.", "axis2"), 
+                  ("query_size_added_ORs_qg", "*", "tab:brown", ":", "axis2"), 
                   ]
     
     
     df, params = load_statistics_data(
         filter_vars=filter_vars,
-        qg=qg
+        qg=qg,
+        metrics=metrics
     )
 
     analyze_and_plot_best_files_from_df(
         df,
+        opt_metric="pubmed_f1_qg",
         top_n=10,
         metrics=metrics,
     )

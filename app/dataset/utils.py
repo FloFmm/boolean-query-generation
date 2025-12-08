@@ -249,7 +249,7 @@ def load_statistics_data_dt(filter_vars=None):
 
     return pd.DataFrame(records)
 
-def load_statistics_data(filter_vars=None, qg=True):
+def load_statistics_data(filter_vars=None, qg=True, metrics=None):
     """
     Load and aggregate JSONL experiment results by file.
 
@@ -262,11 +262,17 @@ def load_statistics_data(filter_vars=None, qg=True):
         pd.DataFrame: Averaged metrics per file and associated hyperparameters.
     """
     input_folder = statistics_base_path()
+    
+    i = 0
+    for results_file_dt in input_folder.glob("*/results_dt.jsonl"):
+        for results_file_qg in results_file_dt.parent.glob("*/results_qg.jsonl"):
+            i+=1
+    print(i) 
+    exit(0)
     records = []
     for results_file_dt in input_folder.glob("*/results_dt.jsonl"):
-        print(results_file_dt)
+        
         config_file_dt = results_file_dt.parent / "config.json"
-        print(config_file_dt)
         with config_file_dt.open("r", encoding="utf-8") as f_dt:
             conf_dt = json.load(f_dt)
             
@@ -294,10 +300,13 @@ def load_statistics_data(filter_vars=None, qg=True):
                 data = json.loads(line)
                 data = {f"{k}_dt" if not k.endswith("_dt") else k: v for k, v in data.items()}
                 file_records_dt.append(data)
+                
+        samples_dt = len(file_records_dt) 
 
         if not file_records_dt:
             continue
         df_file_dt = pd.DataFrame(file_records_dt)
+        df_file_dt["f1_dt"] = 2 * df_file_dt["precision_dt"] * df_file_dt["recall_dt"] / (df_file_dt["precision_dt"] + df_file_dt["recall_dt"])
         mean_metrics_dt = df_file_dt.mean(numeric_only=True).to_dict()
         
         if qg: 
@@ -308,38 +317,64 @@ def load_statistics_data(filter_vars=None, qg=True):
                     
                 if filter_vars and not all(conf_qg.get(k, v) == v for k, v in filter_vars.items()):
                     continue
-                    
                 params_qg = {
                     "optimization_metric": conf_qg["optimization_metric"],
-                    "constraint": conf_qg["constraint"]#["metric"],
+                    "constraint": conf_qg["constraint"]["metric"] + "=" + str(conf_qg["constraint"]["value"]) if conf_qg["constraint"] else None#["metric"],
                     # "constraint_value": conf_qg["constraint"]["value"],
                 }
                 
                 file_records_qg = []
                 with results_file_qg.open("r", encoding="utf-8") as f:
                     for line in f:
+                        line = line.strip()
+                        if not line: # skip empty or whitespace-only lines
+                            continue
                         data = json.loads(line)
                         data = {f"{k}_qg" if not k.endswith("_qg") else k: v for k, v in data.items()}
+                        if not "query_size_qg" in data:
+                            continue
+                        for k, v in data["query_size_qg"].items():
+                            data[f"query_size_{k}_qg"] = v
                         file_records_qg.append(data)
+                samples_qg = len(file_records_qg)
+                
                 if not file_records_qg:
                     continue
                 df_file_qg = pd.DataFrame(file_records_qg)
+                df_file_qg["pubmed_f1_qg"] = 2 * df_file_qg["pubmed_precision_qg"] * df_file_qg["pubmed_recall_qg"] / (df_file_qg["pubmed_precision_qg"] + df_file_qg["pubmed_recall_qg"])
+
                 mean_metrics_qg = df_file_qg.mean(numeric_only=True).to_dict()
                 
-                records.append({**params_dt, **params_qg, **mean_metrics_qg, **mean_metrics_dt})
+                data_dict = {**params_dt, 
+                             **params_qg, 
+                             **mean_metrics_qg, 
+                             **mean_metrics_dt,
+                             "samples_qg": samples_qg,
+                             "samples_dt": samples_dt,
+                             }
+                
+                if all([m[0] in data_dict.keys() for m in metrics]):
+                    records.append(data_dict)
+                else:
+                    print("skipping file", results_file_dt)
         else:
-            records.append({**params_dt, **mean_metrics_dt})
+            data_dict = {**params_dt, 
+                         **mean_metrics_dt,
+                         "samples_qg": samples_qg,
+                         "samples_dt": samples_dt,
+                         }
+            if all([m[0] in data_dict.keys() for m in metrics]):
+                records.append(data_dict)
+            else:
+                print("skipping file", results_file_dt)
 
     if not records:
         print("No matching files or records found.")
         return pd.DataFrame()
 
     df = pd.DataFrame(records)
-    df["f1_dt"] = 2 * df["precision_dt"] * df["recall_dt"] / (df["precision_dt"] + df["recall_dt"])
     
-    if qg:
-        df["f1_qg"] = 2 * df["precision_pubmed_qg"] * df["recall_pubmed_qg"] / (df["precision_pubmed_qg"] + df["recall_pubmed_qg"])
-
+    
 
     params = list(params_dt.keys())
     if qg:
