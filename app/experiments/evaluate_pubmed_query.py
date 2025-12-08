@@ -155,7 +155,7 @@ def evaluate_pubmed_query(
         print(f"✅ Processed {jsonl_file.name} → {output_file.name}")
 
 
-if __name__ == "__main__":
+def main():
     optimization_metric = ["pubmed_f3", "f3"]
     constraint = [None, {"metric": "pubmed_count", "value": -1 * 50_000}]
     
@@ -174,3 +174,26 @@ if __name__ == "__main__":
     job_idx = int(sys.argv[1])
     if job_idx < len(args):
         evaluate_pubmed_query(**args[job_idx])
+        
+def test():
+    optimization_metric = ["f3"]
+    constraint = [None]
+    
+    args = [
+        {
+        "skip_existing": False,
+        "optimization_metric": om,
+        "constraint": c
+    }
+    for c, om in product(
+            constraint,
+            optimization_metric,
+        )
+    ]
+    
+    for i in range(len(args)):
+        evaluate_pubmed_query(**args[i])
+
+if __name__ == "__main__":
+    main()
+    # test()
