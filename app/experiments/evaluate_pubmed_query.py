@@ -194,7 +194,7 @@ def main():
     
     args = [
         {
-        "skip_existing": False,
+        "skip_existing": True,
         "optimization_metric": om,
         "constraint": c,
         "dt_data_paths": dt_path,
@@ -211,12 +211,12 @@ def main():
         evaluate_pubmed_query(**args[job_idx])
         
 def test():
-    optimization_metric = ["f3"]
-    constraint = [{"metric": "pubmed_count", "value": -1 * 50_000}]
+    optimization_metric = ["pubmed_f3"]
+    constraint = [None]
     
     # input_folder = statistics_base_path()
     # dt_data_paths = [[jsonl_file.parent for jsonl_file in input_folder.glob("*/results_dt.jsonl")]]
-    dt_data_paths = [["data/statistics/csmed/GreedyORDecisionTree(md=5,mss=2,midr=[0.01,0.1],tkoc=1000,cw='balanced'),d=433660,psc={'type':'abs','num_pos':50,'num_neutral':500},rc={'model':'pubmedbert','query_type':'title'},mindf=10,maxdf=0.5,mesh=True"]]
+    dt_data_paths = [["data/statistics/csmed/GreedyORDecisionTree(md=5,mss=2,midr=[0.1,0.1],tkoc=1000,cw={1:500,0:0.5}),d=433660,psc={'type':'abs','num_pos':100,'num_neutral':1000},rc={'model':'pubmedbert','query_type':'title'},mindf=10,maxdf=0.5,mesh=True"]]
     
     args = [
         {

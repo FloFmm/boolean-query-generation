@@ -527,11 +527,11 @@ class GreedyORDecisionTree:
             y_pred = (probs >= t - 1e-8).astype(int)
             main_score = get_metric(y_true, y_pred, metric, term_expansions)
             
-            # print(self.pretty_print(verbose=True))
-            # print("t", t)
-            # print("mainscore", main_score)
-            # print("y_pred.sum()", y_pred.sum())
-            # print()
+            print(self.pretty_print(verbose=True))
+            print("t", t)
+            print("mainscore", main_score)
+            print("y_pred.sum()", y_pred.sum())
+            print()
             if constraint:
                 constraint_score = get_metric(y_true, y_pred, constraint["metric"], term_expansions)
                 
@@ -557,6 +557,8 @@ class GreedyORDecisionTree:
         self._optimal_score = best_score
         # print("==============================optimal===============================", self._optimal_threshold)
         self._optimal_metric = metric
+        if final_constraint_score == -float("inf"):
+            final_constraint_score = None
         return self._optimal_threshold, self._optimal_score, final_constraint_score
 
     def to_json(self) -> str:

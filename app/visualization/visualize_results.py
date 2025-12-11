@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from app.dataset.utils import load_statistics_data, statistics_base_path
@@ -36,11 +37,12 @@ def analyze_dataframe_results(df, variables, metrics):
     # metrics = ["precision", "recall", "f1", "time_seconds", "ORs", "IFs"]
 
     for var in variables:
-        if var not in df.columns:
+        df = df.replace([np.inf, -np.inf], None)
+        if var not in df.columns or var == "file":
             continue
         print(var)
         grouped = df.groupby(var)[[m[0] for m in metrics]].mean().reset_index()
-
+        
         # --- Dual y-axis plot ---
         fig, ax1 = plt.subplots(figsize=(7, 5))
         ax1.tick_params(axis="x", labelsize=6)
@@ -55,7 +57,7 @@ def analyze_dataframe_results(df, variables, metrics):
 
         # --- X-tick labels with sample counts ---
         counts = df.groupby(var).size().reindex(grouped[var]).tolist()
-        xtick_labels = [f"{v}\n(samples: {c})" for v, c in zip(grouped[var], counts)]
+        xtick_labels = [f"{v}\n({c})" for v, c in zip(grouped[var], counts)]
 
         ax1.set_xticks(grouped[var])
         ax1.set_xticklabels(xtick_labels, fontsize=6)
@@ -87,7 +89,7 @@ def analyze_dataframe_results(df, variables, metrics):
 
     return df
 
-def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="f1_dt", metrics=[]):
+def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="f1_dt", metrics=[], worst=False):
     """
     Plot the top-performing configurations from an already prepared DataFrame.
 
@@ -101,7 +103,10 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="f1_dt", metric
 
     # Sort by F1 and take top N
     df = df.sort_values(opt_metric, ascending=False)
-    top_df = df.head(top_n)
+    if worst:
+        top_df = df.tail(top_n)
+    else:
+        top_df = df.head(top_n)
 
     # --- Plot ---
     fig, ax1 = plt.subplots(figsize=(10, 6))
@@ -113,7 +118,10 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="f1_dt", metric
         i += 1
 
     # --- Build legend labels with Top-1 values ---
-    top1 = top_df.iloc[0]
+    if worst:
+        top1 = top_df.iloc[-1]
+    else:
+        top1 = top_df.iloc[0]
     legend_labels = {}
     for m in metrics:
         metric_name = m[0]
@@ -171,15 +179,16 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="f1_dt", metric
     ax1.set_xlabel(f"Top {top_n} Files (Configurations)")
 
     # Combined legend
+    text = "worst" if worst else "best"
     lines, labels = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax1.legend(lines + lines2, labels + labels2, loc="best")
 
-    plt.title(f"Top {top_n} Best Files (Average F1)")
+    plt.title(f"Top {top_n} {text} Files (Average F1)")
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.tight_layout()
     # plt.show()
-    out_path = statistics_base_path() / "../images" / f"best_{opt_metric}.png"
+    out_path = statistics_base_path() / "../images" / f"{text}_{opt_metric}.png"
     os.makedirs(statistics_base_path() / "../images", exist_ok=True)
     plt.savefig(out_path, dpi=200)
     plt.close()
@@ -219,6 +228,13 @@ def visualize_results(
         opt_metric="pubmed_f1_qg",
         top_n=10,
         metrics=metrics,
+    )
+    analyze_and_plot_best_files_from_df(
+        df,
+        opt_metric="pubmed_f1_qg",
+        top_n=10,
+        metrics=metrics,
+        worst=True,
     )
 
     df = analyze_dataframe_results(df, variables=params, metrics=metrics)
