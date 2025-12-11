@@ -1,12 +1,13 @@
 import json
 import sys
 import os
+import re
 import numpy as np
 from itertools import product
 from pathlib import Path
 from sklearn.metrics import recall_score, precision_score
 from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
-from app.pubmed.retrieval import search_pubmed_year_month
+from app.pubmed.retrieval import search_pubmed_dynamic
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset
@@ -18,34 +19,40 @@ def evaluate_pubmed_query(
     constraint= {"metric": "pubmed_count", "value": -1 * 50_000},
     skip_existing=True,
     data_base_path="../systematic-review-datasets/data",
+    dt_data_paths=None,
 ):
     
     dataset = load_dataset()
     eval_reviews = dataset["EVAL"]
-    input_folder = statistics_base_path()
+    if not dt_data_paths:
+        input_folder = statistics_base_path()
+        dt_data_paths = [jsonl_file.parent for jsonl_file in input_folder.glob("*/results_dt.jsonl")]
+    
 
     # Loop through all JSONL files
     last_conf = None
-    for jsonl_file in input_folder.glob("*/results_dt.jsonl"):
-        print("Processing", jsonl_file)
-        conf = {
+    for folder_path_dt in dt_data_paths:
+        folder_path_dt = Path(folder_path_dt)
+        print("Processing", folder_path_dt)
+        conf_qg = {
             "optimization_metric":optimization_metric,
             "constraint":constraint,
         }
         
-        folder_path = jsonl_file.parent / f"{abbreviate_params(**conf)}"
-        os.makedirs(folder_path, exist_ok=True)
-        output_file = Path(os.path.join(folder_path, "results_qg.jsonl"))
-        conf_file_path = Path(os.path.join(folder_path, "config.json"))
+        folder_path_qg = folder_path_dt / f"{abbreviate_params(**conf_qg)}"
+        os.makedirs(folder_path_qg, exist_ok=True)
+        output_file = Path(os.path.join(folder_path_qg, "results_qg.jsonl"))
+        conf_file_qg = Path(os.path.join(folder_path_qg, "config.json"))
         
-        with conf_file_path.open("w", encoding="utf-8") as f:
-            json.dump(conf, f, indent=4)
+        with conf_file_qg.open("w", encoding="utf-8") as f:
+            json.dump(conf_qg, f, indent=4)
             
         if skip_existing:
             completed = load_completed(output_file)
-            
-        config_file = jsonl_file.parent / "config.json"
-        with config_file.open("r", encoding="utf-8") as f:
+           
+        results_file_dt = folder_path_dt / "results_dt.jsonl"    
+        config_file_dt = folder_path_dt / "config.json"
+        with config_file_dt.open("r", encoding="utf-8") as f:
             conf = json.load(f)
         total_docs, min_df, max_df, mesh, ret_config, positive_selection_conf = conf["total_docs"], conf["min_df"], conf["max_df"], conf["mesh"], conf["ret_config"], conf["positive_selection_conf"]
         
@@ -71,8 +78,8 @@ def evaluate_pubmed_query(
             qrels_by_query_id = load_qrels_from_rankings(ranking_files, positive_selection_conf=positive_selection_conf)
         
 
-        with jsonl_file.open("r", encoding="utf-8") as f_in, \
-            output_file.open("a", encoding="utf-8") as f_out:
+        with results_file_dt.open("r", encoding="utf-8") as f_in, \
+            output_file.open("a" if skip_existing else "w", encoding="utf-8") as f_out:
 
             for line in f_in:
                 data = json.loads(line)
@@ -89,6 +96,26 @@ def evaluate_pubmed_query(
 
                 # Load GreedyORDecisionTree
                 tree = GreedyORDecisionTree.from_json(tree_obj_json)
+                
+                # regex that matches ANY non-alphanumeric character (anything not a-z, A-Z, 0-9, or underscore)
+                features_with_punct = set()
+                punctuation_pattern = re.compile(r"[^A-Za-z0-9_]")
+                for name in tree.get_feature_names():
+                    if name.endswith("[mh]"):
+                        continue
+                    if name[0] == '"' and name[-1] == "]":
+                        parts = name.split("[")
+                        if len(parts) != 2 or len(parts[0]) <= 2:
+                            features_with_punct.add(name)
+                        elif punctuation_pattern.search(parts[0][1:-1]):
+                            features_with_punct.add(name)
+                    elif punctuation_pattern.search(name):
+                        features_with_punct.add(name)
+                if features_with_punct:
+                    print("Skipping: Some feature names contain punctuation or special characters.")
+                    print(features_with_punct)
+                    continue
+                    
                 keep_indices, labels = generate_labels(qrels_by_query_id[query_id], ordered_pmids)
                 num_pos = sum(labels)
                 best_threshold, best_score, final_constraint_score = tree._find_optimal_threshold(
@@ -103,7 +130,7 @@ def evaluate_pubmed_query(
 
                 # evaluate on pubmed
                 print(pubmed_query_str)
-                retrieved = search_pubmed_year_month(pubmed_query_str)
+                retrieved = search_pubmed_dynamic(pubmed_query_str)
                 retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
                 positives = set([str(doc["pmid"]) for doc in eval_reviews[query_id]["data"]["train"] if int(doc["label"])==1])         # relevant PMIDs
                 TP = len(retrieved & positives)
@@ -152,22 +179,30 @@ def evaluate_pubmed_query(
                     
                 }
                 f_out.write(json.dumps(out_record, ensure_ascii=False) + "\n")
-        print(f"✅ Processed {jsonl_file.name} → {output_file.name}")
+        print(f"✅ Processed {results_file_dt.name} → {output_file.name}")
 
 
 def main():
     optimization_metric = ["pubmed_f3", "f3"]
     constraint = [None, {"metric": "pubmed_count", "value": -1 * 50_000}]
     
+    input_folder = statistics_base_path()
+    
+    all_dt_files = [jsonl_file.parent for jsonl_file in input_folder.glob("*/results_dt.jsonl")]
+    batch_size = 9
+    dt_data_paths_batches = [all_dt_files[i:i + batch_size] for i in range(0, len(all_dt_files), batch_size)]
+    
     args = [
         {
         "skip_existing": False,
         "optimization_metric": om,
-        "constraint": c
+        "constraint": c,
+        "dt_data_paths": dt_path,
     }
-    for c, om in product(
+    for c, om, dt_path in product(
             constraint,
             optimization_metric,
+            dt_data_paths_batches
         )
     ]
     
@@ -179,15 +214,21 @@ def test():
     optimization_metric = ["f3"]
     constraint = [{"metric": "pubmed_count", "value": -1 * 50_000}]
     
+    # input_folder = statistics_base_path()
+    # dt_data_paths = [[jsonl_file.parent for jsonl_file in input_folder.glob("*/results_dt.jsonl")]]
+    dt_data_paths = [["data/statistics/csmed/GreedyORDecisionTree(md=5,mss=2,midr=[0.01,0.1],tkoc=1000,cw='balanced'),d=433660,psc={'type':'abs','num_pos':50,'num_neutral':500},rc={'model':'pubmedbert','query_type':'title'},mindf=10,maxdf=0.5,mesh=True"]]
+    
     args = [
         {
         "skip_existing": False,
         "optimization_metric": om,
-        "constraint": c
+        "constraint": c,
+        "dt_data_paths": dt_path,
     }
-    for c, om in product(
+    for c, om, dt_path in product(
             constraint,
             optimization_metric,
+            dt_data_paths
         )
     ]
     

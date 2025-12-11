@@ -12,11 +12,12 @@ import torch
 import subprocess
 import json
 import time
+import datetime
 Entrez.email = "florian_maurus.mueller@mailbox.tu-dresden.de"
 
 Entrez.tool = "YearMonthSplitter"
 
-def fetch_pmids(query, mindate=None, maxdate=None):
+def search_pubmed_date_range(query, mindate=None, maxdate=None):
     """Fetch PMIDs for a query with date range (max 9999)."""
     handle = Entrez.esearch(
         db="pubmed",
@@ -24,79 +25,78 @@ def fetch_pmids(query, mindate=None, maxdate=None):
         mindate=mindate,
         maxdate=maxdate,
         datetype="pdat",
-        retmax=1000000,
+        retmax=9999,
     )
     record = Entrez.read(handle)
     handle.close()
-    return record["IdList"]
+    return record
 
-def search_pubmed_year_month(query, start_year=1800, end_year=2025):
-    """Retrieve all PMIDs by splitting per year and month if needed."""
+def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=9500):
+    """Retrieve all PMIDs using dynamic window sizing to avoid 10k limit."""
     if not query or not str(query).strip():
         print("Empty query — nothing to search.")
         return set()
     
-    all_pmids = set()
-    handle = Entrez.esearch(db="pubmed", term=query)
-    record = Entrez.read(handle)
-    handle.close()
-    expected_pmids = int(record["Count"])
-    all_pmids = set(record["IdList"])
-    print(f"expected PMIDs: {expected_pmids}")
-    if expected_pmids == len(all_pmids):
-        print(f"retrived PMIDs: {len(all_pmids)}")
-        return all_pmids
+    start_date = datetime.date(start_year, 1, 1)
+    end_date = datetime.date(end_year, 12, 31)
     
-    last = False
-    for year in range(end_year, start_year - 1, -1):
-        count_remaining = expected_pmids - len(all_pmids)
-        print("reamining:", count_remaining)
-        if count_remaining == 0:
-            break
-        if count_remaining < 9999:
-            last = True
-            mindate = f"{start_year}/01/01"
-        else:
-            mindate = f"{year}/01/01"
-        maxdate = f"{year}/12/31"
+    # Get total expected PMIDs
+    total_expected = int(search_pubmed_date_range(query)["Count"])
+    print(f"Total expected PMIDs: {total_expected}")
+    
+    all_pmids = set()
+    current_end = end_date 
+    window_days = 365  # initial window: 1 year
 
-        pmids = fetch_pmids(query, mindate, maxdate)
-        count_year = len(pmids)
-        print(f"{mindate}-{maxdate}: {count_year} results")
+    while current_end >= start_date:
+        current_start = max(current_end - datetime.timedelta(days=int(window_days)), start_date)
+        mindate = current_start.strftime("%Y/%m/%d")
+        maxdate = current_end.strftime("%Y/%m/%d")
 
-        # If year contains <10k, retrieve directly
-        if count_year < 9999:
-            all_pmids.update(pmids)
-            if last:
-                print(f"expected PMIDs: {expected_pmids} retrived PMIDs: {len(all_pmids)}")
-                return all_pmids
-            time.sleep(0.34)  # NCBI polite limit
+        record = search_pubmed_date_range(query, mindate, maxdate)
+        pmids = list(record["IdList"])
+        count_pmids = int(record["Count"])
+        print(f"{mindate}-{maxdate}: {count_pmids} results (window {int(window_days)} days)")
+
+        if count_pmids >= 9999:
+            if window_days <= 1:
+                return None
+            # Too many results: reduce window proportionally
+            window_days = max(1, window_days * target_count / count_pmids)
+            print(f"  Too many results, reducing window to {int(window_days)} days")
             continue
+        elif count_pmids == 0:
+            # No results: increase window
+            window_days = max(1, window_days * 2)
+            print(f"  No results, increasing window to {int(window_days)} days")
+            continue
+        elif count_pmids != target_count:
+            # Adjust window to aim for target_count
+            window_days = max(1, window_days * target_count / count_pmids)
 
-        # Split into months if year has 10k results
-        print(f" Splitting year {year} into months...")
-        for month in range(1, 13):
-            mindate = f"{year}/{month:02d}/01"
-            if month == 12:
-                maxdate = f"{year}/12/31"
-            else:
-                maxdate = f"{year}/{month+1:02d}/01"
+        # Accept this window
+        all_pmids.update(pmids)
+        current_end = current_start - datetime.timedelta(days=1)
 
-            month_pmids = fetch_pmids(query, mindate, maxdate)
-            print("month", len(month_pmids))
-            if len(month_pmids) >= 9995:
-                exit(0)
-            all_pmids.update(month_pmids)
-            time.sleep(0.34)
+        # If remaining PMIDs are below 9999, fetch all remaining time
+        remaining = total_expected - len(all_pmids)
+        print("remaining: ", remaining)
+        if remaining < 9999:
+            record = search_pubmed_date_range(query, start_date.strftime('%Y/%m/%d'), current_end.strftime('%Y/%m/%d'))
+            pmids = record["IdList"]
+            count_pmids = record["Count"]
+            print(f"{start_date.strftime('%Y/%m/%d')}-{current_end.strftime('%Y/%m/%d')}: {count_pmids} results")
+            all_pmids.update(pmids)
+            break
 
-    # Deduplicate (some overlap may happen)
-    all_pmids = list(dict.fromkeys(all_pmids))
-    print(f"expected PMIDs: {expected_pmids} retrived PMIDs: {len(all_pmids)}")
+        time.sleep(0.34)
+
+    print(f"\nExpected PMIDs: {total_expected}")
+    print(f"Retrieved PMIDs: {len(all_pmids)}")
+    return list(all_pmids)
 
 
-    return all_pmids
-
-def search_pubmed(term, retmax=1000, retries=50):
+def search_pubmed(term, retmax=9999, retries=50):
     """
     Search PubMed with retry/backoff on ANY exception.
     Retries even on HTTPError 500, timeouts, network errors, etc.

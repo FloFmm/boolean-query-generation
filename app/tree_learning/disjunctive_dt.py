@@ -475,9 +475,9 @@ class GreedyORDecisionTree:
             raise ValueError("Tree not trained. Call fit() first.")
 
         probs = self.predict_proba(X)
-        best_threshold = 0.5
-        best_score = -1.0
-        final_constraint_score = None
+        best_score = -float("inf")
+        final_constraint_score = -float("inf")
+        best_threshold = None
 
         def pubmed_precision(y_true, y_pred, term_expansions):
             """Compute precision using PubMed-derived FP count."""
@@ -499,7 +499,7 @@ class GreedyORDecisionTree:
             if name == "pubmed_count":
                 pubmed_query, query_size = self.pubmed_query(term_expansions)
                 if not pubmed_query:
-                    return 0
+                    return -float("inf")
                 return -1 * int(search_pubmed(pubmed_query)["Count"])
             elif name.startswith("pubmed_f"):
                 prec = pubmed_precision(y_true, y_pred, term_expansions)
@@ -521,29 +521,43 @@ class GreedyORDecisionTree:
             else:
                 raise ValueError(f"Unsupported metric: {name}")
 
-
-        for t in sorted(self._possible_thresholds):
+        print(self._possible_thresholds)
+        for t in sorted(set(self._possible_thresholds) - {0.0}):
             self._optimal_threshold = t # just temporary for calculations
             y_pred = (probs >= t - 1e-8).astype(int)
             main_score = get_metric(y_true, y_pred, metric, term_expansions)
-            if constraint:
-                constraint_score = get_metric(y_true, y_pred, constraint["metric"], term_expansions)
-                if constraint_score < constraint["value"]:
-                    continue  # doesn’t satisfy constraint
+            
             # print(self.pretty_print(verbose=True))
             # print("t", t)
             # print("mainscore", main_score)
             # print("y_pred.sum()", y_pred.sum())
             # print()
+            if constraint:
+                constraint_score = get_metric(y_true, y_pred, constraint["metric"], term_expansions)
+                
+                if constraint_score < constraint["value"]:
+                    # Does NOT satisfy constraint
+                    if final_constraint_score < constraint["value"]:
+                        # no solution that satisifies constraint found yet
+                        if final_constraint_score < constraint_score:
+                            # current solution is closer to satisifying constraint
+                            best_score = main_score
+                            best_threshold = t
+                            final_constraint_score = constraint_score
+                    continue
+                
+            # If we reach here → the constraint is satisfied OR we have no constraint
             if main_score > best_score:
                 best_score = main_score
+                best_threshold = t
                 if constraint:
                     final_constraint_score = constraint_score
-                best_threshold = t
+                
         self._optimal_threshold = best_threshold
-        self._optimal_metric = metric
         self._optimal_score = best_score
-        return best_threshold, best_score, final_constraint_score
+        # print("==============================optimal===============================", self._optimal_threshold)
+        self._optimal_metric = metric
+        return self._optimal_threshold, self._optimal_score, final_constraint_score
 
     def to_json(self) -> str:
         """
@@ -768,6 +782,25 @@ class GreedyORDecisionTree:
             "ORs": query.count('OR'),
         }
         return query, query_size
+    
+    def get_feature_names(self):
+        if self._tree is None:
+            raise ValueError("Tree not trained. Call fit() first.")
+
+        collected = set()
+
+        def recurse(node):
+            if node["type"] == "node":
+                # Add all features at this node
+                for f in node["features"]:
+                    collected.add(f)
+
+                # Recurse down both children
+                recurse(node["left"])
+                recurse(node["right"])
+
+        recurse(self._tree)
+        return collected
 
 
 def generate_texts_from_boolean(

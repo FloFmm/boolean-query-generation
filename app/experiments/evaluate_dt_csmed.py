@@ -75,7 +75,7 @@ def evaluate_dt_csmed(
             f"Already computed {len(completed)} queries, skipping those..."
         )
 
-    with file_path.open("a", encoding="utf-8") as out_f:
+    with file_path.open("a" if skip_existing else "w", encoding="utf-8") as out_f:
 
         for query_id, qrels in qrels_by_query_id.items():
             if query_id not in EVAL_QUERY_IDS:
