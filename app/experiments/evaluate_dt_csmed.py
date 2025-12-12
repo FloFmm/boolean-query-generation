@@ -114,14 +114,14 @@ if __name__ == "__main__":
     max_depth = [5]
     num_pos = [50, 100]
     num_neutral = [500, 1000]
-    min_samples_split = [2, 5]
+    min_samples_split = [2]
     min_impurity_d_start = [0.1, 0.01, 0.001, 0.2]
     min_impurity_d_end = [0.001, 0.01, 0.1, 0.2]
     top_k_or_candidates = [1000]
     class_weight = [
         {1: 3, 0: 1}, "balanced", {1: 1, 0: 1}, {1: 2, 0: 1},
-        {1: 4, 0: 1}, {1: 5, 0: 1}, {1: 6, 0: 1},
-        {1: 3, 0: 0.5}, {1: 500, 0: 0.5}, {1: 500, 0: 1}
+        {1: 5, 0: 1}, {1: 6, 0: 1},
+        {1: 3, 0: 0.5}, {1: 500, 0: 1}
     ]
     
     

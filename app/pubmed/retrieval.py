@@ -17,19 +17,35 @@ Entrez.email = "florian_maurus.mueller@mailbox.tu-dresden.de"
 
 Entrez.tool = "YearMonthSplitter"
 
-def search_pubmed_date_range(query, mindate=None, maxdate=None):
+def search_pubmed_date_range(query, mindate=None, maxdate=None, retries=50):
     """Fetch PMIDs for a query with date range (max 9999)."""
-    handle = Entrez.esearch(
-        db="pubmed",
-        term=query,
-        mindate=mindate,
-        maxdate=maxdate,
-        datetype="pdat",
-        retmax=9999,
+    for attempt in range(1, retries + 1):
+        try:
+            handle = Entrez.esearch(
+                db="pubmed",
+                term=query,
+                mindate=mindate,
+                maxdate=maxdate,
+                datetype="pdat",
+                retmax=9999,
+            )
+            record = Entrez.read(handle)
+            handle.close()
+            return record
+
+        except Exception as e:
+            wait = min(60, 2 ** min(attempt, 8)) + random.random()
+            print(
+                f"[PubMed ERROR] attempt {attempt}/{retries} "
+                f"for query '{query[:80]}...' → {e}\n"
+                f"Retrying in {wait:.2f} seconds..."
+            )
+            time.sleep(wait)
+
+    # If we reach here, ALL retries failed
+    raise RuntimeError(
+        f"search_pubmed() failed after {retries} attempts for query:\n{query}"
     )
-    record = Entrez.read(handle)
-    handle.close()
-    return record
 
 def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=9500):
     """Retrieve all PMIDs using dynamic window sizing to avoid 10k limit."""
@@ -60,7 +76,7 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=95
 
         if count_pmids >= 9999:
             if window_days <= 1:
-                return None
+                return []
             # Too many results: reduce window proportionally
             window_days = max(1, window_days * target_count / count_pmids)
             print(f"  Too many results, reducing window to {int(window_days)} days")
@@ -95,7 +111,6 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=95
     print(f"Retrieved PMIDs: {len(all_pmids)}")
     return list(all_pmids)
 
-
 def search_pubmed(term, retmax=9999, retries=50):
     """
     Search PubMed with retry/backoff on ANY exception.
@@ -121,8 +136,6 @@ def search_pubmed(term, retmax=9999, retries=50):
     raise RuntimeError(
         f"search_pubmed() failed after {retries} attempts for query:\n{term}"
     )
-
-
 
 def fetch_pubmed_records(id_list):
     """Fetch PubMed records (title, abstract, MeSH) given a list of IDs."""

@@ -3,7 +3,7 @@
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=1
 #SBATCH --time=24:00:00
-#SBATCH --array=0-98%98
+#SBATCH --array=0-63%5
 #SBATCH --mail-type=end
 #SBATCH --mail-user=florian_maurus.mueller@mailbox.tu-dresden.de
 #SBATCH --output=logs/%A/out_%A_%a.txt

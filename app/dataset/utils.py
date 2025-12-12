@@ -307,6 +307,9 @@ def load_statistics_data(filter_vars=None, qg=True, metrics=None):
             continue
         df_file_dt = pd.DataFrame(file_records_dt)
         df_file_dt["f1_dt"] = 2 * df_file_dt["precision_dt"] * df_file_dt["recall_dt"] / (df_file_dt["precision_dt"] + df_file_dt["recall_dt"])
+        df_file_dt["f3_dt"] = (1 + 3**2) * (
+            df_file_dt["precision_dt"] * df_file_dt["recall_dt"]
+        ) / (3**2 * df_file_dt["precision_dt"] + df_file_dt["recall_dt"])
         mean_metrics_dt = df_file_dt.mean(numeric_only=True).to_dict()
         
         if qg: 
@@ -342,6 +345,9 @@ def load_statistics_data(filter_vars=None, qg=True, metrics=None):
                     continue
                 df_file_qg = pd.DataFrame(file_records_qg)
                 df_file_qg["pubmed_f1_qg"] = 2 * df_file_qg["pubmed_precision_qg"] * df_file_qg["pubmed_recall_qg"] / (df_file_qg["pubmed_precision_qg"] + df_file_qg["pubmed_recall_qg"])
+                df_file_qg["pubmed_f3_qg"] = (1 + 3**2) * (
+                    df_file_qg["pubmed_precision_qg"] * df_file_qg["pubmed_recall_qg"]
+                ) / (3**2 * df_file_qg["pubmed_precision_qg"] + df_file_qg["pubmed_recall_qg"])
 
                 mean_metrics_qg = df_file_qg.mean(numeric_only=True).to_dict()
                 
@@ -360,7 +366,6 @@ def load_statistics_data(filter_vars=None, qg=True, metrics=None):
         else:
             data_dict = {**params_dt, 
                          **mean_metrics_dt,
-                         "samples_qg": samples_qg,
                          "samples_dt": samples_dt,
                          }
             if all([m[0] in data_dict.keys() for m in metrics]):

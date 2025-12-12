@@ -189,7 +189,7 @@ def main():
     input_folder = statistics_base_path()
     
     all_dt_files = [jsonl_file.parent for jsonl_file in input_folder.glob("*/results_dt.jsonl")]
-    batch_size = 9
+    batch_size = 8
     dt_data_paths_batches = [all_dt_files[i:i + batch_size] for i in range(0, len(all_dt_files), batch_size)]
     
     args = [
