@@ -105,8 +105,6 @@ def load_vectors(total_docs: int, min_df: int, max_df: int, mesh: bool):
     #     pmid: " ".join([w for w in bow if "[mh]" not in w])
     #     for pmid, bow in load_bow(total_docs).items()
     # }
-    
-    
 
     # texts = list(docs_by_pmid.values())   # CountVectorizer expects a list of strings
 
