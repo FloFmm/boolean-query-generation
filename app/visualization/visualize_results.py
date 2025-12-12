@@ -106,6 +106,11 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt",
     # keep only those with atleast 10 samples (TODO remove)
     df = df[df["samples_dt"] >= 10]
     
+    if "samples_qg" in df.columns:
+        df = df[df["samples_qg"] >= 10]
+    # if "pubmed_recall_qg" in df.columns:
+    #     df = df[df["pubmed_recall_qg"] >= 0.7]
+    
     # Sort by F1 and take top N
     df = df.sort_values(opt_metric, ascending=False)
     if worst:
@@ -131,7 +136,7 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt",
     for m in metrics:
         metric_name = m[0]
         if metric_name in top1:
-            legend_labels[metric_name] = f"{metric_name} ({top1[metric_name]:.3f})"
+            legend_labels[metric_name] = f"{metric_name} ({top1[metric_name]:.5f})"
         else:
             legend_labels[metric_name] = metric_name
 
