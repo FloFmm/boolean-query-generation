@@ -212,7 +212,7 @@ def greedy_or_expand(
         for f in candidate_features:
             # mask = combined_mask | col_masks[f]
             # union_rows = np.union1d(combined_rows, col_indices[f])
-            union_rows = union_sorted(combined_rows, col_indices[f])
+            union_rows = union_sorted(combined_rows, col_indices[f]) #slowest part (can be optimized. we do not need union only the counts from it)
             weighted, valid_split = fast_gini_both(
                 rows=union_rows, 
                 y_true=y, 
