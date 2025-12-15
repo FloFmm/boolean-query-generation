@@ -11,35 +11,76 @@ import time
 import json
 import inspect
 import jsonpickle
+import numba
 from tqdm import tqdm
 from copy import deepcopy
 
 from app.pubmed.retrieval import search_pubmed
 
-def fast_gini_both(mask, y_true, min_samples_split, class_weight):
+@numba.njit
+def union_sorted(a, b):
+    i = j = 0
+    out = np.empty(len(a) + len(b), dtype=a.dtype)
+    k = 0
+
+    while i < len(a) and j < len(b):
+        if a[i] == b[j]:
+            out[k] = a[i]
+            k += 1
+            i += 1
+            j += 1
+        elif a[i] < b[j]:
+            out[k] = a[i]
+            k += 1
+            i += 1
+        else:
+            out[k] = b[j]
+            k += 1
+            j += 1
+
+    while i < len(a):
+        out[k] = a[i]
+        k += 1
+        i += 1
+
+    while j < len(b):
+        out[k] = b[j]
+        k += 1
+        j += 1
+
+    return out[:k]
+
+@numba.njit
+def fast_gini_both(rows, y_true, n_class_1, min_samples_split, cw1, cw0):
     """Compute Gini impurity for mask and its complement in one pass."""
     n_total = len(y_true)
 
     # Left side
-    n_left = mask.sum()
+    # n_left = mask.sum()
+    n_left = len(rows)
     if n_left < min_samples_split or n_left > n_total - min_samples_split:
         # return high impuriy to avoid useless splits
         return 1.0, False
 
-    n_class_1_left = mask @ y_true
+    # n_class_1_left = mask @ y_true
+    # n_class_1_left = np.sum(y_true[rows]) # TODO 45 percent
+    n_class_1_left = 0
+    for i in range(n_left):
+        n_class_1_left += y_true[rows[i]]
+    
     # np.sum(y_true[mask], dtype=np.float64)  # number of positives on left
     n_class_0_left = n_left - n_class_1_left
-    weighted_class_1_left = n_class_1_left * class_weight[1]
-    weighted_class_0_left = n_class_0_left * class_weight[0]
+    weighted_class_1_left = n_class_1_left * cw1 #class_weight[1]
+    weighted_class_0_left = n_class_0_left * cw0 # class_weight[0]
     p_left = weighted_class_1_left / (weighted_class_1_left + weighted_class_0_left)
     left_imp = 2 * p_left * (1 - p_left)
 
     # Right side
     n_right = n_total - n_left
-    n_class_1_right = y_true.sum() - n_class_1_left
+    n_class_1_right = n_class_1 - n_class_1_left
     n_class_0_right = n_right - n_class_1_right
-    weighted_class_1_right = n_class_1_right * class_weight[1]
-    weighted_class_0_right = n_class_0_right * class_weight[0]
+    weighted_class_1_right = n_class_1_right * cw1 #* class_weight[1]
+    weighted_class_0_right = n_class_0_right * cw0  #* class_weight[0]
     p_right = weighted_class_1_right / (weighted_class_1_right + weighted_class_0_right)
     right_imp = 2 * p_right * (1 - p_right)
 
@@ -48,7 +89,6 @@ def fast_gini_both(mask, y_true, min_samples_split, class_weight):
     weighted_right_total = weighted_class_1_right + weighted_class_0_right
     weighted_total = weighted_left_total + weighted_right_total
     return (weighted_left_total * left_imp + weighted_right_total * right_imp) / weighted_total, True
-
 
 def best_split(X, y, features, min_samples_split, class_weight):
     """Find best split feature (sparse version, optimized with fast_gini)."""
@@ -70,9 +110,19 @@ def best_split(X, y, features, min_samples_split, class_weight):
     invalid_features = []
     for f in features:
         # Sparse column slice
-        col = X[:, f]
-        mask = col.getnnz(axis=1) > 0  # rows where feature is present
-        weighted, valid_split = fast_gini_both(mask, y, min_samples_split, class_weight)
+        # col = X[:, f]
+        # mask = col.getnnz(axis=1) > 0  # rows where feature is present
+        start = X.indptr[f]
+        end = X.indptr[f + 1]
+        rows_with_feature = X.indices[start:end]
+        
+        
+        weighted, valid_split = fast_gini_both(rows=rows_with_feature, 
+                                               y_true=y, 
+                                               min_samples_split=min_samples_split, 
+                                               cw1=class_weight[1],
+                                               cw0=class_weight[0],
+                                               n_class_1=n_class_1)
         if not valid_split:
             invalid_features.append(f)
             continue
@@ -124,36 +174,52 @@ def greedy_or_expand(
     base_features : list[int]
         Selected OR features after greedy expansion.
     """
-    n_samples = X.shape[0]
+    # n_samples = X.shape[0]
     # Compute initial combined mask
+    # if base_features:
+    #     combined_mask = X[:, base_features].getnnz(axis=1) > 0
+    # else:
+    #     combined_mask = np.zeros(n_samples, dtype=bool)
     if base_features:
-        combined_mask = X[:, base_features].getnnz(axis=1) > 0
+        combined_rows = np.unique(np.concatenate([
+            X.indices[X.indptr[f]:X.indptr[f+1]] for f in base_features
+        ]))
     else:
-        combined_mask = np.zeros(n_samples, dtype=bool)
+        combined_rows = np.array([], dtype=int)
 
     best_impurity = current_impurity
 
-    col_masks = {f: (X[:, f].getnnz(axis=1) > 0) for f in candidate_features}
+    # col_masks = {f: (X[:, f].getnnz(axis=1) > 0) for f in candidate_features}
+    col_indices = {f: X.indices[X.indptr[f]:X.indptr[f+1]] for f in candidate_features}
+    n_class_1 = np.sum(y)
     improved = True
+    
     while improved and candidate_features:
         improved = False
 
         # Vectorized: compute OR mask for all candidates
         # X[:, candidate_features] returns sparse; ensure CSR for row slicing
-        candidates_matrix = X[:, candidate_features].tocsr()
+        # candidates_matrix = X[:, candidate_features].tocsr()
         # OR operation with base_features mask
         # Convert combined_mask to int (0/1) and add to each candidate column
         # result >0 gives OR
-        combined_masks = candidates_matrix.copy()
-        combined_masks.data = np.ones_like(combined_masks.data)  # ensure binary
+        # combined_masks = candidates_matrix.copy()
+        # combined_masks.data = np.ones_like(combined_masks.data)  # ensure binary
 
         # Weighted impurities for each candidate
         weighted_impurities = []
         
         for f in candidate_features:
-            mask = combined_mask | col_masks[f]
+            # mask = combined_mask | col_masks[f]
+            # union_rows = np.union1d(combined_rows, col_indices[f])
+            union_rows = union_sorted(combined_rows, col_indices[f])
             weighted, valid_split = fast_gini_both(
-                mask, y, min_samples_split, class_weight=class_weight
+                rows=union_rows, 
+                y_true=y, 
+                min_samples_split=min_samples_split, 
+                cw1=class_weight[1],
+                cw0=class_weight[0],
+                n_class_1=n_class_1
             )
             if valid_split:
                 weighted_impurities.append(weighted)
@@ -170,7 +236,8 @@ def greedy_or_expand(
                 candidate_features.remove(best_addition)
                 best_impurity = weighted_impurities[idx]
                 # update combined_mask for next round
-                combined_mask = combined_mask | (X[:, best_addition].getnnz(axis=1) > 0)
+                # combined_mask = combined_mask | (X[:, best_addition].getnnz(axis=1) > 0)
+                combined_rows = np.union1d(combined_rows, X.indices[X.indptr[best_addition]:X.indptr[best_addition+1]])
                 improved = True
                 # print("added OR feature", best_addition)
 
@@ -309,8 +376,10 @@ class GreedyORDecisionTree:
             class_weight=self.class_weight,
         )
         # Update for child nodes
+        excluded_features = set(or_features)
+        excluded_features.update(invalid_features)
         new_features = [
-            f for f in features if f not in (or_features + invalid_features)
+            f for f in features if f not in excluded_features
         ]
         combined_mask = X[:, or_features].getnnz(axis=1) > 0
 
@@ -909,9 +978,9 @@ def main():
         error=0.1,
         completeness=0.9,
         seed=42,
-        doc_count=10_000,
-        word_pool_size=400,
-        average_doc_length=30,
+        doc_count=500_000,
+        word_pool_size=50_000,
+        average_doc_length=60,
     )
 
     # --- Calculate actual statistics from the result ---
@@ -985,12 +1054,13 @@ def main():
     print(tree_loaded.pretty_print(verbose=True, prune=True))
     print("result tree_loaded", tree_loaded.predict(X_test))
     print("pubmed", tree_loaded.pubmed_query({"dogs": ["dogs", "dog"]}))
+    print(f"Fit time: {end_time - start_time:.4f} seconds")
 
 from line_profiler import LineProfiler
 
 if __name__ == "__main__":
     lp = LineProfiler()
-    lp.add_function(GreedyORDecisionTree.fit)
+    lp.add_function(greedy_or_expand)#GreedyORDecisionTree._grow)
 
     lp.run("main()")
     lp.print_stats()

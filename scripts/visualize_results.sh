@@ -15,3 +15,4 @@ CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_
 
 cd boolean-query-generation
 $CSMED_PY -m app.visualization.visualize_results
+# /data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python -m app.visualization.visualize_results

@@ -105,9 +105,19 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt",
 
     # keep only those with atleast 10 samples (TODO remove)
     df = df[df["samples_dt"] >= 10]
-    
+    # print("mor than 0", len(df))
+    # print("mor than 10", len(df[df["samples_dt"] >= 10]))
+    # print("mor than 20", len(df[df["samples_dt"] >= 20]))
+    # print("mor than 30", len(df[df["samples_dt"] >= 30]))
+    # print("mor than 40", len(df[df["samples_dt"] >= 40]))
+    # print("mor than 0", len(df))
+    # print("mor than 10", len(df[df["samples_qg"] >= 10]))
+    # print("mor than 20", len(df[df["samples_qg"] >= 20]))
+    # print("mor than 30", len(df[df["samples_qg"] >= 30]))
+    # print("mor than 40", len(df[df["samples_qg"] >= 40]))
+    # exit(0)
     if "samples_qg" in df.columns:
-        df = df[df["samples_qg"] >= 10]
+        df = df[df["samples_qg"] >= 20]
     # if "pubmed_recall_qg" in df.columns:
     #     df = df[df["pubmed_recall_qg"] >= 0.7]
     
@@ -227,6 +237,7 @@ def visualize_results(
         metrics = [("pubmed_precision_qg", "o", "tab:blue", None, "axis1"), 
                   ("pubmed_recall_qg", "s", "tab:orange", None, "axis1"), 
                   ("pubmed_f3_qg", "D", "tab:purple", None, "axis1"), 
+                  ("f3_dt", "D", "tab:purple", "--", "axis1"), 
                   ("query_size_ANDs_qg", "x", "tab:red", "-.", "axis2"), 
                   ("query_size_added_ORs_qg", "*", "tab:brown", ":", "axis2"), 
                   ("query_size_NOTs_qg", "*", "tab:pink", ":", "axis2"), 
