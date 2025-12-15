@@ -36,7 +36,7 @@ def search_pubmed_date_range(query, mindate=None, maxdate=None, retries=50):
         except Exception as e:
             wait = min(60, 2 ** min(attempt, 8)) + random.random()
             print(
-                f"[PubMed ERROR] attempt {attempt}/{retries} "
+                f"[PubMed ERR] attempt {attempt}/{retries} "
                 f"for query '{query[:80]}...' → {e}\n"
                 f"Retrying in {wait:.2f} seconds..."
             )

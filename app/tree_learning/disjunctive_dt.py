@@ -250,7 +250,7 @@ class GreedyORDecisionTree:
         weighted_class_0 = n_class_0 * self.class_weight[0]
         counts = {0: n_class_0, 1: n_class_1}
         total_weight = weighted_class_0 + weighted_class_1
-        prob_class_1 = weighted_class_1 / total_weight
+        prob_class_1 = weighted_class_1 / total_weight #TODO job_index 0 total weight is 0
         return counts, prob_class_1
 
     def _create_leaf(self, y):
