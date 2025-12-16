@@ -15,8 +15,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..",
 from csmed.experiments.csmed_cochrane_retrieval import create_retriever, build_global_corpus, load_dataset
 
 # Give either a custom query or a query_id 
-query_id = "CD008760"
-query = "cancer with legs heart attack"
+query_id = "CD009784"#"CD002115"#"CD008760"
+query = "Management of faecal incontinence and constipation in adults with central neurological diseases"#cancer with legs heart attack"
 ret_name = "pubmedbert"
 ret_conf = {"type": "dense",
             "model": "pritamdeka/S-PubMedBert-MS-MARCO",
@@ -93,13 +93,15 @@ best_threshold, best_score, final_constraint_score = tree._find_optimal_threshol
     term_expansions=synonym_map
 )
 pubmed_query_str, query_size = tree.pubmed_query(term_expansions=synonym_map)
+pubmed_query_str_no_exp, query_size_no_exp = tree.pubmed_query()
 print("PubMed Query:", pubmed_query_str)
+print("PubMed Query (No Expansion):", pubmed_query_str_no_exp)
 print("Optimal Threshol:", best_threshold)
 print("Query Size:", query_size)
+print("Query Size (No Expansion):", query_size_no_exp)
 
 ### Evaluate on PubMed ###
 if query_id is not None:
-    print(pubmed_query_str)
     retrieved = search_pubmed_dynamic(pubmed_query_str)
     retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
     positives = set([str(doc["pmid"]) for doc in reviews[query_id]["data"]["train"] if int(doc["label"])==1])         # relevant PMIDs

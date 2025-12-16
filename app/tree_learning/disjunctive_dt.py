@@ -58,6 +58,7 @@ def fast_gini_both(rows, y_true, n_class_1, min_samples_split, cw1, cw0):
     # Left side
     # n_left = mask.sum()
     n_left = len(rows)
+    # print("n_total, n_left", n_total, n_left)
     if n_left < min_samples_split or n_left > n_total - min_samples_split:
         # return high impuriy to avoid useless splits
         return 1.0, False
@@ -207,7 +208,10 @@ def greedy_or_expand(
         # combined_masks.data = np.ones_like(combined_masks.data)  # ensure binary
 
         # Weighted impurities for each candidate
-        weighted_impurities = []
+        # weighted_impurities = []
+        best_candidate = None
+        best_weighted_impurity = best_impurity
+        best_improvement = 0.0
         
         for f in candidate_features:
             # mask = combined_mask | col_masks[f]
@@ -221,25 +225,34 @@ def greedy_or_expand(
                 cw0=class_weight[0],
                 n_class_1=n_class_1
             )
-            if valid_split:
-                weighted_impurities.append(weighted)
-
-        if weighted_impurities:  # found suitable or features
-            weighted_impurities = np.array(weighted_impurities)
-            improvements = best_impurity - weighted_impurities
-
-            # Pick best candidate
-            idx = np.argmax(improvements)
-            if improvements[idx] >= min_impurity_decrease:
-                best_addition = candidate_features[idx]
-                base_features.append(best_addition)
-                candidate_features.remove(best_addition)
-                best_impurity = weighted_impurities[idx]
-                # update combined_mask for next round
-                # combined_mask = combined_mask | (X[:, best_addition].getnnz(axis=1) > 0)
-                combined_rows = np.union1d(combined_rows, X.indices[X.indptr[best_addition]:X.indptr[best_addition+1]])
-                improved = True
-                # print("added OR feature", best_addition)
+            # print(f, valid_split)
+            if not valid_split:
+                continue
+            improvement = best_impurity - weighted
+            
+            # Keep best instantly
+            if improvement > best_improvement:
+                best_improvement = improvement
+                best_candidate = f
+                best_weighted_impurity = weighted
+                
+        if best_candidate is not None and best_improvement >= min_impurity_decrease:
+            base_features.append(best_candidate)
+            candidate_features.remove(best_candidate)
+            best_impurity = best_weighted_impurity
+            combined_rows = np.union1d(
+                combined_rows,
+                X.indices[X.indptr[best_candidate]:X.indptr[best_candidate + 1]]
+            )
+            improved = True
+            # print(
+            #     "added OR feature",
+            #     best_candidate,
+            #     len(combined_rows),
+            #     len(y),
+            #     "improvement:",
+            #     best_improvement
+            # )
 
     return base_features
 
@@ -375,6 +388,7 @@ class GreedyORDecisionTree:
             min_samples_split=self.min_samples_split,
             class_weight=self.class_weight,
         )
+        print(or_features)
         # Update for child nodes
         excluded_features = set(or_features)
         excluded_features.update(invalid_features)
@@ -761,10 +775,13 @@ class GreedyORDecisionTree:
             # TODO maybe only add :noexp on negative meshterms
             return feature.replace("[mh]", "[mh:noexp]")
         # Helper: get PubMed-safe name for a feature, expand terms
-        terms = term_expansions.get(feature, [feature])
+        if term_expansions is None:
+            terms = [feature]
+        else:  
+            terms = term_expansions.get(feature, [feature])
         # TODO remove [tiab] title abstract. but needed since NOT diagnsis matches mesh term diagnsos otherwise
         terms = [f + "[tiab]" for f in terms]
-        return " OR ".join(terms)
+        return " SYNONYM_OR ".join(terms)
 
     def pubmed_query(self, term_expansions: dict = None):
         """
@@ -777,11 +794,8 @@ class GreedyORDecisionTree:
         if self._tree is None:
             raise ValueError("Tree not trained. Call fit() first.")
 
-        # Traverse recursively
-        added_ORs = 0
-        synonym_ORs = 0
+        # Traverse tree recursively
         def recurse(node, path_terms=None):
-            nonlocal added_ORs, synonym_ORs
             if path_terms is None:
                 path_terms = []
 
@@ -801,9 +815,7 @@ class GreedyORDecisionTree:
 
             clauses = []
 
-            addition = " OR ".join(self._expand_term(term_expansions, f) for f in node["features"])
-            added_ORs += len(node["features"]) - 1
-            synonym_ORs += addition.count("OR") - added_ORs
+            addition = " ADDED_OR ".join(self._expand_term(term_expansions, f) for f in node["features"])
             # Right child = feature present
             left_addition = addition
             if "OR" in left_addition:
@@ -848,11 +860,12 @@ class GreedyORDecisionTree:
             "avg_path_len": avg_path_len, 
             "ANDs": query.count('AND'),
             "NOTs": query.count('NOT'),
-            "added_ORs": added_ORs,
-            "synonym_ORs": synonym_ORs,
+            "added_ORs": query.count('ADDED_OR'),
+            "synonym_ORs": query.count('SYNONYM_OR'),
             "ORs": query.count('OR'),
         }
-        return query, query_size
+        assert query_size["ORs"] == query_size["added_ORs"] + query_size["synonym_ORs"] + query_size["paths"] - 1
+        return query.replace("ADDED_OR", "OR").replace("SYNONYM_OR", "OR"), query_size
     
     def get_feature_names(self):
         if self._tree is None:
