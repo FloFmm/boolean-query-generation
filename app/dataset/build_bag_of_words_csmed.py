@@ -40,10 +40,8 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
 
                         text = doc["title"] + "\n\n" + doc["abstract"]
                         mesh_terms = doc["mesh_terms"]
-
-                        bow, synonym_map = bag_of_words(text, mesh_terms, conf)
                         
-                        print([w for w in bow if not re.fullmatch(r"[A-Za-z ]+", w) and not w.endswith("[mh]")])
+                        bow, synonym_map = bag_of_words(text, mesh_terms, conf)
                         for lemma, synonym in synonym_map.items():
                             global_synonym_map[lemma].update(synonym)
 

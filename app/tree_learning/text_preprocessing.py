@@ -3,6 +3,7 @@ from pathlib import Path
 from tqdm import tqdm
 from collections import defaultdict
 import spacy
+import re
 import string
 from app.pubmed.mesh_term import expand_mesh_terms
 # Load spaCy model (English, small is usually enough)
@@ -27,8 +28,14 @@ def lemmatize_with_synonyms(text: str, conf: dict):
 
     lemma_to_synonyms = defaultdict(set)
 
+    punct_to_remove = string.punctuation.replace('-', '') # minus may stay
+    PUNCT_RE = re.compile(f"[{re.escape(punct_to_remove)}]")
+    MULTIPLE_RE = re.compile(r"[-\s]{2,}")
+
     for token in doc:
         if token.is_stop:
+            continue
+        if token.lemma_ == "\n\n":
             continue
         if conf.get("rm_numbers", False) and token.like_num:
             continue
@@ -37,7 +44,17 @@ def lemmatize_with_synonyms(text: str, conf: dict):
             
         lemma = token.lemma_.lower()
         synonym = token.text.lower()
-        if conf.get("rm_punct", False) and all(c in string.punctuation for c in lemma):
+        if conf.get("rm_punct", False):
+            if conf.get("rm_numbers", False):
+                if re.fullmatch(r"[\d\s\W]+", lemma):
+                    continue
+                elif re.fullmatch(r"[\s\W]+", lemma):
+                    continue
+            lemma = PUNCT_RE.sub(" ", lemma).strip(" -")
+            synonym = PUNCT_RE.sub(" ", synonym).strip(" -")
+            lemma = MULTIPLE_RE.sub(" ", lemma)
+            synonym = MULTIPLE_RE.sub(" ", synonym)
+        if len(lemma) <= 1:
             continue
         
         lemma_to_synonyms[lemma].add(synonym)
@@ -56,7 +73,10 @@ def bag_of_words(text: str, mesh_terms: list[str], conf: dict):
     # BOW from text
     synonym_map = lemmatize_with_synonyms(text, conf)
     bow_words = list(synonym_map.keys())
-
+    bow_words = [
+        f'"{w}"[tiab]' if " " in w else w
+        for w in bow_words
+    ]
     # BOW from MeSH terms
     bow_mesh = [f'"{term}"[mh]' for term in expanded_mesh]
 
