@@ -3,6 +3,7 @@ from pathlib import Path
 from tqdm import tqdm
 from collections import defaultdict
 import spacy
+import string
 from app.pubmed.mesh_term import expand_mesh_terms
 # Load spaCy model (English, small is usually enough)
 nlp = spacy.load("../systematic-review-datasets/data/spacy/en_core_web_lg-3.7.1/en_core_web_lg/en_core_web_lg-3.7.1", disable=["ner", "parser"])
@@ -16,7 +17,7 @@ def lemmatize_unique(text: str):
         if not token.is_stop and not token.is_punct
     })
 
-def lemmatize_with_synonyms(text: str):
+def lemmatize_with_synonyms(text: str, conf: dict):
     """
     Return:
       - unique lemmas
@@ -27,17 +28,24 @@ def lemmatize_with_synonyms(text: str):
     lemma_to_synonyms = defaultdict(set)
 
     for token in doc:
-        if token.is_stop or token.is_punct:
+        if token.is_stop:
             continue
-
+        if conf.get("rm_numbers", False) and token.like_num:
+            continue
+        if conf.get("rm_punct", False) and token.is_punct:
+            continue
+            
         lemma = token.lemma_.lower()
         synonym = token.text.lower()
+        if conf.get("rm_punct", False) and all(c in string.punctuation for c in lemma):
+            continue
+        
         lemma_to_synonyms[lemma].add(synonym)
 
     return lemma_to_synonyms
 
 
-def bag_of_words(text: str, mesh_terms: list[str]):
+def bag_of_words(text: str, mesh_terms: list[str], conf: dict):
     """
     Create a bag-of-words containing:
     - Lemmatized words from text
@@ -46,7 +54,7 @@ def bag_of_words(text: str, mesh_terms: list[str]):
     expanded_mesh = expand_mesh_terms(mesh_terms)
     
     # BOW from text
-    synonym_map = lemmatize_with_synonyms(text)
+    synonym_map = lemmatize_with_synonyms(text, conf)
     bow_words = list(synonym_map.keys())
 
     # BOW from MeSH terms
