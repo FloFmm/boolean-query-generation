@@ -1,6 +1,12 @@
+from pathlib import Path
+NLTK_DATA_PATH = Path("../systematic-review-datasets/data/nltk_data")
+import nltk
+# Tell NLTK to look here first
+nltk.data.path.insert(0, str(NLTK_DATA_PATH))
+
 from nltk.corpus import wordnet as wn
 from nltk.stem import WordNetLemmatizer
-
+from app.tree_learning.text_preprocessing import lemmatize_with_synonyms
 lemmatizer = WordNetLemmatizer()
 
 def word_net_get_related(word, pos='v'):
@@ -23,6 +29,19 @@ def word_net_get_synonyms(word):
     return synonyms
 
 # Example usage
-word = "correcting"
-print("Lemmas:", sorted(word_net_get_related(word)))
-print("Synonyms:", sorted(word_net_get_synonyms(word)))
+text = "correct correctability correctable corrected correctible correcting correction corrections corrective correctives correctness corrects" 
+config = {
+    "lower_case": True,
+    "mesh_ancestors": True,
+    "rm_numbers": True,
+    "rm_punct": True,
+}
+result = lemmatize_with_synonyms(text, conf=config)
+lemmas = result.keys()
+for l in lemmas:
+    print(l, sorted(word_net_get_related(l)))
+# print()
+# # exit(0)
+# word = "correcting"
+# print("Lemmas:", sorted(word_net_get_related(word)))
+# print("Synonyms:", sorted(word_net_get_synonyms(word)))

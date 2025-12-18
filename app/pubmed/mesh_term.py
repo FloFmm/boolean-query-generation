@@ -139,7 +139,7 @@ def download_mesh_xml(year=2025, target_dir="data/pubmed/mesh_data"):
     _save_mesh_json(mesh_data, json_path)
     return mesh_data
 
-def expand_mesh_terms(mesh_list):
+def expand_mesh_terms(mesh_list, mesh_ancestor_data=None):
     """
     Expands compact MeSH-style notations like
     'Down Syndrome/blood/*prevention & control'
@@ -150,7 +150,10 @@ def expand_mesh_terms(mesh_list):
         mesh_str = mesh_str.replace('&', 'and')
         mesh_str = mesh_str.replace('*', '')
         parts = mesh_str.split('/')
-        expanded.add(parts[0])
+        striped_mesh = parts[0]
+        expanded.add(striped_mesh)
+        if mesh_ancestor_data:
+            expanded.update(get_ancestors_by_name(mesh_ancestor_data, striped_mesh))
         for p in parts[1:]:
             expanded.add(f"{parts[0]}/{p}")
 

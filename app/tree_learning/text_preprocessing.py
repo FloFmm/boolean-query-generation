@@ -62,13 +62,13 @@ def lemmatize_with_synonyms(text: str, conf: dict):
     return lemma_to_synonyms
 
 
-def bag_of_words(text: str, mesh_terms: list[str], conf: dict):
+def bag_of_words(text: str, mesh_terms: list[str], conf: dict, mesh_ancestor_data=None):
     """
     Create a bag-of-words containing:
     - Lemmatized words from text
     - Normalized MeSH terms (not lemmatized)
     """
-    expanded_mesh = expand_mesh_terms(mesh_terms)
+    expanded_mesh = expand_mesh_terms(mesh_terms, mesh_ancestor_data)
     
     # BOW from text
     synonym_map = lemmatize_with_synonyms(text, conf)
