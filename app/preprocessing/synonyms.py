@@ -10,7 +10,7 @@ nltk.data.path.insert(0, str(NLTK_DATA_PATH))
 from nltk import word_tokenize, pos_tag
 from nltk.corpus import wordnet as wn
 from nltk.stem import WordNetLemmatizer
-from app.tree_learning.text_preprocessing import lemmatize_with_synonyms
+from app.preprocessing.text_preprocessing import lemmatize_with_synonyms
 from collections import defaultdict
 import heapq
 lemmatizer = WordNetLemmatizer()
@@ -156,11 +156,11 @@ def process_synonym_file(file_path, out_file, related_fn):
 # result = build_dominating_map(lemmas, transitive_closure)
 # print(result)
 
-process_synonym_file(
-    "../systematic-review-datasets/data/bag_of_words/synonym_map,d=433660_old.json",
-    "../systematic-review-datasets/data/bag_of_words/synonym_result.json",
-    transitive_closure
-)
+# process_synonym_file(
+#     "../systematic-review-datasets/data/bag_of_words/synonym_map,d=433660_old.json",
+#     "../systematic-review-datasets/data/bag_of_words/synonym_result.json",
+#     transitive_closure
+# )
 
 # # Step 1: invert the mapping to know which words each alternative can cover
 # cover_map = defaultdict(set)

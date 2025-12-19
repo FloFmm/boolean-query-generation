@@ -61,7 +61,6 @@ def lemmatize_with_synonyms(text: str, conf: dict):
 
     return lemma_to_synonyms
 
-
 def bag_of_words(text: str, mesh_terms: list[str], conf: dict, mesh_ancestor_data=None):
     """
     Create a bag-of-words containing:
@@ -84,7 +83,6 @@ def bag_of_words(text: str, mesh_terms: list[str], conf: dict, mesh_ancestor_dat
     bag = sorted(bow_words) + sorted(bow_mesh)
 
     return bag, synonym_map
-
 
 def process_jsonl_file(file_path: Path, skip_existing: bool):
     # Read all lines
@@ -112,5 +110,6 @@ def process_folder(folder_path: str, skip_existing: bool):
     for file_path in jsonl_files:
         process_jsonl_file(file_path, skip_existing)
 
-# Usage
-process_folder("data/pubmed/baseline", skip_existing = True)
+if __name__ == "__main__":
+    # Usage
+    process_folder("data/pubmed/baseline", skip_existing = True)

@@ -6,7 +6,8 @@ import sys
 import os
 import json
 from collections import defaultdict
-from app.tree_learning.text_preprocessing import bag_of_words
+from app.preprocessing.text_preprocessing import bag_of_words
+from app.preprocessing.synonyms import build_dominating_map, transitive_closure
 from app.dataset.utils import bag_of_words_path, synonym_map_path
 from app.pubmed.mesh_term import download_mesh_xml
 
@@ -31,6 +32,7 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
 
     doc_ids = set()
     global_synonym_map = defaultdict(set)
+    records = []
     with open(bow_output_path, "w", encoding="utf-8") as f:
         for split, reviews in dataset.items():
             for review_name, review_data in reviews.items():
@@ -50,20 +52,37 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
                         for lemma, synonym in synonym_map.items():
                             global_synonym_map[lemma].update(synonym)
 
-                        record = {
+                        records.append({
                             "id": doc_id,
                             "title": doc["title"],
                             "abstract": doc["abstract"],
                             "bow": bow
-                        }
+                        })
 
-                        f.write(json.dumps(record) + "\n")
-
-     # Convert sets to sorted lists
+    if conf["related_words"]:
+        all_lemmas = global_synonym_map.keys()
+        dom_map, reverse_map = build_dominating_map(all_lemmas, transitive_closure)
+        for record in records:
+            record["bow"] = sorted(set([dom_map[w] for w in record["bow"]]))
+        
+        result_map = defaultdict(set)
+        for lemma, forms in global_synonym_map:
+            if lemma in dom_map:
+                result_map[dom_map[lemma]].update(forms)
+            else:
+                result_map[lemma].update(forms)
+        global_synonym_map = result_map
+     
+    # Convert sets to sorted lists
     global_synonym_map = {
         lemma: sorted(list(forms))
         for lemma, forms in global_synonym_map.items()
     }
+    
+    # Write all records at once to JSONL
+    with open(bow_output_path, "w", encoding="utf-8") as f:
+        for record in records:
+            f.write(json.dumps(record) + "\n")
 
     with open(synonym_map_output_path, "w", encoding="utf-8") as f:
         json.dump(global_synonym_map, f, indent=2)
@@ -74,6 +93,7 @@ if __name__ == "__main__":
         "mesh_ancestors": True,
         "rm_numbers": True,
         "rm_punct": True,
+        "related_words": True,
     }
     
     output_dir = "../systematic-review-datasets/data/bag_of_words/"
