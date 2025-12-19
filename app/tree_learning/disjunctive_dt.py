@@ -235,7 +235,7 @@ def greedy_or_expand(
                 best_improvement = improvement
                 best_candidate = f
                 best_weighted_impurity = weighted
-                
+        
         if best_candidate is not None and best_improvement >= min_impurity_decrease:
             base_features.append(best_candidate)
             candidate_features.remove(best_candidate)
@@ -245,14 +245,6 @@ def greedy_or_expand(
                 X.indices[X.indptr[best_candidate]:X.indptr[best_candidate + 1]]
             )
             improved = True
-            # print(
-            #     "added OR feature",
-            #     best_candidate,
-            #     len(combined_rows),
-            #     len(y),
-            #     "improvement:",
-            #     best_improvement
-            # )
 
     return base_features
 
@@ -388,7 +380,6 @@ class GreedyORDecisionTree:
             min_samples_split=self.min_samples_split,
             class_weight=self.class_weight,
         )
-        print(or_features)
         # Update for child nodes
         excluded_features = set(or_features)
         excluded_features.update(invalid_features)
@@ -604,7 +595,6 @@ class GreedyORDecisionTree:
             else:
                 raise ValueError(f"Unsupported metric: {name}")
 
-        print(self._possible_thresholds)
         for t in sorted(set(self._possible_thresholds) - {0.0}):
             self._optimal_threshold = t # just temporary for calculations
             y_pred = (probs >= t - 1e-8).astype(int)
@@ -850,7 +840,12 @@ class GreedyORDecisionTree:
                 continue
 
             # Reorder: positive terms first, NOT terms last
-            query_clauses.append(f"({' AND '.join(pos_terms)} {' '.join(not_terms)})")
+            new_clause = f"{' AND '.join(pos_terms)}"
+            if not_terms:
+                new_clause += f" {' '.join(not_terms)}"
+            if len(pos_terms) + len(not_terms) > 1:
+                new_clause = "(" + new_clause + ")"
+            query_clauses.append(new_clause)
             path_lens.append(len(pos_terms) + len(not_terms))
         # Combine all clauses with OR
         query = " OR ".join(query_clauses)

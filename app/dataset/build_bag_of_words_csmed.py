@@ -4,6 +4,7 @@ os.environ["HF_HOME"] = CUSTOM_HF_PATH # has to be up here
 import re
 import sys
 import os
+from tqdm import tqdm
 import json
 from collections import defaultdict
 from app.preprocessing.text_preprocessing import bag_of_words
@@ -23,7 +24,7 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
     
     dataset = load_dataset()
     global_corpus = build_global_corpus(dataset)
-   
+    print("Finished building global corpus", flush=True)
     os.makedirs(output_dir, exist_ok=True)
 
     conf["total_docs"] = len(global_corpus)
@@ -37,7 +38,7 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
         for split, reviews in dataset.items():
             for review_name, review_data in reviews.items():
                 for split_name in review_data["data"].keys():  # train/val/test
-                    for doc in review_data["data"][split_name]:
+                    for doc in tqdm(review_data["data"][split_name], desc="Processing docs"):
                         doc_id = doc["pmid"]
 
                         # Avoid duplicates
