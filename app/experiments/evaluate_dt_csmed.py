@@ -64,6 +64,7 @@ def evaluate_dt_csmed(
     )
     os.makedirs(folder_path, exist_ok=True)
     file_path = Path(os.path.join(folder_path, "results_dt.jsonl"))
+    print("Saving to", file_path)
     conf_file_path = Path(os.path.join(folder_path, "config.json"))
     
     with conf_file_path.open("w", encoding="utf-8") as f:

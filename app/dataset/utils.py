@@ -27,7 +27,8 @@ def abbreviate_params(**kwargs) -> str:
     using the ABBREVIATIONS dict.
     """
     parts = []
-    for full, value in kwargs.items():
+    for full in sorted(kwargs):
+        value = kwargs[full]
         abbr = ABBREVIATIONS.get(full, full)  # fallback: keep same
         parts.append(f"{abbr}={value}")
     return ",".join(parts)
@@ -38,11 +39,13 @@ def data_base_path():
 def statistics_base_path():
     return Path("../boolean-query-generation/data/statistics/csmed")
 
-def bag_of_words_path(total_docs):
-    return Path(f"{data_base_path()}/bag_of_words/bag_of_words,{abbreviate_params(total_docs=total_docs)}.jsonl")
+def bag_of_words_path(**args):
+    """params: total_docs, lower_case, mesh_ancestors, rm_numbers, rm_punct"""
+    return Path(f"{data_base_path()}/bag_of_words/bag_of_words,{abbreviate_params(**args)}.jsonl")
 
-def synonym_map_path(total_docs):
-    return Path(f"../systematic-review-datasets/data/bag_of_words/synonym_map,{abbreviate_params(total_docs=total_docs)}.jsonl")
+def synonym_map_path(**args):
+    """params: total_docs, lower_case, mesh_ancestors, rm_numbers, rm_punct"""
+    return Path(f"../systematic-review-datasets/data/bag_of_words/synonym_map,{abbreviate_params(**args)}.jsonl")
 
 def statistics_sub_folder_path(model, **args):
     """params: model, total_docs, min_df, max_df, positive_selection_conf, mesh"""
