@@ -1,6 +1,6 @@
 from nltk.corpus import wordnet as wn
 from nltk.stem import WordNetLemmatizer
-
+from app.tree_learning.text_preprocessing import lemmatize_with_synonyms
 lemmatizer = WordNetLemmatizer()
 
 def word_net_get_related(word, pos='v'):
@@ -23,6 +23,14 @@ def word_net_get_synonyms(word):
     return synonyms
 
 # Example usage
+
+text = "correct correctability correctable corrected correctible correcting correction corrections corrective correctives correctness corrects" 
+
+result = lemmatize_with_synonyms(text)
+print(result)
+exit(0)
 word = "correcting"
+
+
 print("Lemmas:", sorted(word_net_get_related(word)))
 print("Synonyms:", sorted(word_net_get_synonyms(word)))
