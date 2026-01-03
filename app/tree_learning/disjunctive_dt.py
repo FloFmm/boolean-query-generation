@@ -17,6 +17,7 @@ from copy import deepcopy
 
 from app.pubmed.retrieval import search_pubmed
 
+
 def compute_sample_weight(class_weight: dict, y):
     """
     Compute sample weights for binary classification (labels 0 and 1).
@@ -34,7 +35,7 @@ def compute_sample_weight(class_weight: dict, y):
         Weight for each sample.
     """
     assert 0 in class_weight and 1 in class_weight
-    
+
     y = np.asarray(y)  # ensure it's a numpy array
     if not np.all(np.isin(y, [0, 1])):
         print(y)
@@ -44,11 +45,12 @@ def compute_sample_weight(class_weight: dict, y):
     sample_weight = np.vectorize(class_weight.get)(y)
     return sample_weight
 
+
 def compute_class_weight(class_weight, X, y):
     _n_samples = X.shape[0]
     n_class_1 = y.sum()
     n_class_0 = _n_samples - n_class_1
-    
+
     if class_weight == "balanced":
         return {
             0: _n_samples / (2 * n_class_0),
@@ -58,6 +60,7 @@ def compute_class_weight(class_weight, X, y):
         return {0: 1, 1: 1}
     else:
         return class_weight
+
 
 @numba.njit
 def union_sorted(a, b):
@@ -92,48 +95,82 @@ def union_sorted(a, b):
 
     return out[:k]
 
-@numba.njit
-def gini(y, sample_weight):
+
+def calc_prob_class_1(y, sample_weight):
     w_total = np.sum(sample_weight)
     if w_total == 0:
         print("warning w_total = 0, all samples have weight 0")
         return 0.0, 0.0, False
     weighted_class_1 = np.sum(y * sample_weight)
-    p_total = weighted_class_1 / w_total
-    impurity = 2 * p_total * (1 - p_total)
+    p_class_1 = weighted_class_1 / w_total
+    return p_class_1, weighted_class_1, True
+
+
+def gini(y, sample_weight):
+    p_class_1, weighted_class_1, valid = calc_prob_class_1(y, sample_weight)
+    if not valid:
+        return 0.0, 0.0, False
+    impurity = 2 * p_class_1 * (1 - p_class_1)
     return impurity, weighted_class_1, True
-    
+
+
 @numba.njit
-def fast_gini_both(rows, y_true, sample_weight, n_class_1, min_samples_split):
+def fast_gini_both(
+    rows,
+    y_true,
+    sample_weight,
+    w_class_1,
+    min_samples_split,
+    min_weight_fraction_leaf,
+    total_sample_weight,
+):
     n_total = len(y_true)
     n_left = len(rows)
-    
+
     if n_left < min_samples_split or n_left > n_total - min_samples_split:
         return 1.0, False
 
     w_left = 0.0
-    n_class_1_left = 0.0
+    w_class_1_left = 0.0
     for i in range(n_left):
         w = sample_weight[rows[i]]
-        n_class_1_left += y_true[rows[i]] * w
+        w_class_1_left += y_true[rows[i]] * w
         w_left += w
     w_total = np.sum(sample_weight)
     w_right = w_total - w_left
+    if (
+        w_left / total_sample_weight < min_weight_fraction_leaf
+        or w_right / total_sample_weight < min_weight_fraction_leaf
+    ):
+        return 1.0, False
+
     assert w_left >= 0
     assert w_right >= 0
-    if w_left == 0 or w_right == 0: # weights can be 0 due to bootsrapping (samples that do not occur)
+    if (
+        w_left == 0 or w_right == 0
+    ):  # weights can be 0 due to bootsrapping (samples that do not occur)
         return 1.0, False
-    
-    p_left = n_class_1_left / w_left
+
+    p_left = w_class_1_left / w_left
     left_imp = 2 * p_left * (1 - p_left)
-    n_class_1_right = n_class_1 - n_class_1_left
-    
-    p_right = n_class_1_right / w_right
+    w_class_1_right = w_class_1 - w_class_1_left
+
+    p_right = w_class_1_right / w_right
     right_imp = 2 * p_right * (1 - p_right)
-    
+
     return (w_left * left_imp + w_right * right_imp) / w_total, True
 
-def best_split(X, y, features, min_samples_split, sample_weight, features_subset=None):
+
+def best_split(
+    X,
+    y,
+    features,
+    min_samples_split,
+    min_weight_fraction_leaf,
+    total_sample_weight,
+    sample_weight,
+    features_subset=None,
+):
     """Find best split feature (sparse version, optimized with fast_gini)."""
     if not features:
         return None, None, 0.0, [], []
@@ -142,7 +179,7 @@ def best_split(X, y, features, min_samples_split, sample_weight, features_subset
     initial_impurity, weighted_class_1, valid = gini(y=y, sample_weight=sample_weight)
     if not valid:
         return None, None, 0.0, [], []
-    
+
     best_feature = None
     best_impurity = 1.0
     improvements = []
@@ -154,13 +191,16 @@ def best_split(X, y, features, min_samples_split, sample_weight, features_subset
         start = X.indptr[f]
         end = X.indptr[f + 1]
         rows_with_feature = X.indices[start:end]
-        
-        
-        weighted, valid_split = fast_gini_both(rows=rows_with_feature, 
-                                               y_true=y, 
-                                               sample_weight=sample_weight,
-                                               min_samples_split=min_samples_split, 
-                                               n_class_1=weighted_class_1)
+
+        weighted, valid_split = fast_gini_both(
+            rows=rows_with_feature,
+            y_true=y,
+            sample_weight=sample_weight,
+            min_samples_split=min_samples_split,
+            min_weight_fraction_leaf=min_weight_fraction_leaf,
+            total_sample_weight=total_sample_weight,
+            w_class_1=weighted_class_1,
+        )
         if not valid_split:
             invalid_features.append(f)
             continue
@@ -190,6 +230,8 @@ def greedy_or_expand(
     current_impurity,
     min_impurity_decrease,
     min_samples_split,
+    min_weight_fraction_leaf,
+    total_sample_weight,
     sample_weight,
 ):
     """
@@ -220,19 +262,23 @@ def greedy_or_expand(
     # else:
     #     combined_mask = np.zeros(n_samples, dtype=bool)
     if base_features:
-        combined_rows = np.unique(np.concatenate([
-            X.indices[X.indptr[f]:X.indptr[f+1]] for f in base_features
-        ]))
+        combined_rows = np.unique(
+            np.concatenate(
+                [X.indices[X.indptr[f] : X.indptr[f + 1]] for f in base_features]
+            )
+        )
     else:
         combined_rows = np.array([], dtype=int)
 
     best_impurity = current_impurity
 
     # col_masks = {f: (X[:, f].getnnz(axis=1) > 0) for f in candidate_features}
-    col_indices = {f: X.indices[X.indptr[f]:X.indptr[f+1]] for f in candidate_features}
+    col_indices = {
+        f: X.indices[X.indptr[f] : X.indptr[f + 1]] for f in candidate_features
+    }
     weighted_class_1 = np.sum(y * sample_weight)
     improved = True
-    
+
     while improved and candidate_features:
         improved = False
 
@@ -250,36 +296,40 @@ def greedy_or_expand(
         best_candidate = None
         best_weighted_impurity = best_impurity
         best_improvement = 0.0
-        
+
         for f in candidate_features:
             # mask = combined_mask | col_masks[f]
             # union_rows = np.union1d(combined_rows, col_indices[f])
-            union_rows = union_sorted(combined_rows, col_indices[f]) #slowest part (can be optimized. we do not need union only the counts from it)
+            union_rows = union_sorted(
+                combined_rows, col_indices[f]
+            )  # slowest part (can be optimized. we do not need union only the counts from it)
             weighted, valid_split = fast_gini_both(
-                rows=union_rows, 
-                y_true=y, 
+                rows=union_rows,
+                y_true=y,
                 sample_weight=sample_weight,
-                min_samples_split=min_samples_split, 
-                n_class_1=weighted_class_1
+                min_samples_split=min_samples_split,
+                min_weight_fraction_leaf=min_weight_fraction_leaf,
+                total_sample_weight=total_sample_weight,
+                w_class_1=weighted_class_1,
             )
             # print(f, valid_split)
             if not valid_split:
                 continue
             improvement = best_impurity - weighted
-            
+
             # Keep best instantly
             if improvement > best_improvement:
                 best_improvement = improvement
                 best_candidate = f
                 best_weighted_impurity = weighted
-        
+
         if best_candidate is not None and best_improvement >= min_impurity_decrease:
             base_features.append(best_candidate)
             candidate_features.remove(best_candidate)
             best_impurity = best_weighted_impurity
             combined_rows = np.union1d(
                 combined_rows,
-                X.indices[X.indptr[best_candidate]:X.indptr[best_candidate + 1]]
+                X.indices[X.indptr[best_candidate] : X.indptr[best_candidate + 1]],
             )
             improved = True
 
@@ -291,6 +341,7 @@ class GreedyORDecisionTree:
         self,
         max_depth=3,
         min_samples_split=2,
+        min_weight_fraction_leaf=0.01,
         min_impurity_decrease_range=[0.01, 0.03],
         top_k_or_candidates=500,
         class_weight=None,
@@ -300,6 +351,7 @@ class GreedyORDecisionTree:
     ):
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
+        self.min_weight_fraction_leaf = min_weight_fraction_leaf
         self.min_impurity_decrease_range = min_impurity_decrease_range
         self.top_k_or_candidates = top_k_or_candidates
         self.class_weight = class_weight
@@ -328,7 +380,8 @@ class GreedyORDecisionTree:
         else:
             class_weight = compute_class_weight(self.class_weight, X, y)
             sample_weight = compute_sample_weight(class_weight, np.copy(y))
-        
+        self.total_sample_weight = np.sum(sample_weight)
+
         n_class_1 = y.sum()
         n_class_0 = self._n_samples - n_class_1
         if n_class_0 == 0 or n_class_1 == 0:
@@ -352,7 +405,14 @@ class GreedyORDecisionTree:
             self._pbar = None
 
         # Convert X to CSC once for fast column access
-        self._tree = self._grow(X.tocsc(), y, depth=0, features=list(range(X.shape[1])), sample_weight=sample_weight)
+        relevant_sample_mask = sample_weight > 0
+        self._tree = self._grow(
+            X[relevant_sample_mask, :].tocsc(),
+            y[relevant_sample_mask],
+            depth=0,
+            features=list(range(X.shape[1])),
+            sample_weight=sample_weight[relevant_sample_mask],
+        )
 
         # self._find_optimal_threshold(
         #     X,
@@ -362,20 +422,23 @@ class GreedyORDecisionTree:
         #     constraint_value=0.7,
         # )
 
-    def _calc_node_stats(self, y): #TODO adjust to sample weights
+    def _calc_node_stats(self, y, sample_weight=None):
         n_class_1 = int(np.sum(y))
         n_class_0 = int((len(y) - n_class_1))
-        weighted_class_1 = n_class_1 * self.class_weight[1]
-        weighted_class_0 = n_class_0 * self.class_weight[0]
         counts = {0: n_class_0, 1: n_class_1}
-        total_weight = weighted_class_0 + weighted_class_1
-        prob_class_1 = weighted_class_1 / total_weight
-        return counts, prob_class_1
+        if sample_weight is not None:
+            p_class_1, weighted_class_1, valid = calc_prob_class_1(y, sample_weight)
+        else:
+            weighted_class_1 = n_class_1 * self.class_weight[1]
+            weighted_class_0 = n_class_0 * self.class_weight[0]
+            total_weight = weighted_class_0 + weighted_class_1
+            p_class_1 = weighted_class_1 / total_weight
+        return counts, p_class_1
 
-    def _create_leaf(self, y):
+    def _create_leaf(self, y, sample_weight):
         node = {}
         node["type"] = "leaf"
-        counts, prob_class_1 = self._calc_node_stats(y)
+        counts, prob_class_1 = self._calc_node_stats(y, sample_weight=sample_weight)
         node["counts"] = counts
         node["prob_class_1"] = prob_class_1
         self._possible_thresholds.add(prob_class_1)
@@ -386,23 +449,27 @@ class GreedyORDecisionTree:
         if (
             depth >= self.max_depth
             or len(y) < self.min_samples_split
+            or np.sum(sample_weight) / self.total_sample_weight
+            < self.min_weight_fraction_leaf
             or len(np.unique(y)) == 1
         ):
-            return self._create_leaf(y)
+            return self._create_leaf(y, sample_weight=sample_weight)
 
         if self._verbose and hasattr(self, "_pbar") and self._pbar is not None:
             self._grow_counter += 1
             self._pbar.update(1)
             self._pbar.set_postfix(depth=depth)
-            
+
         # --- Random feature subsampling (Random Forest style) ---
         # IMPORTANT: OR combinations are only explored among the sampled features because of top_candidates
         if self.max_features is not None:
             k = self._compute_max_features(len(features))
-            features_subset = set(self.random_state.choice(features, size=k, replace=False))
+            features_subset = set(
+                self.random_state.choice(features, size=k, replace=False)
+            )
         else:
             features_subset = None
-        
+
         (
             best_feature,
             best_impurity,
@@ -410,10 +477,17 @@ class GreedyORDecisionTree:
             best_sorted_features,
             invalid_features,
         ) = best_split(
-            X, y, features, self.min_samples_split, sample_weight=sample_weight, features_subset=features_subset
+            X,
+            y,
+            features,
+            self.min_samples_split,
+            sample_weight=sample_weight,
+            min_weight_fraction_leaf=self.min_weight_fraction_leaf,
+            total_sample_weight=self.total_sample_weight,
+            features_subset=features_subset,
         )
         if best_feature is None or initial_impurity - best_impurity <= 0:
-            return self._create_leaf(y)
+            return self._create_leaf(y, sample_weight=sample_weight)
 
         # Take top-k features to try for OR expansion
         top_candidates = [
@@ -433,35 +507,37 @@ class GreedyORDecisionTree:
                 X.shape[0]
             ),  # min_impurity_decrease scales inversely with number of remaining docs
             min_samples_split=self.min_samples_split,
-            sample_weight=sample_weight
+            sample_weight=sample_weight,
+            min_weight_fraction_leaf=self.min_weight_fraction_leaf,
+            total_sample_weight=self.total_sample_weight,
         )
         # Update for child nodes
         excluded_features = set(or_features)
         excluded_features.update(invalid_features)
-        new_features = [
-            f for f in features if f not in excluded_features
-        ]
+        new_features = [f for f in features if f not in excluded_features]
         combined_mask = X[:, or_features].getnnz(axis=1) > 0
 
         node["type"] = "node"
-        counts, prob_class_1 = self._calc_node_stats(y)
+        counts, prob_class_1 = self._calc_node_stats(y, sample_weight=sample_weight)
         node["counts"] = counts
         node["prob_class_1"] = prob_class_1
         node["features"] = [self._feature_names[f] for f in or_features]
         node["feature_indices"] = or_features
-        node["left"] = self._grow( #TODO instead of passing masked X,y and sampleweight only pass rows (no copies of X,y and smapleweight -> speed?)
-            X[combined_mask],
-            y[combined_mask],
-            depth + 1,
-            new_features,
-            sample_weight=sample_weight[combined_mask]
+        node["left"] = (
+            self._grow(  # TODO performance instead of passing masked X,y and sampleweight only pass rows (no copies of X,y and smapleweight -> speed?)
+                X[combined_mask],
+                y[combined_mask],
+                depth + 1,
+                new_features,
+                sample_weight=sample_weight[combined_mask],
+            )
         )
         node["right"] = self._grow(
             X[~combined_mask],
             y[~combined_mask],
             depth + 1,
             new_features,
-            sample_weight=sample_weight[~combined_mask]
+            sample_weight=sample_weight[~combined_mask],
         )
         return node
 
@@ -576,7 +652,7 @@ class GreedyORDecisionTree:
                 total_weight = weighted_class_0 + weighted_class_1
                 probs = {
                     0: weighted_class_0 / total_weight,
-                    1: weighted_class_1 / total_weight
+                    1: weighted_class_1 / total_weight,
                 }
                 node.clear()
                 node["type"] = "leaf"
@@ -653,18 +729,20 @@ class GreedyORDecisionTree:
                 raise ValueError(f"Unsupported metric: {name}")
 
         for t in sorted(set(self._possible_thresholds) - {0.0}):
-            self._optimal_threshold = t # just temporary for calculations
+            self._optimal_threshold = t  # just temporary for calculations
             y_pred = (probs >= t - 1e-8).astype(int)
             main_score = get_metric(y_true, y_pred, metric, term_expansions)
-            
+
             # print(self.pretty_print(verbose=True))
             # print("t", t)
             # print("mainscore", main_score)
             # print("y_pred.sum()", y_pred.sum())
             # print()
             if constraint:
-                constraint_score = get_metric(y_true, y_pred, constraint["metric"], term_expansions)
-                
+                constraint_score = get_metric(
+                    y_true, y_pred, constraint["metric"], term_expansions
+                )
+
                 if constraint_score < constraint["value"]:
                     # Does NOT satisfy constraint
                     if final_constraint_score < constraint["value"]:
@@ -675,14 +753,14 @@ class GreedyORDecisionTree:
                             best_threshold = t
                             final_constraint_score = constraint_score
                     continue
-                
+
             # If we reach here → the constraint is satisfied OR we have no constraint
             if main_score > best_score:
                 best_score = main_score
                 best_threshold = t
                 if constraint:
                     final_constraint_score = constraint_score
-                
+
         self._optimal_threshold = best_threshold
         self._optimal_score = best_score
         # print("==============================optimal===============================", self._optimal_threshold)
@@ -734,7 +812,10 @@ class GreedyORDecisionTree:
         for k, v in data_dict.items():
             setattr(tree, k, v)
 
-        if not hasattr(tree, "_possible_thresholds") or tree._possible_thresholds is None:
+        if (
+            not hasattr(tree, "_possible_thresholds")
+            or tree._possible_thresholds is None
+        ):
             tree._possible_thresholds = tree._recompute_possible_thresholds()
 
         return tree
@@ -742,7 +823,7 @@ class GreedyORDecisionTree:
     def _node_class(self, node):
         # Helper to determine the class of a node
         return int(node["prob_class_1"] >= self._optimal_threshold - 1e-8)
-    
+
     def _all_same_class(self, node):
         # Helper to check if all descendants have the same class
         if node["type"] == "leaf":
@@ -782,6 +863,7 @@ class GreedyORDecisionTree:
                 return f
 
         lines = []
+
         def recurse(node, indent=""):
             if prune:
                 same_class = self._all_same_class(node)
@@ -811,8 +893,8 @@ class GreedyORDecisionTree:
     def __repr__(self):
         params = []
         for k, v in self.__dict__.items():
-            if not k.startswith('_'):  # skip hidden
-                abrevation = ''.join(w[0] for w in k.split('_'))
+            if not k.startswith("_"):  # skip hidden
+                abrevation = "".join(w[0] for w in k.split("_"))
                 params.append(f"{abrevation}={v!r}")
         return f"{self.__class__.__name__}({', '.join(params)})"
 
@@ -824,7 +906,7 @@ class GreedyORDecisionTree:
         # Helper: get PubMed-safe name for a feature, expand terms
         if term_expansions is None:
             terms = [feature]
-        else:  
+        else:
             terms = term_expansions.get(feature, [feature])
         # TODO remove [tiab] title abstract. but needed since NOT diagnsis matches mesh term diagnsos otherwise
         terms = [f + "[tiab]" for f in terms]
@@ -862,7 +944,9 @@ class GreedyORDecisionTree:
 
             clauses = []
 
-            addition = " ADDED_OR ".join(self._expand_term(term_expansions, f) for f in node["features"])
+            addition = " ADDED_OR ".join(
+                self._expand_term(term_expansions, f) for f in node["features"]
+            )
             # Right child = feature present
             left_addition = addition
             if "OR" in left_addition:
@@ -908,17 +992,23 @@ class GreedyORDecisionTree:
         query = " OR ".join(query_clauses)
         avg_path_len = sum(path_lens) / len(path_lens) if path_lens else 0
         query_size = {
-            "paths": len(query_clauses), 
-            "avg_path_len": avg_path_len, 
-            "ANDs": query.count('AND'),
-            "NOTs": query.count('NOT'),
-            "added_ORs": query.count('ADDED_OR'),
-            "synonym_ORs": query.count('SYNONYM_OR'),
-            "ORs": query.count('OR'),
+            "paths": len(query_clauses),
+            "avg_path_len": avg_path_len,
+            "ANDs": query.count("AND"),
+            "NOTs": query.count("NOT"),
+            "added_ORs": query.count("ADDED_OR"),
+            "synonym_ORs": query.count("SYNONYM_OR"),
+            "ORs": query.count("OR"),
         }
-        assert query_size["ORs"] == query_size["added_ORs"] + query_size["synonym_ORs"] + query_size["paths"] - 1
+        assert (
+            query_size["ORs"]
+            == query_size["added_ORs"]
+            + query_size["synonym_ORs"]
+            + query_size["paths"]
+            - 1
+        )
         return query.replace("ADDED_OR", "OR").replace("SYNONYM_OR", "OR"), query_size
-    
+
     def get_feature_names(self):
         if self._tree is None:
             raise ValueError("Tree not trained. Call fit() first.")
@@ -1016,7 +1106,6 @@ def generate_texts_from_boolean(
         texts = (texts * expand_factor)[:doc_count]
         labels = (labels * expand_factor)[:doc_count]
 
-        
         # Prepare random word pool
         word_pool = [f"r{i}" for i in range(word_pool_size - len(variables))]
 
@@ -1046,9 +1135,9 @@ def generate_texts_from_boolean(
 def main():
     def f(d):
         return (
-            not (d["cats"] or d["dogs"] or d["mice[mh]"]) and
-            (d["house"] or d["wohnung"])
-            and (d["bowl"] or d["box"])  
+            not (d["cats"] or d["dogs"] or d["mice[mh]"])
+            and (d["house"] or d["wohnung"])
+            and (d["bowl"] or d["box"])
         )
 
     variables = ["cats", "dogs", "mice[mh]", "house", "wohnung", "bowl", "box"]
@@ -1078,7 +1167,7 @@ def main():
     # vectorizer = CountVectorizer(binary=True)
     # X = vectorizer.fit_transform(texts)
     vectorizer = CountVectorizer(
-        tokenizer=lambda x: x, 
+        tokenizer=lambda x: x,
         preprocessor=lambda x: x,
         token_pattern=None,
         binary=True,
@@ -1137,15 +1226,14 @@ def main():
     print(f"Fit time: {end_time - start_time:.4f} seconds")
 
 
-
 if __name__ == "__main__":
     from line_profiler import LineProfiler
+
     lp = LineProfiler()
-    lp.add_function(greedy_or_expand)#GreedyORDecisionTree._grow)
+    lp.add_function(greedy_or_expand)  # GreedyORDecisionTree._grow)
 
     lp.run("main()")
     lp.print_stats()
 
 
 # TODO balanced min sample split (weighted)
-

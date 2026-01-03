@@ -55,7 +55,7 @@ if __name__ == "__main__":
         max_depth=4,
         min_samples_split=2,
         min_samples_leaf=1,
-        min_weight_fraction_leaf=0.0,
+        min_weight_fraction_leaf=0.005,
         max_features="sqrt", 
         min_impurity_decrease_range=(0.01, 0.01),
         bootstrap=False,
@@ -73,6 +73,9 @@ if __name__ == "__main__":
 
     print()
     for tree in forest.estimators_:
+        print()
         print(tree.pretty_print(verbose=True, prune=True))
     print()
     print(end_time - start_time)
+
+# TODO write tests for random forest

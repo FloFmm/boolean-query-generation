@@ -103,8 +103,8 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt",
         print("DataFrame is empty.")
         return
 
-    # keep only those with atleast 10 samples (TODO remove)
-    df = df[df["samples_dt"] >= 10]
+    # keep only those with atleast 10 samples 
+    # df = df[df["samples_dt"] >= 10]
     # print("mor than 0", len(df))
     # print("mor than 10", len(df[df["samples_dt"] >= 10]))
     # print("mor than 20", len(df[df["samples_dt"] >= 20]))
@@ -116,8 +116,8 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt",
     # print("mor than 30", len(df[df["samples_qg"] >= 30]))
     # print("mor than 40", len(df[df["samples_qg"] >= 40]))
     # exit(0)
-    if "samples_qg" in df.columns:
-        df = df[df["samples_qg"] >= 20]
+    # if "samples_qg" in df.columns:
+    #     df = df[df["samples_qg"] >= 20]
     # if "pubmed_recall_qg" in df.columns:
     #     df = df[df["pubmed_recall_qg"] >= 0.7]
     

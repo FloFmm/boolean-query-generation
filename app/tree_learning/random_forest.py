@@ -16,18 +16,7 @@ class RandomForest():
         all leaves are pure or until all leaves contain less than
         min_samples_split samples.
 
-    min_samples_split : int or float, default=2
-        The minimum number of samples required to split an internal node:
-
-        - If int, then consider `min_samples_split` as the minimum number.
-        - If float, then `min_samples_split` is a fraction and
-          `ceil(min_samples_split * n_samples)` are the minimum
-          number of samples for each split.
-
-        .. versionchanged:: 0.18
-           Added float values for fractions.
-
-    min_samples_leaf : TODO (currently min_samples split is a mix of minsamples split and leaf) int or float, default=1
+    min_samples_split (should be named min_samples_leaf) : int or float, default=1
         The minimum number of samples required to be at a leaf node.
         A split point at any depth will only be considered if it leaves at
         least ``min_samples_leaf`` training samples in each of the left and
@@ -38,9 +27,6 @@ class RandomForest():
         - If float, then `min_samples_leaf` is a fraction and
           `ceil(min_samples_leaf * n_samples)` are the minimum
           number of samples for each node.
-
-        .. versionchanged:: 0.18
-           Added float values for fractions.
 
     min_weight_fraction_leaf : float, default=0.0
         The minimum weighted fraction of the sum total of weights (of all
@@ -70,7 +56,7 @@ class RandomForest():
         Best nodes are defined as relative reduction in impurity.
         If None then unlimited number of leaf nodes.
 
-    min_impurity_decrease : TODO (other formual than mine??) float, default=0.0
+    min_impurity_decrease : TODO (other formual than mine -> scales with N_t??) float, default=0.0
         A node will be split if this split induces a decrease of the impurity
         greater than or equal to this value.
 
@@ -312,6 +298,7 @@ class RandomForest:
             "top_k_or_candidates": self.top_k_or_candidates,
             "verbose": self.verbose and not self.n_jobs, # has to be set to false because of tqdm breaking Parallel
             "min_samples_split": self.min_samples_split,
+            "min_weight_fraction_leaf": self.min_weight_fraction_leaf,
             "class_weight": self.class_weight,
             "max_features": self.max_features,
             "random_state": self.random_state,
