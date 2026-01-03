@@ -228,7 +228,6 @@ def train_text_classifier(
     # def map_synonyms(text, synonym_map):
     #     return " ".join([synonym_map.get(word, word) for word in text.split()])
 
-
 def tree_to_boolean(clf, feature_names, target_class):
     tree = clf.tree_
     classes = clf.classes_
@@ -265,7 +264,6 @@ def tree_to_boolean(clf, feature_names, target_class):
                 return None
 
     return recurse(0)
-
 
 def tree_to_dnf_pubmed(
     tree: DecisionTreeClassifier, feature_names=None, target_class=None
@@ -310,7 +308,6 @@ def tree_to_dnf_pubmed(
     )
     # return dnf_clauses
 
-
 def plot_tree(model, feature_names, class_names):
     plt.figure(figsize=(30, 10), facecolor="k")  # create the tree plot
     a = tree.plot_tree(
@@ -324,7 +321,6 @@ def plot_tree(model, feature_names, class_names):
         fontsize=14,
     )  # show the plot
     plt.show()
-
 
 # Example usage
 if __name__ == "__main__":
