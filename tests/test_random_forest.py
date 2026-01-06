@@ -4,7 +4,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import precision_score, recall_score
 from app.tree_learning.random_forest import RandomForest
 from app.tree_learning.disjunctive_dt import generate_texts_from_boolean
-
+from app.tree_learning.query_generation import extract_and_vectorize_rules, select_rules_via_ga, rules_to_pubmed_query
 if __name__ == "__main__":
     def f(d):
         return (
@@ -20,8 +20,8 @@ if __name__ == "__main__":
         error=0.0,
         completeness=1.0,
         seed=42,
-        doc_count=50_000,
-        word_pool_size=100,
+        doc_count=5_000,
+        word_pool_size=1_000,
         average_doc_length=50,
     )
 
@@ -51,11 +51,11 @@ if __name__ == "__main__":
     X = vectorizer.fit_transform(texts)
 
     forest = RandomForest(
-        n_estimators=10,
+        n_estimators=20,
         max_depth=4,
         min_samples_split=2,
         min_samples_leaf=1,
-        min_weight_fraction_leaf=0.005,
+        min_weight_fraction_leaf=0.0005,
         max_features="sqrt", 
         min_impurity_decrease_range=(0.01, 0.01),
         bootstrap=False,
@@ -75,7 +75,26 @@ if __name__ == "__main__":
     for tree in forest.estimators_:
         print()
         print(tree.pretty_print(verbose=True, prune=True))
+       
     print()
     print(end_time - start_time)
+    print()
+    print("FOREST:", forest.pubmed_query()[0])
+    print()
+    print("FOREST (optimized):", forest.pubmed_query(X=X, labels=labels)[0])
+    print()
+    # vec_result = extract_and_vectorize_rules(forest=forest, X=X)
+    # rules = vec_result["rules"]
+    # kept_variables = vec_result["kept_variables"]
+    # coverage = vec_result["coverage"]
+    # print(coverage)
+    
+    # result = select_rules_via_ga(
+    #     coverage = coverage,
+    #     y=np.array(labels)
+    # )
+    # print("============RESULT RULES===========")
+    # for i in result["selected_rule_indices"]:
+    #     print(rules_to_pubmed_query([rules[i]])[0])
 
 # TODO write tests for random forest

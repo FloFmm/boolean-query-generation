@@ -1,10 +1,24 @@
 import numpy as np
+from typing import List, Tuple
 from joblib import Parallel, delayed
 from scipy.sparse import issparse
 from numbers import Integral, Real
-from app.tree_learning.disjunctive_dt import GreedyORDecisionTree, compute_class_weight, compute_sample_weight
+from app.tree_learning.disjunctive_dt import (
+    GreedyORDecisionTree,
+    compute_class_weight,
+    compute_sample_weight,
+)
+from app.tree_learning.query_generation import (
+    rules_to_pubmed_query,
+    extract_and_vectorize_rules,
+    select_rules_via_ga,
+    query_size,
+    query_cost,
+)
+from app.helper.helper import biased_random
 
-class RandomForest():
+
+class RandomForest:
     """
     Parameters
     ----------
@@ -37,6 +51,7 @@ class RandomForest():
         The number of features to consider when looking for the best split:
 
         - If int, then consider `max_features` features at each split.
+        - If random then _biased_random_max_features is callled (sqrt(n) <= random <= n_features)
         - If float, then `max_features` is a fraction and
           `max(1, int(max_features * n_features_in_))` features are considered at each
           split.
@@ -165,8 +180,9 @@ class RandomForest():
     of the criterion is identical for several splits enumerated during the
     search of the best split. To obtain a deterministic behaviour during
     fitting, ``random_state`` has to be fixed.
-    """    
-       
+    """
+
+
 class RandomForest:
     def __init__(
         self,
@@ -176,7 +192,9 @@ class RandomForest:
         min_samples_leaf=1,
         min_weight_fraction_leaf=0.0,
         max_features="sqrt",
+        randomize_max_feature=None,
         min_impurity_decrease_range=(0.01, 0.01),
+        randomize_min_impurity_decrease_range=None,
         bootstrap=True,
         n_jobs=None,
         random_state=None,
@@ -197,7 +215,11 @@ class RandomForest:
         self.min_samples_leaf = min_samples_leaf
         self.min_weight_fraction_leaf = min_weight_fraction_leaf
         self.max_features = max_features
+        self.randomize_max_feature = randomize_max_feature
         self.min_impurity_decrease_range = min_impurity_decrease_range
+        self.randomize_min_impurity_decrease_range = (
+            randomize_min_impurity_decrease_range
+        )
         self.bootstrap = bootstrap
         self.n_jobs = n_jobs
         self.random_state = random_state
@@ -211,7 +233,7 @@ class RandomForest:
         self.estimators_ = []
         self._n_samples_bootstrap = None
         self.n_outputs_ = None
-       
+
     def fit(self, X, y, sample_weight=None, feature_names=None):
         """
         Build a forest of trees from the training set (X, y).
@@ -242,7 +264,7 @@ class RandomForest:
         # Validate or convert input data
         if issparse(y):
             raise ValueError("sparse multilabel-indicator for y is not supported.")
-        
+
         # X, y = validate_data(
         #     self,
         #     X,
@@ -252,7 +274,7 @@ class RandomForest:
         #     dtype=DTYPE,
         #     ensure_all_finite=False,
         # )
-        
+
         # _compute_missing_values_in_feature_mask checks if X has missing values and
         # will raise an error if the underlying tree base estimator can't handle missing
         # values. Only the criterion is required to determine if the tree supports
@@ -291,22 +313,47 @@ class RandomForest:
         # random_state = np.random.RandomState(self.random_state) # Turn seed into a np.random.RandomState instance
 
         self.estimators_ = []
-
-        tree_config = {
-            "max_depth": self.max_depth,
-            "min_impurity_decrease_range": self.min_impurity_decrease_range,
-            "top_k_or_candidates": self.top_k_or_candidates,
-            "verbose": self.verbose and not self.n_jobs, # has to be set to false because of tqdm breaking Parallel
-            "min_samples_split": self.min_samples_split,
-            "min_weight_fraction_leaf": self.min_weight_fraction_leaf,
-            "class_weight": self.class_weight,
-            "max_features": self.max_features,
-            "random_state": self.random_state,
-        }
-        trees = [
-            GreedyORDecisionTree(**tree_config)
-            for i in range(self.n_estimators)
-        ]
+        trees = []
+        for i in range(self.n_estimators):
+            tree_max_features = self.max_features
+            tree_randomize_max_feature = self.randomize_max_feature
+            tree_min_impurity_decrease_range = self.min_impurity_decrease_range
+            if i == 0:
+                if (
+                    self.randomize_max_feature
+                ):  # first random tree always gets all features
+                    tree_max_features = None
+                    tree_randomize_max_feature = False
+            else:
+                if self.randomize_min_impurity_decrease_range:
+                    tree_min_impurity_decrease_range = [
+                        biased_random(
+                            low=self.min_impurity_decrease_range[0],
+                            high=1.0,
+                            exponent=self.randomize_min_impurity_decrease_range,
+                        ),
+                        biased_random(
+                            low=self.min_impurity_decrease_range[1],
+                            high=1.0,
+                            exponent=self.randomize_min_impurity_decrease_range,
+                        ),
+                    ]
+            tree_config = {
+                "max_depth": self.max_depth,
+                "min_impurity_decrease_range": tree_min_impurity_decrease_range,
+                "top_k_or_candidates": self.top_k_or_candidates,
+                "verbose": self.verbose
+                and not self.n_jobs,  # has to be set to false because of tqdm breaking Parallel
+                "min_samples_split": self.min_samples_split,
+                "min_weight_fraction_leaf": self.min_weight_fraction_leaf,
+                "class_weight": self.class_weight,
+                "max_features": tree_max_features,
+                "randomize_max_feature": tree_randomize_max_feature,
+                "random_state": self.random_state,
+            }
+            trees = [
+                GreedyORDecisionTree(**tree_config) for i in range(self.n_estimators)
+            ]
 
         trees = Parallel(
             n_jobs=self.n_jobs,
@@ -332,7 +379,58 @@ class RandomForest:
         trees = [t for t in trees if t is not None]
         self.estimators_.extend(trees)
         return self
-    
+
+    def get_tree_paths(self):
+        """
+        Extract rules from all trees.
+
+        Returns
+        -------
+        rules : list[dict]
+        rule_tree_map : list[int]
+            tree index for each rule
+        """
+        all_rules = []
+        rule_tree_map = []
+
+        for t_idx, tree in enumerate(self.estimators_):
+            tree_rules = tree.get_tree_paths()
+            all_rules.extend(tree_rules)
+            rule_tree_map.extend([t_idx] * len(tree_rules))
+        return all_rules, rule_tree_map
+
+    def pubmed_query(self, term_expansions: dict = None, X=None, labels=None, min_tree_occ=0.05, min_rule_occ=0.05, cost_factor=0.002):
+        if X is None or labels is None:
+            all_rules, rule_tree_map = self.get_tree_paths()
+            return rules_to_pubmed_query(
+                rules=all_rules, term_expansions=term_expansions
+            )
+        else:
+            vec_result = extract_and_vectorize_rules(
+                forest=self, X=X, min_tree_occ=min_tree_occ, min_rule_occ=min_rule_occ
+            )
+            rules = vec_result["rules"]
+            # kept_variables = vec_result["kept_variables"]
+            coverage = vec_result["coverage"]
+            rule_costs = np.array([query_cost(query_size([r])) for r in rules])
+            selection_result = select_rules_via_ga(
+                coverage=coverage,
+                y=np.array(labels),
+                rule_costs=rule_costs,
+                cost_factor=cost_factor,
+            )
+            selected_rules = [
+                rules[i] for i in selection_result["selected_rule_indices"]
+            ]
+            return rules_to_pubmed_query(
+                rules=selected_rules, term_expansions=term_expansions
+            )
+
+    def _find_optimal_threshold(self, **args):
+        for tree in self.estimators_:
+            tree._find_optimal_threshold(**args)
+
+
 def _get_n_samples_bootstrap(n_samples, max_samples):
     """
     Get the number of samples in a bootstrap sample.
@@ -364,7 +462,8 @@ def _get_n_samples_bootstrap(n_samples, max_samples):
 
     if isinstance(max_samples, Real):
         return max(round(n_samples * max_samples), 1)
-    
+
+
 def _parallel_build_trees(
     tree,
     bootstrap,
@@ -396,16 +495,18 @@ def _parallel_build_trees(
         curr_sample_weight *= sample_counts
     else:
         curr_sample_weight = sample_weight
-        
+
     # --- Early check: must have at least one sample of each class with weight > 0 ---
     has_pos = np.any((y == 1) & (curr_sample_weight > 0))
     has_neg = np.any((y == 0) & (curr_sample_weight > 0))
 
     if not (has_pos and has_neg):
         if verbose:
-            print(f"Skipping tree {tree_idx + 1}: only one class present after weighting")
-        return None  # Early exit    
-        
+            print(
+                f"Skipping tree {tree_idx + 1}: only one class present after weighting"
+            )
+        return None  # Early exit
+
     tree.fit(
         X,
         y,
@@ -414,8 +515,3 @@ def _parallel_build_trees(
     )
 
     return tree
-
-
-
-
-

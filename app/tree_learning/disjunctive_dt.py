@@ -1,19 +1,18 @@
 import numpy as np
 from collections import Counter
+from typing import List, Tuple
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import precision_score, recall_score, fbeta_score, fbeta_score
-from scipy.sparse import csr_matrix
+from app.tree_learning.query_generation import rules_to_pubmed_query
+from app.helper.helper import biased_random
 import random
 import itertools
 import math
 import re
 import time
-import json
-import inspect
 import jsonpickle
 import numba
 from tqdm import tqdm
-from copy import deepcopy
 
 from app.pubmed.retrieval import search_pubmed
 
@@ -346,6 +345,7 @@ class GreedyORDecisionTree:
         top_k_or_candidates=500,
         class_weight=None,
         max_features=None,
+        randomize_max_feature=None,
         random_state=None,
         verbose=False,
     ):
@@ -365,6 +365,7 @@ class GreedyORDecisionTree:
         self._optimal_score = None
         self._possible_thresholds = set()
         self.max_features = max_features
+        self.randomize_max_feature = randomize_max_feature
         self.random_state = np.random.RandomState(random_state)
 
     def fit(self, X, y, feature_names=None, sample_weight=None):
@@ -898,116 +899,53 @@ class GreedyORDecisionTree:
                 params.append(f"{abrevation}={v!r}")
         return f"{self.__class__.__name__}({', '.join(params)})"
 
-    def _expand_term(self, term_expansions, feature):
-        if feature.endswith("[mh]"):
-            # mesh terms
-            # TODO maybe only add :noexp on negative meshterms
-            return feature.replace("[mh]", "[mh:noexp]")
-        # Helper: get PubMed-safe name for a feature, expand terms
-        if term_expansions is None:
-            terms = [feature]
-        else:
-            terms = term_expansions.get(feature, [feature])
-        # TODO remove [tiab] title abstract. but needed since NOT diagnsis matches mesh term diagnsos otherwise
-        terms = [f + "[tiab]" for f in terms]
-        return " SYNONYM_OR ".join(terms)
-
-    def pubmed_query(self, term_expansions: dict = None):
+    def get_tree_paths(self):
         """
-        Converts a GreedyORDecisionTree into a PubMed DNF boolean query.
-        - Left child = NOT feature (omitted if NOT at root of clause)
-        - Right child = feature present
-        - Skips paths that lead only to negative class
-        - Expands each term using term_expansions dict
+        Extract all root-to-leaf rules from a GreedyORDecisionTree.
+
+        Returns
+        -------
+        list[list[tuple[list[int], bool]]]
+            Each rule is a list of (features, is_positive)
         """
         if self._tree is None:
             raise ValueError("Tree not trained. Call fit() first.")
+        
+        rules = []
 
-        # Traverse tree recursively
-        def recurse(node, path_terms=None):
-            if path_terms is None:
-                path_terms = []
-
-            # Early stop if subtree pure
+        def recurse(node, literals):
             same_class = self._all_same_class(node)
             if same_class is not None:
-                if same_class == 1:  # positive leaf
-                    return [path_terms]  # return current path
-                else:
-                    return []  # skip paths leading to negative class only
-
+                if same_class == 1:
+                    rules.append(list(literals))
+                return
+        
             if node["type"] == "leaf":
-                if self._node_class(node):
-                    return [path_terms]
-                else:
-                    return []
+                if node["prob_class_1"] >= self._optimal_threshold - 1e-8:
+                    rules.append(list(literals))
+                return
 
-            clauses = []
+            feature_indices = list(node["feature_indices"])
+            features = list(node["features"])
 
-            addition = " ADDED_OR ".join(
-                self._expand_term(term_expansions, f) for f in node["features"]
+            # LEFT = feature present (OR semantics)
+            recurse(
+                node["left"],
+                literals + [(feature_indices, features, True)],
             )
-            # Right child = feature present
-            left_addition = addition
-            if "OR" in left_addition:
-                left_addition = "(" + left_addition + ")"
-            left_terms = path_terms + [left_addition]
-            clauses.extend(recurse(node["left"], left_terms))
 
-            # Left child = NOT of feature
-            right_addition = addition
-            if "OR" in right_addition:
-                right_addition = "NOT (" + right_addition + ")"
-            else:
-                right_addition = "NOT " + right_addition
-            right_terms = path_terms + [right_addition]
-            clauses.extend(recurse(node["right"], right_terms))
+            # RIGHT = feature absent
+            recurse(
+                node["right"],
+                literals + [(feature_indices, features, False)],
+            )
 
-            return clauses
+        recurse(self._tree, [])
+        return rules
 
-        # Collect all DNF clauses
-        dnf_clauses = recurse(self._tree)
-
-        # Combine with OR for PubMed query
-        query_clauses = []
-        path_lens = []
-        for clause in dnf_clauses:
-            # Split into positive and negative terms
-            pos_terms = [t for t in clause if not t.startswith("NOT ")]
-            not_terms = [t for t in clause if t.startswith("NOT ")]
-
-            # Skip clauses that are all NOT
-            if len(pos_terms) == 0:
-                continue
-
-            # Reorder: positive terms first, NOT terms last
-            new_clause = f"{' AND '.join(pos_terms)}"
-            if not_terms:
-                new_clause += f" {' '.join(not_terms)}"
-            if len(pos_terms) + len(not_terms) > 1:
-                new_clause = "(" + new_clause + ")"
-            query_clauses.append(new_clause)
-            path_lens.append(len(pos_terms) + len(not_terms))
-        # Combine all clauses with OR
-        query = " OR ".join(query_clauses)
-        avg_path_len = sum(path_lens) / len(path_lens) if path_lens else 0
-        query_size = {
-            "paths": len(query_clauses),
-            "avg_path_len": avg_path_len,
-            "ANDs": query.count("AND"),
-            "NOTs": query.count("NOT"),
-            "added_ORs": query.count("ADDED_OR"),
-            "synonym_ORs": query.count("SYNONYM_OR"),
-            "ORs": query.count("OR"),
-        }
-        assert (
-            query_size["ORs"]
-            == query_size["added_ORs"]
-            + query_size["synonym_ORs"]
-            + query_size["paths"]
-            - 1
-        )
-        return query.replace("ADDED_OR", "OR").replace("SYNONYM_OR", "OR"), query_size
+    def pubmed_query(self, term_expansions: dict = None):
+        all_rules = self.get_tree_paths()
+        return rules_to_pubmed_query(rules=all_rules, term_expansions=term_expansions)
 
     def get_feature_names(self):
         if self._tree is None:
@@ -1030,20 +968,29 @@ class GreedyORDecisionTree:
 
     def _compute_max_features(self, n_features):
         mf = self.max_features  # note: you have a typo, see below
-
+        
         if mf is None:
-            return n_features
-        if isinstance(mf, int):
-            return max(1, min(mf, n_features))
-        if isinstance(mf, float):
-            return max(1, int(mf * n_features))
-        if mf == "sqrt":
-            return max(1, int(np.sqrt(n_features)))
-        if mf == "log2":
-            return max(1, int(np.log2(n_features)))
-        raise ValueError(f"Invalid max_features: {mf}")
-
-
+            value = n_features
+        elif isinstance(mf, int):
+            value = max(1, min(mf, n_features))
+        elif isinstance(mf, float):
+            value = max(1, int(mf * n_features))
+        elif mf == "sqrt":
+            value = max(1, int(np.sqrt(n_features)))
+        elif mf == "log2":
+            value = max(1, int(np.log2(n_features)))
+        else:
+            raise ValueError(f"Invalid max_features: {mf}")
+        
+        if self.randomize_max_feature:
+            value = biased_random(
+                low = value,
+                high = n_features,
+                exponent = self.randomize_max_feature, # higher for stronger bias toward low numbers
+                rng=self.random_state
+            )
+        return value
+    
 def generate_texts_from_boolean(
     func,
     variables,
@@ -1234,6 +1181,3 @@ if __name__ == "__main__":
 
     lp.run("main()")
     lp.print_stats()
-
-
-# TODO balanced min sample split (weighted)
