@@ -40,8 +40,9 @@ def run_tree_test(
     X = vectorizer.fit_transform(texts)
 
     # tree = GreedyORDecisionTree(**tree_params)
+    feature_names = vectorizer.get_feature_names_out()
     classifier.fit(
-        X, np.array(labels), feature_names=vectorizer.get_feature_names_out()
+        X, np.array(labels), feature_names=feature_names
     )
 
     # tree_json = tree.to_json()
@@ -84,6 +85,7 @@ def run_tree_test(
         generated_pubmed_query, query_size = classifier.pubmed_query(
             X=X,
             labels=labels,
+            feature_names=feature_names,
             min_tree_occ=qg_params["min_tree_occ"],
             min_rule_occ=qg_params["min_rule_occ"],
             cost_factor=qg_params["cost_factor"],
@@ -163,8 +165,9 @@ FORMULAS = [
     # """NOT A AND B""",
     # """A""",
     # """XX OR (YY NOT XX NOT (AA OR BB OR CC OR DD))""",
-    # """hello AND bye AND (nope OR never)"""
-    # """(A AND B) OR (C AND D) OR (E AND F)"""
+    # """hello AND bye AND (nope OR never)""",
+    # """(A AND B) OR (C AND D) OR (E AND F)""",
+    # """A NOT B""",
 ]
 
 

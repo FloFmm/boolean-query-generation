@@ -399,11 +399,11 @@ class RandomForest:
             rule_tree_map.extend([t_idx] * len(tree_rules))
         return all_rules, rule_tree_map
 
-    def pubmed_query(self, term_expansions: dict = None, X=None, labels=None, min_tree_occ=0.05, min_rule_occ=0.05, cost_factor=0.002):
+    def pubmed_query(self, feature_names, term_expansions: dict = None, X=None, labels=None, min_tree_occ=0.05, min_rule_occ=0.05, cost_factor=0.002):
         if X is None or labels is None:
             all_rules, rule_tree_map = self.get_tree_paths()
             return rules_to_pubmed_query(
-                rules=all_rules, term_expansions=term_expansions
+                rules=all_rules, feature_names=feature_names, term_expansions=term_expansions
             )
         else:
             vec_result = extract_and_vectorize_rules(
@@ -423,7 +423,7 @@ class RandomForest:
                 rules[i] for i in selection_result["selected_rule_indices"]
             ]
             pubmed_query = rules_to_pubmed_query(
-                rules=selected_rules, term_expansions=term_expansions
+                rules=selected_rules, feature_names=feature_names, term_expansions=term_expansions
             )
             return pubmed_query
 

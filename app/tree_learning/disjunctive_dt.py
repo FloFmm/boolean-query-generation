@@ -1,6 +1,6 @@
 import numpy as np
 from collections import Counter
-from typing import List, Tuple
+from typing import List, Tuple, FrozenSet, Set
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import precision_score, recall_score, fbeta_score, fbeta_score
 from app.tree_learning.query_generation import rules_to_pubmed_query
@@ -905,47 +905,47 @@ class GreedyORDecisionTree:
 
         Returns
         -------
-        list[list[tuple[list[int], bool]]]
-            Each rule is a list of (features, is_positive)
+        Set(Rule)
         """
         if self._tree is None:
             raise ValueError("Tree not trained. Call fit() first.")
-        
-        rules = []
+
+        rules = set()
 
         def recurse(node, literals):
             same_class = self._all_same_class(node)
             if same_class is not None:
                 if same_class == 1:
-                    rules.append(list(literals))
+                    rules.add(frozenset(literals))
                 return
-        
+
             if node["type"] == "leaf":
                 if node["prob_class_1"] >= self._optimal_threshold - 1e-8:
-                    rules.append(list(literals))
+                    rules.add(frozenset(literals))
                 return
 
-            feature_indices = list(node["feature_indices"])
-            features = list(node["features"])
+            feature_indices = frozenset(node["feature_indices"])
 
             # LEFT = feature present (OR semantics)
-            recurse(
-                node["left"],
-                literals + [(feature_indices, features, True)],
-            )
+            recurse(node["left"], literals | {(feature_indices, True)})
 
             # RIGHT = feature absent
-            recurse(
-                node["right"],
-                literals + [(feature_indices, features, False)],
-            )
+            recurse(node["right"], literals | {(feature_indices, False)})
 
-        recurse(self._tree, [])
+        recurse(self._tree, set())
+        
+        # Filter out rules that have only negative terms
+        rules = {r for r in rules if any(t[-1] for t in r)}
+
         return rules
 
-    def pubmed_query(self, term_expansions: dict = None):
+    def pubmed_query(self, feature_names, term_expansions: dict = None):
         all_rules = self.get_tree_paths()
-        return rules_to_pubmed_query(rules=all_rules, term_expansions=term_expansions)
+        return rules_to_pubmed_query(
+            rules=all_rules,
+            feature_names=feature_names,
+            term_expansions=term_expansions,
+        )
 
     def get_feature_names(self):
         if self._tree is None:
@@ -968,7 +968,7 @@ class GreedyORDecisionTree:
 
     def _compute_max_features(self, n_features):
         mf = self.max_features  # note: you have a typo, see below
-        
+
         if mf is None:
             value = n_features
         elif isinstance(mf, int):
@@ -981,16 +981,19 @@ class GreedyORDecisionTree:
             value = max(1, int(np.log2(n_features)))
         else:
             raise ValueError(f"Invalid max_features: {mf}")
-        
+
         if self.randomize_max_feature:
-            value = int(biased_random(
-                low = value,
-                high = n_features,
-                exponent = self.randomize_max_feature, # higher for stronger bias toward low numbers
-                rng=self.random_state
-            ))
+            value = int(
+                biased_random(
+                    low=value,
+                    high=n_features,
+                    exponent=self.randomize_max_feature,  # higher for stronger bias toward low numbers
+                    rng=self.random_state,
+                )
+            )
         return value
-    
+
+
 def generate_texts_from_boolean(
     func,
     variables,

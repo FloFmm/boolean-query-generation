@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Tuple, Literal, Dict, Optional, FrozenSet
+from typing import List, Tuple, Literal, Dict, Optional, FrozenSet, Set
 import numpy as np
 import copy
 import scipy.sparse as sp
@@ -7,14 +7,14 @@ from deap import base, creator, tools, algorithms
 from app.helper.helper import f_beta
 
 # Rule = List[Tuple[List[int], List[str], bool]]
-Rule = List[Tuple[List[int], List[str], bool]]
+Rule = FrozenSet[Tuple[FrozenSet[int], bool]]
 
 
-def compute_variable_frequencies(rules, rule_tree_map, n_trees):
+def compute_variable_frequencies(rules: Set[Rule], rule_tree_map, n_trees):
     """
     Parameters
     ----------
-    rules : list[list[tuple[list[int], bool]]]
+    rules : Set[Rule]
 
     Returns
     -------
@@ -26,8 +26,8 @@ def compute_variable_frequencies(rules, rule_tree_map, n_trees):
 
     for r_idx, rule in enumerate(rules):
         vars_in_rule = set()
-        for feature_indices, features, is_pos in rule:
-            vars_in_rule.update(features)
+        for feature_indices, is_pos in rule:
+            vars_in_rule.update(feature_indices)
 
         for v in vars_in_rule:
             trees_per_var[v].add(rule_tree_map[r_idx])
@@ -40,7 +40,7 @@ def compute_variable_frequencies(rules, rule_tree_map, n_trees):
 
 
 def prune_rules(
-    rules,
+    rules: Set[Rule],
     tree_freq,
     rule_freq,
     min_tree_occ=0.05,
@@ -54,67 +54,66 @@ def prune_rules(
         for v in tree_freq
         if tree_freq[v] >= min_tree_occ and rule_freq.get(v, 0) >= min_rule_occ
     }
-    pruned_rules = []
+    pruned_rules: set[Rule] = set()
 
     for rule in rules:
-        new_rule = []
+        new_terms = []
+        for feat_inds, is_pos in rule:
+            kept_feat_ind = feat_inds & kept_vars
 
-        for feature_indices, features, is_pos in rule:
-            new_features = []
-            new_feature_indices = []
-            for i, feature_name in enumerate(features):
-                if feature_name in kept_vars:
-                    new_features.append(feature_name)
-                    new_feature_indices.append(feature_indices[i])
-            if not new_features:
-                break  # AND-clause fails → drop rule
-            new_rule.append((new_feature_indices, new_features, is_pos))
+            if not kept_feat_ind:
+                break
 
-        if new_rule:
-            pruned_rules.append(new_rule)
+            new_terms.append((frozenset(kept_feat_ind), is_pos))
+
+        if new_terms:
+            pruned_rules.add(frozenset(new_terms))
+
+    # Filter out rules that have only negative terms
+    pruned_rules = {r for r in pruned_rules if any(t[-1] for t in r)}
 
     return pruned_rules, kept_vars
 
 
-def deduplicate_rules(rules):
-    """
-    Removes duplicate rules. Order of triples in a rule and order of features/indices does not matter.
+# def deduplicate_rules(rules):
+#     """
+#     Removes duplicate rules. Order of triples in a rule and order of features/indices does not matter.
 
-    Args:
-        rules: list of rules, each rule is a list of triples
-               (feature_indices: list[int], features: list[str], is_pos: bool)
+#     Args:
+#         rules: list of rules, each rule is a list of triples
+#                (feature_indices: list[int], features: list[str], is_pos: bool)
 
-    Returns:
-        List of unique rules.
-    """
-    seen = set()
-    unique_rules = []
+#     Returns:
+#         List of unique rules.
+#     """
+#     seen = set()
+#     unique_rules = []
 
-    for rule in rules:
-        canonical_rule = []
+#     for rule in rules:
+#         canonical_rule = []
 
-        for feature_indices, features, is_pos in rule:
-            # Sort indices and features to make order irrelevant
-            canonical_triple = (frozenset(feature_indices), frozenset(features), is_pos)
-            canonical_rule.append(canonical_triple)
+#         for feature_indices, features, is_pos in rule:
+#             # Sort indices and features to make order irrelevant
+#             canonical_triple = (frozenset(feature_indices), frozenset(features), is_pos)
+#             canonical_rule.append(canonical_triple)
 
-        # The order of triples in the rule doesn't matter
-        canonical_rule_set = frozenset(canonical_rule)
+#         # The order of triples in the rule doesn't matter
+#         canonical_rule_set = frozenset(canonical_rule)
 
-        if canonical_rule_set not in seen:
-            seen.add(canonical_rule_set)
-            # Recover original rule structure
-            unique_rules.append(rule)
+#         if canonical_rule_set not in seen:
+#             seen.add(canonical_rule_set)
+#             # Recover original rule structure
+#             unique_rules.append(rule)
 
-    return unique_rules
+#     return unique_rules
 
 
-def compute_rule_coverage(X, rules):
+def compute_rule_coverage(X, rules: Set[Rule]):
     """
     Parameters
     ----------
     X : csr_matrix (binary)
-    rules : list[list[tuple[list[int], bool]]]
+    rules : Set(Rule)
 
     Returns
     -------
@@ -125,7 +124,7 @@ def compute_rule_coverage(X, rules):
     for i, rule in enumerate(rules):
         mask = np.ones(n_samples, dtype=bool)
 
-        for feature_indices, features, is_pos in rule:
+        for feature_indices, is_pos in rule:
             cols = list(feature_indices)
             if is_pos:
                 # OR present
@@ -158,7 +157,7 @@ def extract_and_vectorize_rules(
         rule_tree_map,
         n_trees=len(forest.estimators_),
     )
-    
+
     pruned_rules, kept_vars = prune_rules(
         rules,
         tree_freq,
@@ -166,8 +165,8 @@ def extract_and_vectorize_rules(
         min_tree_occ,
         min_rule_occ,
     )
-    pruned_rules = deduplicate_rules(pruned_rules) # deduplicate twice for speed?
-    new_pruned_rules = []
+    # pruned_rules = deduplicate_rules(pruned_rules) # deduplicate twice for speed?
+    new_pruned_rules: set[Rule] = set()
     for rule in pruned_rules:
         # print(rules_to_pubmed_query(
         #         rules=[rule])[0].replace("[tiab]", ""))
@@ -177,9 +176,9 @@ def extract_and_vectorize_rules(
         # for i, r in enumerate(history):
         #     print(i, rules_to_pubmed_query(
         #             rules=[r])[0].replace("[tiab]", ""))
-        new_pruned_rules += history
-    pruned_rules = new_pruned_rules
-    pruned_rules = deduplicate_rules(pruned_rules) # deduplicate twice for speed?
+        new_pruned_rules.update(history)
+    pruned_rules = list(new_pruned_rules)
+    # pruned_rules = deduplicate_rules(pruned_rules) # deduplicate twice for speed?
     coverage = compute_rule_coverage(X, pruned_rules)
 
     return {
@@ -217,7 +216,9 @@ def literal_to_pubmed(features, is_positive, term_expansions):
 
 
 def rules_to_pubmed_query(
-    rules: List[List[Tuple[List[str], List[int], bool]]], term_expansions: dict = None
+    rules: List[Rule],
+    feature_names,
+    term_expansions: dict = None,
 ):
     """
     Converts extracted AND-of-OR rules into a PubMed DNF boolean query.
@@ -226,17 +227,21 @@ def rules_to_pubmed_query(
     path_lens = []
 
     for rule in rules:
-        if not any(is_pos for _, _, is_pos in rule):
+        if not any(is_pos for _, is_pos in rule):
             # Skip clauses that are all NOT
             continue
         pos_literals = [
-            literal_to_pubmed(features, is_pos, term_expansions)
-            for features_indices, features, is_pos in rule
+            literal_to_pubmed(
+                [feature_names[i] for i in features_indices], is_pos, term_expansions
+            )
+            for features_indices, is_pos in rule
             if is_pos
         ]
         neg_literals = [
-            literal_to_pubmed(features, is_pos, term_expansions)
-            for features_indices, features, is_pos in rule
+            literal_to_pubmed(
+                [feature_names[i] for i in features_indices], is_pos, term_expansions
+            )
+            for features_indices, is_pos in rule
             if not is_pos
         ]
 
@@ -263,7 +268,7 @@ def rules_to_pubmed_query(
     }
     query = query.replace("ADDED_OR", "OR").replace("SYNONYM_OR", "OR")
     assert query
-    
+
     return query, query_size
 
 
@@ -396,7 +401,7 @@ def select_rules_via_ga(
 
         # penalize complexity
         cost = np.sum(rule_costs[mask])
-    
+
         # maximize
         return (f3 - cost_factor * cost,)
 
@@ -455,7 +460,7 @@ def select_rules_via_ga(
 
 def coverage_of_rule(X, rule):
     """Return boolean mask of samples covered by a single rule using compute_rule_coverage."""
-    cov = compute_rule_coverage(X, [rule])  # shape (1, n_samples)
+    cov = compute_rule_coverage(X, {rule})  # shape (1, n_samples)
     return cov[0].astype(bool)
 
 
@@ -470,70 +475,60 @@ def metrics_from_mask(mask: np.ndarray, y: np.ndarray):
     return precision, recall, tp, returned, pos_count
 
 
-def deep_copy_rule(rule: Rule):
-    # rule is list of tuples (feature_indices, feature_names, is_pos)
-    new_rule = []
-    for feat_inds, feat_names, is_pos in rule:
-        # ensure we copy lists, sets etc.
-        new_rule.append(
-            (
-                list(feat_inds),
-                list(feat_names) if feat_names is not None else None,
-                bool(is_pos),
-            )
-        )
-    return new_rule
+# def deep_copy_rule(rule: Rule):
+#     # rule is list of tuples (feature_indices, feature_names, is_pos)
+#     new_rule = []
+#     for feat_inds, is_pos in rule:
+#         # ensure we copy lists, sets etc.
+#         new_rule.append(
+#             (
+#                 list(feat_inds),
+#                 list(feat_names) if feat_names is not None else None,
+#                 bool(is_pos),
+#             )
+#         )
+#     return new_rule
 
 
 def generate_one_step_rule_variations(
     rule: Rule, mode: Literal["or", "and"]
-) -> List[Rule]:
+) -> Set[Rule]:
     """
     Generate all rules obtainable by a single pruning step.
 
     Parameters
     ----------
     rule : Rule
-        List of (feature_indices, feature_names, is_positive)
     mode : "or" | "and"
         - "or"  : remove ONE feature from a disjunction
         - "and" : remove ONE entire term
 
     Returns
     -------
-    pruned_rules : List[Rule]
+    pruned_rules : Set[Rule]
         All 1-step pruned variants of the rule
     """
-    pruned_rules: List[Rule] = []
+    pruned_rules: Set[Rule] = set()
 
     if mode == "or":
-        for t_idx, (feat_inds, feat_names, is_pos) in enumerate(rule):
-            # Only prune OR features if it is a positive disjunction with >1 feature
+        for term in rule:
+            feat_inds, is_pos = term
             if len(feat_inds) <= 1:
                 continue
-
-            for f_idx in range(len(feat_inds)):
-                new_rule = copy.deepcopy(rule)
-
-                new_feat_inds = list(new_rule[t_idx][0])
-                new_feat_names = (
-                    list(new_rule[t_idx][1]) if new_rule[t_idx][1] is not None else None
-                )
-
-                new_feat_inds.pop(f_idx)
-                if new_feat_names is not None:
-                    new_feat_names.pop(f_idx)
-
-                new_rule[t_idx] = (new_feat_inds, new_feat_names, True)
-                pruned_rules.append(new_rule)
+            for f in feat_inds:
+                new_inds = feat_inds - {f}
+                new_term = (new_inds, is_pos)
+                new_rule = (rule - {term}) | {new_term}
+                pruned_rules.add(new_rule)
     elif mode == "and":
         if len(rule) > 1:
-            for t_idx in range(len(rule)):
-                new_rule = copy.deepcopy(rule)
-                new_rule.pop(t_idx)
-                pruned_rules.append(new_rule)
+            for term in rule:
+                pruned_rules.add(rule - {term})
     else:
         raise ValueError(f"Unknown mode: {mode}")
+    
+    # Filter out rules that have only negative terms
+    pruned_rules = {r for r in pruned_rules if any(t[-1] for t in r)}
 
     return pruned_rules
 
@@ -612,8 +607,8 @@ def prune_rule_greedy(X, y, rule: Rule, beta: float = 0.1):
       history_meta: list of dicts with metrics for each remembered rule
     """
     # Prepare
-    current_rule = deep_copy_rule(rule)
-    history = [deep_copy_rule(current_rule)]
+    current_rule: Rule = rule
+    history: List[Rule] = [current_rule]
     history_meta = []
 
     # baseline metrics
@@ -639,9 +634,11 @@ def prune_rule_greedy(X, y, rule: Rule, beta: float = 0.1):
             # best_f = -np.inf
             metrics = []
             # iterate over terms
-            candidate_rules = generate_one_step_rule_variations(
-                rule=current_rule,
-                mode=mode,
+            candidate_rules = list(
+                generate_one_step_rule_variations(
+                    rule=current_rule,
+                    mode=mode,
+                )
             )
             if not candidate_rules:
                 break
@@ -671,12 +668,12 @@ def prune_rule_greedy(X, y, rule: Rule, beta: float = 0.1):
                 )
             if mode == "or":
                 acceptance_metric = "tp_gain"
-                acceptance_threshold=-0.1
-                removal_threshold=-0.01
+                acceptance_threshold = -0.1
+                removal_threshold = -0.01
             else:
                 acceptance_metric = "precision_gain"
-                acceptance_threshold=-0.1
-                removal_threshold=-0.01
+                acceptance_threshold = -0.1
+                removal_threshold = -0.01
             best_candidate_index, remove_old = select_best_metric(
                 metrics,
                 acceptance_metric=acceptance_metric,
@@ -701,12 +698,12 @@ def prune_rule_greedy(X, y, rule: Rule, beta: float = 0.1):
                     # drop the second-to-last (the previous state) because "new rule is so good"
                     history.pop(-1)
                     history_meta.pop(-1)
-            
+
             assert current_rule is not None
             assert current_rule != []
-            assert not any([term[0] == [] for term in current_rule])
-            
-            history.append(deep_copy_rule(current_rule))
+            assert not any([not term[0] for term in current_rule])
+
+            history.append(current_rule)
             history_meta.append(best_metric)
             # print("history", history)
             # print("best_metric", best_metric)
