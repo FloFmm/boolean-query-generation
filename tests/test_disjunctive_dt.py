@@ -137,9 +137,9 @@ RF_PARAMS = {
     "min_samples_leaf": 1,
     "min_weight_fraction_leaf": 0.0005,
     "max_features": "sqrt",
-    "randomize_max_feature": 2,
+    "randomize_max_feature": 1,
     "min_impurity_decrease_range": (0.01, 0.01),
-    "randomize_min_impurity_decrease_range": 2,
+    "randomize_min_impurity_decrease_range": 1,
     "bootstrap": False,
     "n_jobs": None,
     "random_state": None,
@@ -153,17 +153,18 @@ QG_PARAMS = {
     "min_tree_occ": 0.05,
     "min_rule_occ": 0.05,
     "cost_factor": 0.002, # 50 ANDs are worth 0.1 F3 score
+    
     }
 
 FORMULAS = [
-    # """((cats OR dogs OR mice) NOT (bowl OR box OR house OR wohnung)) OR ((bowl OR box) AND (house OR wohnung) NOT (cats OR dogs OR mice))""",
+    """((cats OR dogs OR mice) NOT (bowl OR box OR house OR wohnung)) OR ((bowl OR box) AND (house OR wohnung) NOT (cats OR dogs OR mice))""",
     # """NOT (cats OR dogs OR mice) AND (house OR wohnung) AND (bowl OR box)""",
     # """(A AND (B OR C)) OR (NOT A AND C) OR D""",
     # """NOT A AND B""",
     # """A""",
     # """XX OR (YY NOT XX NOT (AA OR BB OR CC OR DD))""",
     # """hello AND bye AND (nope OR never)"""
-    """(A AND B) OR (C AND D) OR (E AND F) OR (G AND H)"""
+    # """(A AND B) OR (C AND D) OR (E AND F)"""
 ]
 
 

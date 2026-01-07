@@ -983,12 +983,12 @@ class GreedyORDecisionTree:
             raise ValueError(f"Invalid max_features: {mf}")
         
         if self.randomize_max_feature:
-            value = biased_random(
+            value = int(biased_random(
                 low = value,
                 high = n_features,
                 exponent = self.randomize_max_feature, # higher for stronger bias toward low numbers
                 rng=self.random_state
-            )
+            ))
         return value
     
 def generate_texts_from_boolean(

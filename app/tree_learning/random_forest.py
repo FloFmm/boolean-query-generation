@@ -407,7 +407,7 @@ class RandomForest:
             )
         else:
             vec_result = extract_and_vectorize_rules(
-                forest=self, X=X, min_tree_occ=min_tree_occ, min_rule_occ=min_rule_occ
+                forest=self, X=X, y=np.asarray(labels), min_tree_occ=min_tree_occ, min_rule_occ=min_rule_occ
             )
             rules = vec_result["rules"]
             # kept_variables = vec_result["kept_variables"]
@@ -422,9 +422,10 @@ class RandomForest:
             selected_rules = [
                 rules[i] for i in selection_result["selected_rule_indices"]
             ]
-            return rules_to_pubmed_query(
+            pubmed_query = rules_to_pubmed_query(
                 rules=selected_rules, term_expansions=term_expansions
             )
+            return pubmed_query
 
     def _find_optimal_threshold(self, **args):
         for tree in self.estimators_:

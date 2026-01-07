@@ -9,7 +9,7 @@ def biased_random(low, high, exponent=2, rng=None):
         exponent: >0, higher = stronger bias toward low
     
     Returns:
-        int: biased random number between low and high
+        float: biased random number between low and high
     """
     if rng is None:
         rng = np.random
@@ -21,6 +21,13 @@ def biased_random(low, high, exponent=2, rng=None):
     biased = u ** exponent
 
     # Map to range [low, high]
-    result = int(low + (high - low) * biased)
+    result = low + (high - low) * biased
 
     return result
+
+
+def f_beta(precision: float, recall: float, beta: float) -> float:
+    if precision == 0 and recall == 0:
+        return 0.0
+    b2 = beta * beta
+    return (1 + b2) * (precision * recall) / (b2 * precision + recall)
