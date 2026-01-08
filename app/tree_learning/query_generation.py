@@ -6,15 +6,21 @@ import scipy.sparse as sp
 from deap import base, creator, tools, algorithms
 from app.helper.helper import f_beta
 
+DEBUG = True  # TODO set to false
+
 # Rule = List[Tuple[List[int], List[str], bool]]
 Rule = FrozenSet[Tuple[FrozenSet[int], bool]]
 
 
-def compute_variable_frequencies(rules: Set[Rule], rule_tree_map, n_trees):
+def rule_size(rule):
+    return sum(len(t) for t in rule)
+
+
+def compute_variable_frequencies(rule_tree_map: dict[Rule, set[int]], n_trees):
     """
     Parameters
     ----------
-    rules : Set[Rule]
+    rule_tree_map : dict[Rule, set[int]]
 
     Returns
     -------
@@ -24,23 +30,22 @@ def compute_variable_frequencies(rules: Set[Rule], rule_tree_map, n_trees):
     trees_per_var = defaultdict(set)
     rules_per_var = defaultdict(int)
 
-    for r_idx, rule in enumerate(rules):
+    for rule, trees in rule_tree_map.items():
         vars_in_rule = set()
         for feature_indices, is_pos in rule:
             vars_in_rule.update(feature_indices)
 
         for v in vars_in_rule:
-            trees_per_var[v].add(rule_tree_map[r_idx])
+            trees_per_var[v].update(trees)
             rules_per_var[v] += 1
 
     tree_freq = {v: len(tset) / n_trees for v, tset in trees_per_var.items()}
-    rule_freq = {v: cnt / len(rules) for v, cnt in rules_per_var.items()}
-
+    rule_freq = {v: cnt / len(rule_tree_map) for v, cnt in rules_per_var.items()}
     return tree_freq, rule_freq
 
 
 def prune_rules(
-    rules: Set[Rule],
+    rule_tree_map: dict[Rule, set[int]],
     tree_freq,
     rule_freq,
     min_tree_occ=0.05,
@@ -54,9 +59,9 @@ def prune_rules(
         for v in tree_freq
         if tree_freq[v] >= min_tree_occ and rule_freq.get(v, 0) >= min_rule_occ
     }
-    pruned_rules: set[Rule] = set()
+    pruned_rule_tree_map: dict[Rule, set[int]] = defaultdict(set)
 
-    for rule in rules:
+    for rule, tree_indices in rule_tree_map.items():
         new_terms = []
         for feat_inds, is_pos in rule:
             kept_feat_ind = feat_inds & kept_vars
@@ -67,12 +72,13 @@ def prune_rules(
             new_terms.append((frozenset(kept_feat_ind), is_pos))
 
         if new_terms:
-            pruned_rules.add(frozenset(new_terms))
+            new_rule = frozenset(new_terms)
+            if any(
+                t[-1] for t in new_rule
+            ):  # Filter out rules that have only negative terms
+                pruned_rule_tree_map[new_rule].update(tree_indices)
 
-    # Filter out rules that have only negative terms
-    pruned_rules = {r for r in pruned_rules if any(t[-1] for t in r)}
-
-    return pruned_rules, kept_vars
+    return pruned_rule_tree_map, kept_vars
 
 
 # def deduplicate_rules(rules):
@@ -147,44 +153,59 @@ def extract_and_vectorize_rules(
     y,
     min_tree_occ=0.05,
     min_rule_occ=0.02,
-):
+) -> List[Rule]:
     """
     Full pipeline for AND-of-OR rules.
     """
-    rules, rule_tree_map = forest.get_tree_paths()
+    rule_tree_map = forest.get_tree_paths()
+
     tree_freq, rule_freq = compute_variable_frequencies(
-        rules,
         rule_tree_map,
         n_trees=len(forest.estimators_),
     )
 
-    pruned_rules, kept_vars = prune_rules(
-        rules,
+    rule_tree_map, kept_vars = prune_rules(
+        rule_tree_map,
         tree_freq,
         rule_freq,
         min_tree_occ,
         min_rule_occ,
     )
     # pruned_rules = deduplicate_rules(pruned_rules) # deduplicate twice for speed?
-    new_pruned_rules: set[Rule] = set()
-    for rule in pruned_rules:
-        # print(rules_to_pubmed_query(
-        #         rules=[rule])[0].replace("[tiab]", ""))
-        current_rule, history, history_meta = prune_rule_greedy(X, y, rule)
-        # print()
-        # print("after")
-        # for i, r in enumerate(history):
-        #     print(i, rules_to_pubmed_query(
-        #             rules=[r])[0].replace("[tiab]", ""))
-        new_pruned_rules.update(history)
-    pruned_rules = list(new_pruned_rules)
+    new_rule_tree_map: dict[Rule, set[int]] = defaultdict(set)
+    histories: set[FrozenSet[Rule]] = set()
+    initial_solutions: dict[int, set[Rule]] = defaultdict(set)
+    for rule, tree_indices in rule_tree_map.items():
+        current_rule, history, history_meta = prune_rule_greedy(X, y, rule, histories)
+
+        biggest_rule = history[0]
+        for tree_inx in tree_indices:
+            initial_solutions[tree_inx].add(biggest_rule)
+
+        # TODO rule_tree_map no yet used
+        histories.add(frozenset(history))
+        for r in history:
+            new_rule_tree_map[r].update(tree_indices)
+    rule_tree_map = new_rule_tree_map
+    pruned_rules = list(rule_tree_map.keys())
+
+    rule_to_idx = {r: i for i, r in enumerate(pruned_rules)}
+    initial_solutions_binary = [
+        np.isin(
+            np.arange(len(pruned_rules)),
+            [rule_to_idx[r] for r in initial_solutions[tree_inx]],
+        ).astype(int)
+        for tree_inx in sorted(initial_solutions)
+    ]
+
     # pruned_rules = deduplicate_rules(pruned_rules) # deduplicate twice for speed?
     coverage = compute_rule_coverage(X, pruned_rules)
-
     return {
         "rules": pruned_rules,
         "kept_variables": kept_vars,
         "coverage": coverage,
+        "initial_solutions_binary": initial_solutions_binary,
+        "initial_solutions": initial_solutions,
     }
 
 
@@ -273,7 +294,6 @@ def rules_to_pubmed_query(
 
 
 def query_size(rules):
-    print(rules)
     query_size = {
         "paths": len(rules),
         "avg_path_len": sum([len(rule) for rule in rules]) / len(rules)
@@ -305,7 +325,7 @@ def query_cost(query_size, weights=None):
             # "avg_path_len": 0.0,
             "ANDs": 1.0,
             "NOTs": 1.5,
-            "added_ORs": 0.25,
+            "added_ORs": 0.5,
             # "synonym_ORs": 0.0,
             # "ORs": 0.0,
         }
@@ -507,9 +527,10 @@ def generate_one_step_rule_variations(
     -------
     pruned_rules : Set[Rule]
         All 1-step pruned variants of the rule
+    removal_in_negated_term : list[bool]
     """
-    pruned_rules: Set[Rule] = set()
-
+    pruned_rules: list[Rule] = []
+    removal_in_negated_term: list[bool] = []
     if mode == "or":
         for term in rule:
             feat_inds, is_pos = term
@@ -519,25 +540,25 @@ def generate_one_step_rule_variations(
                 new_inds = feat_inds - {f}
                 new_term = (new_inds, is_pos)
                 new_rule = (rule - {term}) | {new_term}
-                pruned_rules.add(new_rule)
+                pruned_rules.append(new_rule)
+                removal_in_negated_term.append(not term[-1])
     elif mode == "and":
         if len(rule) > 1:
             for term in rule:
-                pruned_rules.add(rule - {term})
+                pruned_rules.append(rule - {term})
+                removal_in_negated_term.append(not term[-1])
     else:
         raise ValueError(f"Unknown mode: {mode}")
-    
-    # Filter out rules that have only negative terms
-    pruned_rules = {r for r in pruned_rules if any(t[-1] for t in r)}
 
-    return pruned_rules
+    # Filter out rules that have only negative terms
+    pruned_rules = [r for r in pruned_rules if any(t[-1] for t in r)]
+
+    return pruned_rules, removal_in_negated_term
 
 
 def select_best_metric(
     metrics: List[Dict],
-    acceptance_metric: str,
-    acceptance_threshold: float,
-    removal_threshold: float,
+    removal_mode: Literal["or", "and"],
 ) -> Optional[int]:
     """
     Select index of the best metric from a list of metric dicts.
@@ -558,40 +579,70 @@ def select_best_metric(
     index : int or None
         Index of the selected metric in the list, or None if none pass acceptance
     """
+
+    threshold = {
+        "or": {
+            False: { # removal in negated term false -> is positive term
+                "acceptance_metric": "tp_gain",
+                "acceptance_threshold": -0.1,
+                "removal_threshold": -0.01,
+            },
+            True: {
+                "acceptance_metric": "precision_gain",
+                "acceptance_threshold": -0.1,
+                "removal_threshold": -0.01,
+            },
+        },
+        "and": {
+            False: {
+                "acceptance_metric": "precision_gain",
+                "acceptance_threshold": -0.1,
+                "removal_threshold": -0.01,
+            },
+            True: {
+                "acceptance_metric": "precision_gain",
+                "acceptance_threshold": -0.1,
+                "removal_threshold": -0.01,
+            },
+        },
+    }
+
     best_idx = None
     best_f = -float("inf")
 
+    remove_old = False
     # First, filter only metrics passing acceptance_threshold
-    accepted_indices = [
-        i for i, m in enumerate(metrics) if m[acceptance_metric] > acceptance_threshold
-    ]
-
-    if not accepted_indices:
-        return None, False
-
-    # Separate metrics above removal_threshold
-    preferred_indices = [
-        i for i in accepted_indices if metrics[i][acceptance_metric] > removal_threshold
-    ]
-
-    # Decide which indices to consider
-    if preferred_indices:
-        remove_old = True
-        candidate_indices = preferred_indices
-    else:
-        remove_old = False
-        candidate_indices = accepted_indices
-
-    # Pick the one with max f among candidates
-    for i in candidate_indices:
-        if metrics[i]["f"] > best_f:
-            best_f = metrics[i]["f"]
+    for i, m in enumerate(metrics):
+        in_neg_term = m["removal_in_negated_term"]
+        acceptance_metric = threshold[removal_mode][in_neg_term]["acceptance_metric"]
+        value = m[acceptance_metric]
+        acceptance_threshold = threshold[removal_mode][in_neg_term]["acceptance_threshold"]
+        removal_threshold = threshold[removal_mode][in_neg_term]["removal_threshold"]
+        
+        
+        if value < acceptance_threshold:
+            continue
+        
+        if value < removal_threshold:
+            if remove_old:
+                continue
+        
+        if value >= removal_threshold and not remove_old:
+            # first remove_old
+            best_f = m["f"]
             best_idx = i
-
+            remove_old = True
+            continue
+            
+        if m["f"] > best_f:
+            best_f = m["f"]
+            best_idx = i
     return best_idx, remove_old
 
 
-def prune_rule_greedy(X, y, rule: Rule, beta: float = 0.1):
+def prune_rule_greedy(
+    X, y, rule: Rule, histories: set[FrozenSet[Rule]], beta: float = 0.1
+):
     """
     Greedy prune a single rule in two stages:
       1) remove OR features (inside disjunctions) - only disjunctions with >1 features
@@ -629,24 +680,46 @@ def prune_rule_greedy(X, y, rule: Rule, beta: float = 0.1):
 
     for mode in ["and", "or"]:
         while True:
+            for h in histories:
+                if len(current_rule) > 1 and current_rule in h:
+                    smaller_rules = {
+                        r
+                        for r in h
+                        if rule_size(r) <= rule_size(current_rule)
+                        if r != current_rule
+                    }
+                    sorted_rules = sorted(smaller_rules, key=rule_size, reverse=True)
+                    history += sorted_rules
+
+                    if DEBUG:  # TODO REMOVE
+                        assert all(
+                            rule_size(history[i]) >= rule_size(history[i + 1])
+                            for i in range(len(history) - 1)
+                        ), "History is not sorted by rule size (descending)"
+
+                    return (
+                        None,
+                        history,
+                        None,
+                    )
+
             # best_candidate = None
             # best_metrics = None
             # best_f = -np.inf
             metrics = []
             # iterate over terms
-            candidate_rules = list(
+            candidate_rules, removal_in_negated_term = (
                 generate_one_step_rule_variations(
                     rule=current_rule,
                     mode=mode,
                 )
             )
+
             if not candidate_rules:
                 break
-            # print()
-            # print("current", current_rule)
-            # print("candidate_rules", candidate_rules)
-            # print()
-            for cand_rule in candidate_rules:
+            for cand_rule, removal_in_neg in zip(
+                candidate_rules, removal_in_negated_term
+            ):
                 # compute metrics
                 mask_c = coverage_of_rule(X, cand_rule)
                 p_new, r_new, tp_new, ret_new, _ = metrics_from_mask(mask_c, y)
@@ -664,21 +737,13 @@ def prune_rule_greedy(X, y, rule: Rule, beta: float = 0.1):
                         "returned": ret_new,
                         "tp_gain": tp_gain,
                         "precision_gain": precision_gain,
+                        "removal_in_negated_term": removal_in_neg,
                     }
                 )
-            if mode == "or":
-                acceptance_metric = "tp_gain"
-                acceptance_threshold = -0.1
-                removal_threshold = -0.01
-            else:
-                acceptance_metric = "precision_gain"
-                acceptance_threshold = -0.1
-                removal_threshold = -0.01
+
             best_candidate_index, remove_old = select_best_metric(
                 metrics,
-                acceptance_metric=acceptance_metric,
-                acceptance_threshold=acceptance_threshold,
-                removal_threshold=removal_threshold,
+                removal_mode=mode,
             )
             if best_candidate_index is None:
                 break
@@ -705,61 +770,7 @@ def prune_rule_greedy(X, y, rule: Rule, beta: float = 0.1):
 
             history.append(current_rule)
             history_meta.append(best_metric)
-            # print("history", history)
-            # print("best_metric", best_metric)
     return current_rule, history, history_meta
 
 
-""""
-TODO
--1) ==DONE== add complexity to ga
-0) note all the below into nodes for later writing
-1) pass intial solutions (trees of forest) to ga
-    - for that we have to remember which rules we deleted by duplicate
-2) extract rules from tree better (find optimal threshold makes it worse)
-    - simply threshold is not good
-    - cost complexity pruning? which rules and their ancestors to include?
-    - include more rules -> hence remove last view features of each rule and include those aswell?
-    - algo:
-        - caclulate very low threshold for each tree -> to get many 1 rules
-            - e.g. simply take standard threshold of weighted trees: num_class_1 > class_1/(class_1+class_2) (using weight)
-        - for each rule:
-            - let:
-                - precision_gain = (precision - precision_old) 
-                    - range: [-1, 1]
-                - tp_gain = (tp_new - tp_old) / tp_old
-            - greedily remove (to remove useless stuff):
-                - AND term that maximizes: F0.1-score
-                    - can only increase #covered by removing AND term
-                    - accept new rule if: precision_gain > -0.1
-                    - remove old rule if: precision_gain > -0.01
-                - OR term that maximizes: F0.1-score
-                    - can only decrease #covered by removing OR term
-                    - accept new rule if: tp_gain > -0.1
-                    - remove old rule if: tp_gain > -0.01 
-            - greedily remove (for better rules):
-                - AND term that maximizes: f0.1-score (precision 10 times more improtant than recall)
-                    - f_imp = 0.01*(#covered - #covered_old)/#covered_old + (precision - precision_old)
-                    - condition: (precision_old - precision) < 0.2
-                    - can only increase #covered by removing
-                    - can increase and decrease precision
-                    - if we cover twice as much than its ok if we lose 1% precision
-                    - GPT: f = α · log(covered / covered_old) + (precision − precision_old)
-                    - remove old rule if: (precision_old - precision) < 0.01
-                - OR term that maximizes: 0.1*(#covered - #covered_old)/#covered_old + (precision - precision_old)
-                    - can only decrease #covered by removing OR term
-                    - can increase and decrease precision
-                    - if we gain 10% preicsion then its ok if we cover half as much
-                    - remove old rule if: (precision_old - precision) > 0 and (#covered - #covered_old)/#covered_old < 0.05
-3) different target? select subset rules which mimic the forest output (not the training data)???
-4) ==DONE== varying parameters across trees of forest. vary the following: 
-    - min_impurity_decrease_range because we otherwise cannot learn the function (A and B) OR (C AND D)
-        because always A OR C is selected first. (migh this be solvable using competing AND and OR splits?)
-    - max_features because with small max_features (=sqrt) we cannot learn A and B and C and D since it is unlikely that those are all avaiable at the given nodes
-5) ==DONE== first tree always gets all features currently. is that good? somewhat cheating?
-6) compare rf results to best tree (did we find better solutions htat best tree among the forest)
-7) does old prune algo work when it removes the last word of a term? hence empty list?
-8) todo: only keep two best pruned rules per rule (instead of delete old)
-9) always check if pruned rule is already generated then we can stop there (not prune it further)
-10) pruned rule sometimes empty
-"""
+

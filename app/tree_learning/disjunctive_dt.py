@@ -697,8 +697,6 @@ class GreedyORDecisionTree:
             count_retrieved = int(search_pubmed(pubmed_query)["Count"])
             if count_retrieved == 0:
                 return 0.0
-            # print("count_retrieved", count_retrieved)
-            # print("query size", len(pubmed_query))
             return tp / count_retrieved
 
         def get_metric(y_true, y_pred, name, term_expansions):
@@ -711,7 +709,6 @@ class GreedyORDecisionTree:
                 return -1 * int(search_pubmed(pubmed_query)["Count"])
             elif name.startswith("pubmed_f"):
                 prec = pubmed_precision(y_true, y_pred, term_expansions)
-                # print("prec", prec)
                 match = re.match(r"pubmed_f(\d+(\.\d+)?)", name)
                 beta = float(match.group(1))
                 recall = recall_score(y_true, y_pred, zero_division=0)
@@ -734,11 +731,6 @@ class GreedyORDecisionTree:
             y_pred = (probs >= t - 1e-8).astype(int)
             main_score = get_metric(y_true, y_pred, metric, term_expansions)
 
-            # print(self.pretty_print(verbose=True))
-            # print("t", t)
-            # print("mainscore", main_score)
-            # print("y_pred.sum()", y_pred.sum())
-            # print()
             if constraint:
                 constraint_score = get_metric(
                     y_true, y_pred, constraint["metric"], term_expansions
@@ -764,7 +756,6 @@ class GreedyORDecisionTree:
 
         self._optimal_threshold = best_threshold
         self._optimal_score = best_score
-        # print("==============================optimal===============================", self._optimal_threshold)
         self._optimal_metric = metric
         if final_constraint_score == -float("inf"):
             final_constraint_score = None

@@ -92,7 +92,7 @@ def run_tree_test(
         )
         
     generated_pubmed_query = remove_tags(generated_pubmed_query)
-    print(classifier.estimators_[0].pretty_print())
+    print(classifier.estimators_[0].pretty_print(verbose=True))
     print()
     print("CORRECT QUERY\n", pubmed_query)
     print()
@@ -133,16 +133,15 @@ TREE_PARAMS = {
     "class_weight": "balanced",
 }
 RF_PARAMS = {
-    "n_estimators": 20,
+    "n_estimators": 10,
     "max_depth": 4,
     "min_samples_split": 2,
-    "min_samples_leaf": 1,
     "min_weight_fraction_leaf": 0.0005,
     "max_features": "sqrt",
     "randomize_max_feature": 1,
     "min_impurity_decrease_range": (0.01, 0.01),
     "randomize_min_impurity_decrease_range": 1,
-    "bootstrap": False,
+    "bootstrap": True,
     "n_jobs": None,
     "random_state": None,
     "verbose": False,
@@ -160,16 +159,15 @@ QG_PARAMS = {
 
 FORMULAS = [
     """((cats OR dogs OR mice) NOT (bowl OR box OR house OR wohnung)) OR ((bowl OR box) AND (house OR wohnung) NOT (cats OR dogs OR mice))""",
-    # """NOT (cats OR dogs OR mice) AND (house OR wohnung) AND (bowl OR box)""",
-    # """(A AND (B OR C)) OR (NOT A AND C) OR D""",
-    # """NOT A AND B""",
-    # """A""",
-    # """XX OR (YY NOT XX NOT (AA OR BB OR CC OR DD))""",
-    # """hello AND bye AND (nope OR never)""",
-    # """(A AND B) OR (C AND D) OR (E AND F)""",
-    # """A NOT B""",
+    """NOT (cats OR dogs OR mice) AND (house OR wohnung) AND (bowl OR box)""",
+    """(A AND (B OR C)) OR (NOT A AND C) OR D""",
+    """NOT A AND B""",
+    """A""",
+    """XX OR (YY NOT XX NOT (AA OR BB OR CC OR DD))""",
+    """hello AND bye AND (nope OR never)""",
+    """(A AND B) OR (C AND D) OR (E AND F)""",
+    """A NOT B""",
 ]
-
 
 @pytest.mark.parametrize("formula", FORMULAS, ids=lambda f: f[:40])
 def test_basic_formulas_dt(formula):

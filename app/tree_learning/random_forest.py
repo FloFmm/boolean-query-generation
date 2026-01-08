@@ -3,6 +3,7 @@ from typing import List, Tuple
 from joblib import Parallel, delayed
 from scipy.sparse import issparse
 from numbers import Integral, Real
+from collections import defaultdict
 from app.tree_learning.disjunctive_dt import (
     GreedyORDecisionTree,
     compute_class_weight,
@@ -286,7 +287,6 @@ class RandomForest:
             X.sort_indices()
 
         self.class_weight = compute_class_weight(self.class_weight, X, y)
-
         expanded_class_weight = compute_sample_weight(self.class_weight, np.copy(y))
 
         if expanded_class_weight is not None:
@@ -351,9 +351,7 @@ class RandomForest:
                 "randomize_max_feature": tree_randomize_max_feature,
                 "random_state": self.random_state,
             }
-            trees = [
-                GreedyORDecisionTree(**tree_config) for i in range(self.n_estimators)
-            ]
+            trees.append(GreedyORDecisionTree(**tree_config))
 
         trees = Parallel(
             n_jobs=self.n_jobs,
@@ -386,45 +384,77 @@ class RandomForest:
 
         Returns
         -------
-        rules : list[dict]
-        rule_tree_map : list[int]
+        rules : List[Rule]
+        rule_tree_map : dict: Rule -> int
             tree index for each rule
         """
-        all_rules = []
-        rule_tree_map = []
+        # all_rules = []
+        rule_tree_map = defaultdict(set)
 
         for t_idx, tree in enumerate(self.estimators_):
             tree_rules = tree.get_tree_paths()
-            all_rules.extend(tree_rules)
-            rule_tree_map.extend([t_idx] * len(tree_rules))
-        return all_rules, rule_tree_map
+            # all_rules.extend(tree_rules)
+            for r in tree_rules:
+                rule_tree_map[r].add(t_idx)
+            # rule_tree_map.extend([t_idx] * len(tree_rules))
+        return rule_tree_map
 
-    def pubmed_query(self, feature_names, term_expansions: dict = None, X=None, labels=None, min_tree_occ=0.05, min_rule_occ=0.05, cost_factor=0.002):
+    def pubmed_query(
+        self,
+        feature_names,
+        term_expansions: dict = None,
+        X=None,
+        labels=None,
+        min_tree_occ=0.05,
+        min_rule_occ=0.05,
+        cost_factor=0.002,
+    ):
         if X is None or labels is None:
             all_rules, rule_tree_map = self.get_tree_paths()
             return rules_to_pubmed_query(
-                rules=all_rules, feature_names=feature_names, term_expansions=term_expansions
+                rules=all_rules,
+                feature_names=feature_names,
+                term_expansions=term_expansions,
             )
         else:
             vec_result = extract_and_vectorize_rules(
-                forest=self, X=X, y=np.asarray(labels), min_tree_occ=min_tree_occ, min_rule_occ=min_rule_occ
+                forest=self,
+                X=X,
+                y=np.asarray(labels),
+                min_tree_occ=min_tree_occ,
+                min_rule_occ=min_rule_occ,
             )
             rules = vec_result["rules"]
-            # kept_variables = vec_result["kept_variables"]
-            coverage = vec_result["coverage"]
-            rule_costs = np.array([query_cost(query_size([r])) for r in rules])
-            selection_result = select_rules_via_ga(
-                coverage=coverage,
-                y=np.array(labels),
-                rule_costs=rule_costs,
-                cost_factor=cost_factor,
-            )
-            selected_rules = [
-                rules[i] for i in selection_result["selected_rule_indices"]
-            ]
+            if len(rules) > 1:
+                # kept_variables = vec_result["kept_variables"]
+                coverage = vec_result["coverage"]
+                rule_costs = np.array([query_cost(query_size([r])) for r in rules])
+                selection_result = select_rules_via_ga(
+                    coverage=coverage,
+                    y=np.array(labels),
+                    rule_costs=rule_costs,
+                    cost_factor=cost_factor,
+                    initial_solutions=vec_result["initial_solutions_binary"],
+                )
+                rules = [rules[i] for i in selection_result["selected_rule_indices"]]
             pubmed_query = rules_to_pubmed_query(
-                rules=selected_rules, feature_names=feature_names, term_expansions=term_expansions
+                rules=rules,
+                feature_names=feature_names,
+                term_expansions=term_expansions,
             )
+
+            # TODO REMOVE
+            print("INITIAL SOLUTIONS")
+            for tree, rs in vec_result["initial_solutions"].items():
+                print(
+                    tree,
+                    rules_to_pubmed_query(
+                        rules=rs,
+                        feature_names=feature_names,
+                        term_expansions=term_expansions,
+                    )[0].replace("[tiab]", ""),
+                )
+
             return pubmed_query
 
     def _find_optimal_threshold(self, **args):
