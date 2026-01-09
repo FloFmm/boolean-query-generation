@@ -89,6 +89,7 @@ def run_tree_test(
             min_tree_occ=qg_params["min_tree_occ"],
             min_rule_occ=qg_params["min_rule_occ"],
             cost_factor=qg_params["cost_factor"],
+            min_rule_precision=qg_params["min_rule_precision"],
         )
         
     generated_pubmed_query = remove_tags(generated_pubmed_query)
@@ -133,7 +134,7 @@ TREE_PARAMS = {
     "class_weight": "balanced",
 }
 RF_PARAMS = {
-    "n_estimators": 10,
+    "n_estimators": 1,
     "max_depth": 4,
     "min_samples_split": 2,
     "min_weight_fraction_leaf": 0.0005,
@@ -146,18 +147,20 @@ RF_PARAMS = {
     "random_state": None,
     "verbose": False,
     "class_weight": "balanced",
-    "ccp_alpha": 0.0,
     "max_samples": None,
     "top_k_or_candidates": 500,
+    "prefer_pos_splits": 1.1
 }
 QG_PARAMS = {
     "min_tree_occ": 0.05,
     "min_rule_occ": 0.05,
     "cost_factor": 0.002, # 50 ANDs are worth 0.1 F3 score
-    
+    "min_rule_precision": 0.01,
     }
 
 FORMULAS = [
+    # easy, solvable by single dt"
+    """((cats OR dogs OR mice) NOT (x OR y)) OR ((cats OR dogs OR mice) AND (bowl OR box) AND (house OR wohnung))""",
     """((cats OR dogs OR mice) NOT (bowl OR box OR house OR wohnung)) OR ((bowl OR box) AND (house OR wohnung) NOT (cats OR dogs OR mice))""",
     """NOT (cats OR dogs OR mice) AND (house OR wohnung) AND (bowl OR box)""",
     """(A AND (B OR C)) OR (NOT A AND C) OR D""",
@@ -165,8 +168,13 @@ FORMULAS = [
     """A""",
     """XX OR (YY NOT XX NOT (AA OR BB OR CC OR DD))""",
     """hello AND bye AND (nope OR never)""",
-    """(A AND B) OR (C AND D) OR (E AND F)""",
     """A NOT B""",
+    # middle sometimes solved by single tree
+    """((X OR Y OR Z) AND B) OR ((U OR V OR W) NOT B)""", # reuires pruning of rules
+    # hard 
+    """(A AND B) OR (C AND D) OR (E AND F)""",
+    """(A AND B AND C) OR (D AND E AND F)""",
+    """((A OR X) AND B NOT C) OR (D AND (E OR Y) NOT F)""",
 ]
 
 @pytest.mark.parametrize("formula", FORMULAS, ids=lambda f: f[:40])

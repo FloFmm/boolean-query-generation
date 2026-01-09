@@ -204,6 +204,7 @@ class RandomForest:
         ccp_alpha=0.0,
         max_samples=None,
         top_k_or_candidates=None,
+        prefer_pos_splits=None,
     ):
         """
         Initialize a RandomForest instance.
@@ -234,6 +235,7 @@ class RandomForest:
         self.estimators_ = []
         self._n_samples_bootstrap = None
         self.n_outputs_ = None
+        self.prefer_pos_splits = prefer_pos_splits
 
     def fit(self, X, y, sample_weight=None, feature_names=None):
         """
@@ -350,6 +352,7 @@ class RandomForest:
                 "max_features": tree_max_features,
                 "randomize_max_feature": tree_randomize_max_feature,
                 "random_state": self.random_state,
+                "prefer_pos_splits": self.prefer_pos_splits,
             }
             trees.append(GreedyORDecisionTree(**tree_config))
 
@@ -408,6 +411,7 @@ class RandomForest:
         min_tree_occ=0.05,
         min_rule_occ=0.05,
         cost_factor=0.002,
+        min_rule_precision=0.01,
     ):
         if X is None or labels is None:
             all_rules, rule_tree_map = self.get_tree_paths()
@@ -423,6 +427,7 @@ class RandomForest:
                 y=np.asarray(labels),
                 min_tree_occ=min_tree_occ,
                 min_rule_occ=min_rule_occ,
+                min_rule_precision=min_rule_precision,
             )
             rules = vec_result["rules"]
             if len(rules) > 1:

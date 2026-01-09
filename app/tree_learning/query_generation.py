@@ -6,8 +6,6 @@ import scipy.sparse as sp
 from deap import base, creator, tools, algorithms
 from app.helper.helper import f_beta
 
-DEBUG = True  # TODO set to false
-
 # Rule = List[Tuple[List[int], List[str], bool]]
 Rule = FrozenSet[Tuple[FrozenSet[int], bool]]
 
@@ -153,6 +151,7 @@ def extract_and_vectorize_rules(
     y,
     min_tree_occ=0.05,
     min_rule_occ=0.02,
+    min_rule_precision=0.01,
 ) -> List[Rule]:
     """
     Full pipeline for AND-of-OR rules.
@@ -173,17 +172,25 @@ def extract_and_vectorize_rules(
     )
     # pruned_rules = deduplicate_rules(pruned_rules) # deduplicate twice for speed?
     new_rule_tree_map: dict[Rule, set[int]] = defaultdict(set)
-    histories: set[FrozenSet[Rule]] = set()
+    histories: set[tuple[Rule]] = set()
+    rule_stats: dict[Rule, dict] = {} # changed in place by prune_rule_greedy
     initial_solutions: dict[int, set[Rule]] = defaultdict(set)
     for rule, tree_indices in rule_tree_map.items():
-        current_rule, history, history_meta = prune_rule_greedy(X, y, rule, histories)
-
+        history = prune_rule_greedy(
+            X, y, rule, histories=histories, rule_stats=rule_stats
+        )
+        assert len(history) == len(set(history))
+        
+        history = tuple(r for r in history if rule_stats[r]["precision"] > min_rule_precision)
+        
+        if not history:
+            continue
+        
         biggest_rule = history[0]
         for tree_inx in tree_indices:
             initial_solutions[tree_inx].add(biggest_rule)
 
-        # TODO rule_tree_map no yet used
-        histories.add(frozenset(history))
+        histories.add(tuple(history))
         for r in history:
             new_rule_tree_map[r].update(tree_indices)
     rule_tree_map = new_rule_tree_map
@@ -371,7 +378,7 @@ def select_rules_via_ga(
         rule_costs = np.ones(n_rules)
 
     # ensure sparse
-    if not sp.issparse(coverage):
+    if not sp.issparse(coverage): #TODO (currently ga algo transforms matrix himself into sparse). can we do it before that?
         coverage = sp.csr_matrix(coverage)
 
     # ----------------------------
@@ -426,7 +433,8 @@ def select_rules_via_ga(
         return (f3 - cost_factor * cost,)
 
     toolbox.register("evaluate", evaluate)
-    toolbox.register("mate", tools.cxTwoPoint)
+    toolbox.register("mate", tools.cxUniform, indpb=0.5)
+    # toolbox.register("mate", tools.cxTwoPoint)
     toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
     toolbox.register("select", tools.selTournament, tournsize=3)
 
@@ -582,7 +590,7 @@ def select_best_metric(
 
     threshold = {
         "or": {
-            False: { # removal in negated term false -> is positive term
+            False: {  # removal in negated term false -> is positive term
                 "acceptance_metric": "tp_gain",
                 "acceptance_threshold": -0.1,
                 "removal_threshold": -0.01,
@@ -616,24 +624,32 @@ def select_best_metric(
         in_neg_term = m["removal_in_negated_term"]
         acceptance_metric = threshold[removal_mode][in_neg_term]["acceptance_metric"]
         value = m[acceptance_metric]
-        acceptance_threshold = threshold[removal_mode][in_neg_term]["acceptance_threshold"]
+        acceptance_threshold = threshold[removal_mode][in_neg_term][
+            "acceptance_threshold"
+        ]
         removal_threshold = threshold[removal_mode][in_neg_term]["removal_threshold"]
-        
-        
+
         if value < acceptance_threshold:
             continue
-        
+
         if value < removal_threshold:
             if remove_old:
                 continue
-        
+
         if value >= removal_threshold and not remove_old:
             # first remove_old
             best_f = m["f"]
             best_idx = i
             remove_old = True
             continue
-            
+
+        # if value >= removal_threshold:
+        #     print("in_neg_term", in_neg_term)
+        #     print("acceptance_metric", acceptance_metric)
+        #     print("value", value)
+        #     print("acceptance_threshold", acceptance_threshold)
+        #     print("removal_threshold", removal_threshold)
+
         if m["f"] > best_f:
             best_f = m["f"]
             best_idx = i
@@ -641,7 +657,12 @@ def select_best_metric(
 
 
 def prune_rule_greedy(
-    X, y, rule: Rule, histories: set[FrozenSet[Rule]], beta: float = 0.1
+    X,
+    y,
+    rule: Rule,
+    histories: set[FrozenSet[Rule]],
+    rule_stats: dict[Rule, dict], # changed in place
+    beta: float = 0.1,
 ):
     """
     Greedy prune a single rule in two stages:
@@ -655,12 +676,10 @@ def prune_rule_greedy(
     Returns:
       best_rule: pruned rule (in same format)
       history: list of remembered rules (each rule is a deep copy)
-      history_meta: list of dicts with metrics for each remembered rule
     """
     # Prepare
     current_rule: Rule = rule
     history: List[Rule] = [current_rule]
-    history_meta = []
 
     # baseline metrics
     mask = coverage_of_rule(X, current_rule)
@@ -668,40 +687,31 @@ def prune_rule_greedy(
     if tp_old == 0:
         return None, [], []
     f_old = f_beta(p_old, r_old, beta)
-    history_meta.append(
-        {
-            "f": f_old,
-            "precision": p_old,
-            "recall": r_old,
-            "tp": tp_old,
-            "returned": ret_old,
-        }
-    )
-
+    best_metric = {
+        "f": f_old,
+        "precision": p_old,
+        "recall": r_old,
+        "tp": tp_old,
+        "returned": ret_old,
+    }
+    
     for mode in ["and", "or"]:
         while True:
-            for h in histories:
-                if len(current_rule) > 1 and current_rule in h:
-                    smaller_rules = {
-                        r
-                        for r in h
-                        if rule_size(r) <= rule_size(current_rule)
-                        if r != current_rule
-                    }
-                    sorted_rules = sorted(smaller_rules, key=rule_size, reverse=True)
-                    history += sorted_rules
-
-                    if DEBUG:  # TODO REMOVE
-                        assert all(
-                            rule_size(history[i]) >= rule_size(history[i + 1])
-                            for i in range(len(history) - 1)
-                        ), "History is not sorted by rule size (descending)"
-
-                    return (
-                        None,
-                        history,
-                        None,
-                    )
+            if current_rule not in rule_stats:
+                rule_stats[current_rule] = best_metric
+            else:
+                for h in histories:
+                    if len(current_rule) > 1 and current_rule in h:
+                        # smaller_rules = {
+                        #     r
+                        #     for r in h
+                        #     if rule_size(r) <= rule_size(current_rule)
+                        #     if r != current_rule
+                        # }
+                        # sorted_rules = sorted(smaller_rules, key=rule_size, reverse=True)
+                        rule_idx = h.index(current_rule) + 1
+                        history += h[rule_idx:]
+                        return history
 
             # best_candidate = None
             # best_metrics = None
@@ -724,7 +734,10 @@ def prune_rule_greedy(
                 mask_c = coverage_of_rule(X, cand_rule)
                 p_new, r_new, tp_new, ret_new, _ = metrics_from_mask(mask_c, y)
                 f_new = f_beta(p_new, r_new, beta)
-
+                # print("candidate", cand_rule)
+                # print("mode", mode)
+                # print("tp_new", tp_new)
+                # print("tp_old", tp_old)
                 tp_gain = (tp_new - tp_old) / tp_old
                 precision_gain = p_new - p_old
 
@@ -762,15 +775,16 @@ def prune_rule_greedy(
                 if len(history) >= 1:
                     # drop the second-to-last (the previous state) because "new rule is so good"
                     history.pop(-1)
-                    history_meta.pop(-1)
 
             assert current_rule is not None
             assert current_rule != []
             assert not any([not term[0] for term in current_rule])
 
             history.append(current_rule)
-            history_meta.append(best_metric)
-    return current_rule, history, history_meta
-
-
-
+            # history_meta.append(best_metric)
+            tp_old = best_metric["tp"]
+            p_old = best_metric["precision"]
+            r_old = best_metric["recall"]
+            ret_old = best_metric["returned"]
+            f_old = f_beta(p_old, r_old, beta)
+    return history

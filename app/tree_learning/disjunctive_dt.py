@@ -127,7 +127,7 @@ def fast_gini_both(
     n_left = len(rows)
 
     if n_left < min_samples_split or n_left > n_total - min_samples_split:
-        return 1.0, False
+        return 1.0, False, False
 
     w_left = 0.0
     w_class_1_left = 0.0
@@ -141,14 +141,14 @@ def fast_gini_both(
         w_left / total_sample_weight < min_weight_fraction_leaf
         or w_right / total_sample_weight < min_weight_fraction_leaf
     ):
-        return 1.0, False
+        return 1.0, False, False
 
     assert w_left >= 0
     assert w_right >= 0
     if (
         w_left == 0 or w_right == 0
     ):  # weights can be 0 due to bootsrapping (samples that do not occur)
-        return 1.0, False
+        return 1.0, False, False
 
     p_left = w_class_1_left / w_left
     left_imp = 2 * p_left * (1 - p_left)
@@ -157,7 +157,7 @@ def fast_gini_both(
     p_right = w_class_1_right / w_right
     right_imp = 2 * p_right * (1 - p_right)
 
-    return (w_left * left_imp + w_right * right_imp) / w_total, True
+    return (w_left * left_imp + w_right * right_imp) / w_total, True, p_left > p_right
 
 
 def best_split(
@@ -169,6 +169,7 @@ def best_split(
     total_sample_weight,
     sample_weight,
     features_subset=None,
+    prefer_pos_splits=None,
 ):
     """Find best split feature (sparse version, optimized with fast_gini)."""
     if not features:
@@ -181,6 +182,7 @@ def best_split(
 
     best_feature = None
     best_impurity = 1.0
+    best_impurity_gain = 0.0
     improvements = []
     invalid_features = []
     for f in features:
@@ -191,7 +193,7 @@ def best_split(
         end = X.indptr[f + 1]
         rows_with_feature = X.indices[start:end]
 
-        weighted, valid_split = fast_gini_both(
+        weighted, valid_split, is_pos_split = fast_gini_both(
             rows=rows_with_feature,
             y_true=y,
             sample_weight=sample_weight,
@@ -203,12 +205,16 @@ def best_split(
         if not valid_split:
             invalid_features.append(f)
             continue
-        improvements.append((f, initial_impurity - weighted))
+        impurity_gain = initial_impurity - weighted
+        if prefer_pos_splits and is_pos_split:
+            impurity_gain *= prefer_pos_splits
+        improvements.append((f, impurity_gain))
 
-        if weighted < best_impurity:
+        if impurity_gain > best_impurity_gain: #weighted < best_impurity:
             if not features_subset or f in features_subset:
                 best_impurity = weighted
                 best_feature = f
+                best_impurity_gain = impurity_gain
 
     # Sort features by improvement (descending)
     best_sorted_features = sorted(improvements, key=lambda x: x[1], reverse=True)
@@ -302,7 +308,7 @@ def greedy_or_expand(
             union_rows = union_sorted(
                 combined_rows, col_indices[f]
             )  # slowest part (can be optimized. we do not need union only the counts from it)
-            weighted, valid_split = fast_gini_both(
+            weighted, valid_split, is_pos_split = fast_gini_both(
                 rows=union_rows,
                 y_true=y,
                 sample_weight=sample_weight,
@@ -348,6 +354,7 @@ class GreedyORDecisionTree:
         randomize_max_feature=None,
         random_state=None,
         verbose=False,
+        prefer_pos_splits=1.1, # multiply impurity gain of positive splits by prefer_pos_splits
     ):
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
@@ -367,6 +374,7 @@ class GreedyORDecisionTree:
         self.max_features = max_features
         self.randomize_max_feature = randomize_max_feature
         self.random_state = np.random.RandomState(random_state)
+        self.prefer_pos_splits = prefer_pos_splits
 
     def fit(self, X, y, feature_names=None, sample_weight=None):
         # self._n_samples = X.shape[0]
@@ -486,6 +494,7 @@ class GreedyORDecisionTree:
             min_weight_fraction_leaf=self.min_weight_fraction_leaf,
             total_sample_weight=self.total_sample_weight,
             features_subset=features_subset,
+            prefer_pos_splits=self.prefer_pos_splits
         )
         if best_feature is None or initial_impurity - best_impurity <= 0:
             return self._create_leaf(y, sample_weight=sample_weight)
