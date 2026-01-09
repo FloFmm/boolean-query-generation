@@ -173,7 +173,7 @@ def generate_labels(qrels, ordered_pmids):
 
 def load_bow(total_docs: int, mesh: bool = True):
     bow_by_pmid = {}
-    with open(bag_of_words_path(total_docs), "r", encoding="utf-8") as f:
+    with open(bag_of_words_path(total_docs=total_docs), "r", encoding="utf-8") as f:
         for line in f:
             entry = json.loads(line)
             pmid = entry["id"]
