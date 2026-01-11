@@ -57,7 +57,12 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=95
     end_date = datetime.date(end_year, 12, 31)
     
     # Get total expected PMIDs
-    total_expected = int(search_pubmed_date_range(query)["Count"])
+    total_expected = int(
+        search_pubmed_date_range(
+            query, mindate = start_date.strftime("%Y/%m/%d"),
+            maxdate = end_date.strftime("%Y/%m/%d"),
+        )["Count"]
+    )
     print(f"Total expected PMIDs: {total_expected}")
     
     all_pmids = set()

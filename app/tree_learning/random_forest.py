@@ -429,6 +429,7 @@ class RandomForest:
                 min_tree_occ=min_tree_occ,
                 min_rule_occ=min_rule_occ,
                 min_rule_precision=min_rule_precision,
+                verbose=self.verbose,
             )
             rules = vec_result["rules"]
             if len(rules) > 1:

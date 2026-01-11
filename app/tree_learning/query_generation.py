@@ -1,10 +1,12 @@
 from collections import defaultdict
+from tqdm import tqdm
 from typing import List, Tuple, Literal, Dict, Optional, FrozenSet, Set
 import numpy as np
 import copy
 import scipy.sparse as sp
 from deap import base, creator, tools, algorithms
 from app.helper.helper import f_beta
+
 
 # Rule = List[Tuple[List[int], List[str], bool]]
 Rule = FrozenSet[Tuple[FrozenSet[int], bool]]
@@ -112,7 +114,7 @@ def prune_rules(
 #     return unique_rules
 
 
-def compute_rule_coverage(X, rules: Set[Rule]):
+def compute_rule_coverage(X, rules: Set[Rule], verbose: bool = False):
     """
     Parameters
     ----------
@@ -125,7 +127,15 @@ def compute_rule_coverage(X, rules: Set[Rule]):
     """
     n_samples = X.shape[0]
     coverage = np.zeros((len(rules), n_samples), dtype=np.uint8)
-    for i, rule in enumerate(rules):
+    
+    rule_iter = rules
+    if verbose:
+        rule_iter = tqdm(
+            rules,
+            desc="Computing rule coverage",
+            total=len(rules),
+        )
+    for i, rule in enumerate(rule_iter):
         mask = np.ones(n_samples, dtype=bool)
 
         for feature_indices, is_pos in rule:
@@ -141,7 +151,8 @@ def compute_rule_coverage(X, rules: Set[Rule]):
                 break
 
         coverage[i, mask] = 1
-
+    if verbose:
+        rule_iter.close()
     return coverage
 
 
@@ -152,6 +163,7 @@ def extract_and_vectorize_rules(
     min_tree_occ=0.05,
     min_rule_occ=0.02,
     min_rule_precision=0.01,
+    verbose: bool = False,
 ) -> List[Rule]:
     """
     Full pipeline for AND-of-OR rules.
@@ -175,7 +187,15 @@ def extract_and_vectorize_rules(
     histories: set[tuple[Rule]] = set()
     rule_stats: dict[Rule, dict] = {} # changed in place by prune_rule_greedy
     initial_solutions: dict[int, set[Rule]] = defaultdict(set)
-    for rule, tree_indices in rule_tree_map.items():
+    
+    rule_tree_map_iter = rule_tree_map.items()
+    if verbose:
+        rule_tree_map_iter = tqdm(
+            rule_tree_map_iter,          # reuse the same iterator
+            desc="Pruning rule greedily",
+            total=len(rule_tree_map),
+        )
+    for rule, tree_indices in rule_tree_map_iter:
         history = prune_rule_greedy(
             X, y, rule, histories=histories, rule_stats=rule_stats
         )
@@ -193,6 +213,9 @@ def extract_and_vectorize_rules(
         histories.add(tuple(history))
         for r in history:
             new_rule_tree_map[r].update(tree_indices)
+    
+    if verbose:
+        rule_tree_map_iter.close()
     rule_tree_map = new_rule_tree_map
     pruned_rules = list(rule_tree_map.keys())
 
@@ -206,7 +229,7 @@ def extract_and_vectorize_rules(
     ]
 
     # pruned_rules = deduplicate_rules(pruned_rules) # deduplicate twice for speed?
-    coverage = compute_rule_coverage(X, pruned_rules)
+    coverage = compute_rule_coverage(X, pruned_rules, verbose=forest.verbose)
     return {
         "rules": pruned_rules,
         "kept_variables": kept_vars,

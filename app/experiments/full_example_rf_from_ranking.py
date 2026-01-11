@@ -17,11 +17,11 @@ QG_PARAMS = {
     "beta": 0.7,
     }
 RF_PARAMS = {
-    "n_estimators": 10,
+    "n_estimators": 3,
     "max_depth": 4,
     "min_samples_split": 2,
     "min_weight_fraction_leaf": 0.00005,
-    "max_features": 0.5,#"sqrt",
+    "max_features": "sqrt",
     "randomize_max_feature": 1,
     "min_impurity_decrease_range": (0.01, 0.01),
     "randomize_min_impurity_decrease_range": 1,
@@ -77,7 +77,7 @@ pubmed_query_str, query_size = rf.pubmed_query(
     min_rule_precision=QG_PARAMS["min_rule_precision"],
     beta=QG_PARAMS["beta"],
 )
-pubmed_query_str = f'({pubmed_query_str}) AND ("1800"[DP] : "{end_year}"[DP])'
+# pubmed_query_str = f'({pubmed_query_str}) AND ("1800"[DP] : "{end_year}"[DP])'
 print("PubMed Query:", pubmed_query_str)
 
 ### Evaluate on PubMed ###

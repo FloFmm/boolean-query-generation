@@ -422,6 +422,9 @@ class GreedyORDecisionTree:
             features=list(range(X.shape[1])),
             sample_weight=sample_weight[relevant_sample_mask],
         )
+        
+        if self._verbose:
+            self._pbar.close()
 
         # self._find_optimal_threshold(
         #     X,
