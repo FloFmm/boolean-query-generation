@@ -355,6 +355,7 @@ def select_rules_via_ga(
     mutpb=0.2,
     seed=42,
     cost_factor=0.002,
+    beta=3, # -> f3 score is amximized
 ):
     """
     Select a subset of rules using a Genetic Algorithm.
@@ -370,7 +371,7 @@ def select_rules_via_ga(
     initial_solutions : list[np.ndarray] or None
         Optional warm-start solutions (binary vectors).
     """
-
+    beta2 = beta*beta
     rng = np.random.default_rng(seed)
     n_rules, n_samples = coverage.shape
 
@@ -417,9 +418,7 @@ def select_rules_via_ga(
         TP = np.sum(covered & y_pos)
         FP = np.sum(covered & y_neg)
         FN = np.sum(~covered & y_pos)
-
         # F3 score
-        beta2 = 9.0
         denom = (1 + beta2) * TP + beta2 * FN + FP
         if denom == 0:
             f3 = 0.0

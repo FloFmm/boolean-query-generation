@@ -412,6 +412,7 @@ class RandomForest:
         min_rule_occ=0.05,
         cost_factor=0.002,
         min_rule_precision=0.01,
+        beta=2.0,
     ):
         if X is None or labels is None:
             all_rules, rule_tree_map = self.get_tree_paths()
@@ -440,6 +441,7 @@ class RandomForest:
                     rule_costs=rule_costs,
                     cost_factor=cost_factor,
                     initial_solutions=vec_result["initial_solutions_binary"],
+                    beta=beta,
                 )
                 rules = [rules[i] for i in selection_result["selected_rule_indices"]]
             pubmed_query = rules_to_pubmed_query(

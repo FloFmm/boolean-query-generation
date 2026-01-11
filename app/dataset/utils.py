@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import numpy as np
 import re
 import pandas as pd
@@ -158,15 +159,22 @@ def load_qrels_from_rankings(ranking_files, positive_selection_conf):
             raise NotImplementedError("Not implemented yet. positive_selection_conf['type']=", positive_selection_conf["type"])
     return qrels_by_query_id
 
-def generate_labels(qrels, ordered_pmids):
+def generate_labels(qrels, ordered_pmids, sample_prob=1.0):
     keep_indices = []
     labels = []
+    neutral_pmids = set(qrels["neutral"])
+    pos_pmids = set(qrels["pos"])
+    rand = random.random
+    
     for i, pmid in enumerate(ordered_pmids):
-        if pmid in qrels["neutral"]:
+        if pmid in neutral_pmids:
             continue
-        if pmid in qrels["pos"]:
+        
+        if pmid in pos_pmids:
             labels.append(1)
         else:
+            if sample_prob < 1.0 and rand() > sample_prob:
+                continue
             labels.append(0)
         keep_indices.append(i)
     return keep_indices, labels
