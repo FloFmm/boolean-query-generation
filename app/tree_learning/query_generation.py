@@ -276,7 +276,6 @@ def rules_to_pubmed_query(
     """
     query_clauses = []
     path_lens = []
-
     for rule in rules:
         if not any(is_pos for _, is_pos in rule):
             # Skip clauses that are all NOT

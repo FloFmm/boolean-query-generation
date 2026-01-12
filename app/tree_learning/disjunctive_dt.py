@@ -44,22 +44,44 @@ def compute_sample_weight(class_weight: dict, y):
     sample_weight = np.vectorize(class_weight.get)(y)
     return sample_weight
 
-
 def compute_class_weight(class_weight, X, y):
     _n_samples = X.shape[0]
-    n_class_1 = y.sum()
-    n_class_0 = _n_samples - n_class_1
+    n_class_1 = int(y.sum())
+    n_class_0 = int(_n_samples - n_class_1)
 
-    if class_weight == "balanced":
-        return {
-            0: _n_samples / (2 * n_class_0),
-            1: _n_samples / (2 * n_class_1),
-        }
-    elif class_weight is None:
+    if n_class_0 == 0 or n_class_1 == 0:
+        raise ValueError("All samples belong to the same class")
+
+    # No weighting
+    if class_weight is None:
         return {0: 1, 1: 1}
+
+    # Determine exponent alpha
+    if class_weight == "balanced":
+        alpha = 1.0
+    elif isinstance(class_weight, (float, int)):
+        alpha = float(class_weight)
+        if alpha < 0 or alpha > 1:
+            raise ValueError("class_weight exponent must be >= 0")
     else:
+        # Explicit dict passed through unchanged
         return class_weight
 
+    # Power-law ratio
+    # sklearn balanced ratio = n_class_0 / n_class_1
+    ratio = (n_class_0 / n_class_1) ** alpha
+
+    # Convert to small integers
+    w0 = 1
+    w1 = max(1, int(round(ratio)))
+
+    # Reduce scale (mostly symbolic here, but future-proof)
+    g = math.gcd(w0, w1)
+    return {
+        0: w0 // g,
+        1: w1 // g,
+    }
+    
 
 @numba.njit
 def union_sorted(a, b):
@@ -396,14 +418,6 @@ class GreedyORDecisionTree:
         if n_class_0 == 0 or n_class_1 == 0:
             print("All sample are of the same class")
             return -1
-        self.class_weight = compute_class_weight(self.class_weight, X, y)
-        # if self.class_weight == "balanced":
-        #     self.class_weight  = {
-        #         0: self._n_samples / (2 * n_class_0),
-        #         1: self._n_samples / (2 * n_class_1),
-        #     }
-        # elif self.class_weight is None:
-        #     self.class_weight  = {0: 1, 1: 1}
 
         # Initialize tqdm progress bar
         if self._verbose:
@@ -621,63 +635,6 @@ class GreedyORDecisionTree:
         probs = self.predict_proba(X)
         preds = (probs >= self._optimal_threshold - 1e-8).astype(int)
         return preds
-
-    def _prune_pure_subtrees(self):
-        """
-        Remove unnecessary decision nodes where all descendant leaves
-        predict the same class. This simplifies the tree without changing
-        its predictions.
-
-        After pruning, leaf counts and probabilities are recalculated
-        from all descendant leaves.
-        """
-        if self._tree is None:
-            raise ValueError("Tree has not been trained yet. Call fit() first.")
-
-        def aggregate_counts(node):
-            """
-            Recursively aggregate class counts for a node.
-            Returns a Counter of class counts under this node.
-            """
-            if node["type"] == "leaf":
-                return Counter(node["counts"])
-            left_counts = aggregate_counts(node["left"])
-            right_counts = aggregate_counts(node["right"])
-            return left_counts + right_counts
-
-        def prune(node):
-            """
-            Recursively prune pure subtrees.
-            Returns (is_pure, pure_class).
-            """
-            if node["type"] == "leaf":
-                return True, node["class"]
-
-            left_pure, left_class = prune(node["left"])
-            right_pure, right_class = prune(node["right"])
-
-            # If both subtrees pure and of same class → collapse
-            if left_pure and right_pure and left_class == right_class:
-                # Aggregate counts from children
-                total_counts = aggregate_counts(node)
-                weighted_class_0 = total_counts[0] * self.class_weight.get(0, 1)
-                weighted_class_1 = total_counts[1] * self.class_weight.get(1, 1)
-                total_weight = weighted_class_0 + weighted_class_1
-                probs = {
-                    0: weighted_class_0 / total_weight,
-                    1: weighted_class_1 / total_weight,
-                }
-                node.clear()
-                node["type"] = "leaf"
-                node["class"] = left_class
-                node["counts"] = total_counts
-                node["prob_class_1"] = probs[1]
-                node["pruned"] = True
-                return True, left_class
-
-            return False, None
-
-        prune(self._tree)
 
     def _find_optimal_threshold(
         self,
@@ -944,8 +901,10 @@ class GreedyORDecisionTree:
 
     def pubmed_query(self, feature_names, term_expansions: dict = None):
         all_rules = self.get_tree_paths()
+        if len(all_rules) == 0:
+            return "TRUE"
         return rules_to_pubmed_query(
-            rules=all_rules,
+            rules=list(all_rules),
             feature_names=feature_names,
             term_expansions=term_expansions,
         )
@@ -1100,8 +1059,8 @@ def main():
         error=0.1,
         completeness=0.9,
         seed=42,
-        doc_count=500_000,
-        word_pool_size=50_000,
+        doc_count=50_000,
+        word_pool_size=10_000,
         average_doc_length=60,
     )
 
@@ -1136,10 +1095,11 @@ def main():
         top_k_or_candidates=500,
         verbose=True,
         min_samples_split=1,
-        class_weight="balanced",
+        class_weight=0.8,#
     )
     start_time = time.time()
-    tree.fit(X, np.array(labels), feature_names=vectorizer.get_feature_names_out())
+    feature_names=vectorizer.get_feature_names_out()
+    tree.fit(X, np.array(labels), feature_names=feature_names)
     end_time = time.time()
 
     print()
@@ -1175,15 +1135,30 @@ def main():
     print("tree_loaded", tree_loaded)
     print(tree_loaded.pretty_print(verbose=True, prune=True))
     print("result tree_loaded", tree_loaded.predict(X_test))
-    print("pubmed", tree_loaded.pubmed_query({"dogs": ["dogs", "dog"]}))
+    print("pubmed", tree_loaded.pubmed_query(feature_names=feature_names, term_expansions={"dogs": ["dogs", "dog"]}))
     print(f"Fit time: {end_time - start_time:.4f} seconds")
 
 
 if __name__ == "__main__":
+    # zeros = 500_000
+    # ones =45000
+    # X = np.zeros((zeros+ones, 5))   # shape only matters for n_samples
+    # y = np.array(
+    #     [0] * zeros +           # 80 negatives
+    #     [1] * ones             # 20 positives
+    # )
+    # st = time.time()
+    # print(compute_class_weight(1.0, X, y))
+    # print(compute_class_weight(0.5, X, y))
+    # print(compute_class_weight(0.1, X, y))
+    # print(compute_class_weight(0.0, X, y))
+    # print(-st + time.time())
+    # exit(0)
+
     from line_profiler import LineProfiler
 
     lp = LineProfiler()
-    lp.add_function(greedy_or_expand)  # GreedyORDecisionTree._grow)
+    lp.add_function(GreedyORDecisionTree._grow)
 
     lp.run("main()")
     lp.print_stats()

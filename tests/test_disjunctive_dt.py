@@ -9,6 +9,7 @@ from app.tree_learning.disjunctive_dt import (
     GreedyORDecisionTree,
 )
 from app.tree_learning.random_forest import RandomForest
+from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 from app.pubmed.utils import pubmed_query_to_lambda, remove_tags
 
 
@@ -191,6 +192,16 @@ def test_basic_formulas_rf(formula):
     )
 
 
-if __name__ == "__main__":
+def main():
     for f in FORMULAS:
         test_basic_formulas_rf(formula=f)
+
+if __name__ == "__main__":
+    from line_profiler import LineProfiler
+
+    lp = LineProfiler()
+    lp.add_function(GreedyORDecisionTree._grow)
+
+    lp.run("main()")
+    lp.print_stats()
+

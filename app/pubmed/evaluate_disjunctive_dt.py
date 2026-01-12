@@ -23,7 +23,7 @@ tree = MyDecTree(
     splitter="best_or",
     max_depth=3,
     random_state=42,
-    class_weight="balanced"
+    class_weight=1.0
 )
 
 # Fit the model

@@ -42,7 +42,7 @@ RF_PARAMS = {
     "n_jobs": None,
     "random_state": None,
     "verbose": True,
-    "class_weight": "balanced",
+    "class_weight": 1.0,
     "max_samples": None,
     "top_k_or_candidates": 500,
     "prefer_pos_splits": 1.1

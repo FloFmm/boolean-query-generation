@@ -351,7 +351,7 @@ if __name__ == "__main__":
             min_samples_split=2,
             min_impurity_decrease_range=[0.01, 0.03],
             top_k_or_candidates=500,
-            class_weight={1: 1, 0: 1},  # "balanced",
+            class_weight={1: 1, 0: 1},  # 1.0,
             verbose=True,
         )
     ]
@@ -361,7 +361,7 @@ if __name__ == "__main__":
         for min_impurity_d_start in [0.01, 0.1, 0.001]:
             for min_impurity_d_end in [0.03, 0.3, 0.003]:
                 for top_k_or_candidates in [100, 500, 1000]:
-                    for class_weight in ["balanced", {1: 1, 0: 1}, {1: 2, 0: 1}, {1: 3, 0: 1}, {1: 4, 0: 1}, {1: 5, 0: 1}, {1: 6, 0: 1}, {1: 3, 0: 0.5}, {1: 500, 0: 0.5}, {1: 500, 0: 1}]:
+                    for class_weight in [1.0, {1: 1, 0: 1}, {1: 2, 0: 1}, {1: 3, 0: 1}, {1: 4, 0: 1}, {1: 5, 0: 1}, {1: 6, 0: 1}, {1: 3, 0: 0.5}, {1: 500, 0: 0.5}, {1: 500, 0: 1}]:
                         models.append(
                             GreedyORDecisionTree(
                                 max_depth=4,
@@ -371,7 +371,7 @@ if __name__ == "__main__":
                                     min_impurity_d_end,
                                 ],
                                 top_k_or_candidates=top_k_or_candidates,
-                                class_weight=class_weight,  # "balanced",
+                                class_weight=class_weight,  # 1.0,
                                 verbose=True,
                             )
                         )
