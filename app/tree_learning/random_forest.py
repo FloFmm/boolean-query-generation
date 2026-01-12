@@ -205,6 +205,7 @@ class RandomForest:
         max_samples=None,
         top_k_or_candidates=None,
         prefer_pos_splits=None,
+        max_or_features=100,
     ):
         """
         Initialize a RandomForest instance.
@@ -230,12 +231,14 @@ class RandomForest:
         self.ccp_alpha = ccp_alpha
         self.max_samples = max_samples
         self.top_k_or_candidates = top_k_or_candidates
-
+        self.max_or_features = max_or_features
+        
         # Will be populated after fit
         self.estimators_ = []
         self._n_samples_bootstrap = None
         self.n_outputs_ = None
         self.prefer_pos_splits = prefer_pos_splits
+        
 
     def fit(self, X, y, sample_weight=None, feature_names=None):
         """
@@ -353,6 +356,7 @@ class RandomForest:
                 "randomize_max_feature": tree_randomize_max_feature,
                 "random_state": self.random_state,
                 "prefer_pos_splits": self.prefer_pos_splits,
+                "max_or_features": self.max_or_features
             }
             trees.append(GreedyORDecisionTree(**tree_config))
 
@@ -379,6 +383,7 @@ class RandomForest:
         # Collect newly grown trees
         trees = [t for t in trees if t is not None]
         self.estimators_.extend(trees)
+        
         return self
 
     def get_tree_paths(self):
@@ -405,6 +410,7 @@ class RandomForest:
     def pubmed_query(
         self,
         feature_names,
+        pruning_thresholds: dict,
         term_expansions: dict = None,
         X=None,
         labels=None,
@@ -430,6 +436,8 @@ class RandomForest:
                 min_rule_occ=min_rule_occ,
                 min_rule_precision=min_rule_precision,
                 verbose=self.verbose,
+                feature_names=feature_names,
+                pruning_thresholds=pruning_thresholds,
             )
             rules = vec_result["rules"]
             if len(rules) > 1:

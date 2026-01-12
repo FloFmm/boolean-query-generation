@@ -260,6 +260,7 @@ def greedy_or_expand(
     min_weight_fraction_leaf,
     total_sample_weight,
     sample_weight,
+    max_or_features,
 ):
     """
     Try adding features with OR (sparse version, fully vectorized).
@@ -306,7 +307,7 @@ def greedy_or_expand(
     weighted_class_1 = np.sum(y * sample_weight)
     improved = True
 
-    while improved and candidate_features:
+    while improved and candidate_features and len(base_features) < max_or_features:
         improved = False
 
         # Vectorized: compute OR mask for all candidates
@@ -377,6 +378,7 @@ class GreedyORDecisionTree:
         random_state=None,
         verbose=False,
         prefer_pos_splits=1.1, # multiply impurity gain of positive splits by prefer_pos_splits
+        max_or_features=100,
     ):
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
@@ -397,6 +399,7 @@ class GreedyORDecisionTree:
         self.randomize_max_feature = randomize_max_feature
         self.random_state = np.random.RandomState(random_state)
         self.prefer_pos_splits = prefer_pos_splits
+        self.max_or_features = max_or_features
 
     def fit(self, X, y, feature_names=None, sample_weight=None):
         # self._n_samples = X.shape[0]
@@ -537,6 +540,7 @@ class GreedyORDecisionTree:
             sample_weight=sample_weight,
             min_weight_fraction_leaf=self.min_weight_fraction_leaf,
             total_sample_weight=self.total_sample_weight,
+            max_or_features=self.max_or_features,
         )
         # Update for child nodes
         excluded_features = set(or_features)

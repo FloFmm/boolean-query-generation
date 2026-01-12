@@ -1,6 +1,6 @@
 from collections import defaultdict
 from tqdm import tqdm
-from typing import List, Tuple, Literal, Dict, Optional, FrozenSet, Set
+from typing import List, Tuple, Literal, Dict, Optional, FrozenSet, Set, Union
 import numpy as np
 import copy
 import scipy.sparse as sp
@@ -44,12 +44,13 @@ def compute_variable_frequencies(rule_tree_map: dict[Rule, set[int]], n_trees):
     return tree_freq, rule_freq
 
 
-def prune_rules(
+def prune_rare_features(
     rule_tree_map: dict[Rule, set[int]],
     tree_freq,
     rule_freq,
     min_tree_occ=0.05,
     min_rule_occ=0.05,
+    feature_names=None,
 ):
     """
     Removes variables not meeting frequency thresholds.
@@ -65,7 +66,8 @@ def prune_rules(
         new_terms = []
         for feat_inds, is_pos in rule:
             kept_feat_ind = feat_inds & kept_vars
-
+            for f in feat_inds - kept_vars:
+                print(feature_names[f])
             if not kept_feat_ind:
                 break
 
@@ -79,40 +81,6 @@ def prune_rules(
                 pruned_rule_tree_map[new_rule].update(tree_indices)
 
     return pruned_rule_tree_map, kept_vars
-
-
-# def deduplicate_rules(rules):
-#     """
-#     Removes duplicate rules. Order of triples in a rule and order of features/indices does not matter.
-
-#     Args:
-#         rules: list of rules, each rule is a list of triples
-#                (feature_indices: list[int], features: list[str], is_pos: bool)
-
-#     Returns:
-#         List of unique rules.
-#     """
-#     seen = set()
-#     unique_rules = []
-
-#     for rule in rules:
-#         canonical_rule = []
-
-#         for feature_indices, features, is_pos in rule:
-#             # Sort indices and features to make order irrelevant
-#             canonical_triple = (frozenset(feature_indices), frozenset(features), is_pos)
-#             canonical_rule.append(canonical_triple)
-
-#         # The order of triples in the rule doesn't matter
-#         canonical_rule_set = frozenset(canonical_rule)
-
-#         if canonical_rule_set not in seen:
-#             seen.add(canonical_rule_set)
-#             # Recover original rule structure
-#             unique_rules.append(rule)
-
-#     return unique_rules
-
 
 def compute_rule_coverage(X, rules: Set[Rule], verbose: bool = False):
     """
@@ -160,10 +128,12 @@ def extract_and_vectorize_rules(
     forest,
     X,
     y,
+    pruning_thresholds: dict,
     min_tree_occ=0.05,
     min_rule_occ=0.02,
     min_rule_precision=0.01,
     verbose: bool = False,
+    feature_names=None,
 ) -> List[Rule]:
     """
     Full pipeline for AND-of-OR rules.
@@ -175,12 +145,13 @@ def extract_and_vectorize_rules(
         n_trees=len(forest.estimators_),
     )
 
-    rule_tree_map, kept_vars = prune_rules(
+    rule_tree_map, kept_vars = prune_rare_features(
         rule_tree_map,
         tree_freq,
         rule_freq,
         min_tree_occ,
         min_rule_occ,
+        feature_names=feature_names,
     )
     # pruned_rules = deduplicate_rules(pruned_rules) # deduplicate twice for speed?
     new_rule_tree_map: dict[Rule, set[int]] = defaultdict(set)
@@ -198,10 +169,24 @@ def extract_and_vectorize_rules(
         
     X = X.tocsc() # makes compute_rule_coverage much faster (needed for greeddy pruning)
     for rule, tree_indices in rule_tree_map_iter:
+        if not rule:
+            continue
+        
         history = prune_rule_greedy(
-            X, y, rule, histories=histories, rule_stats=rule_stats
+            X, y, rule, histories=histories, rule_stats=rule_stats, feature_names=feature_names, pruning_thresholds=pruning_thresholds
         )
-        assert len(history) == len(set(history))
+        
+        try:
+            x = set(history)
+        except:
+            print()
+            print("history")
+            print(history)
+            print()
+            print("histories")
+            print(histories)
+            # somtimes happens (TODO fix this bug)
+            assert False
         
         history = tuple(r for r in history if rule_stats[r]["precision"] > min_rule_precision)
         
@@ -369,9 +354,9 @@ def query_cost(query_size, weights=None):
 
 
 def select_rules_via_ga(
-    coverage: np.ndarray | sp.csr_matrix,
+    coverage: Union[np.ndarray, sp.csr_matrix],
     y: np.ndarray,
-    rule_costs: np.ndarray | None = None,
+    rule_costs: np.ndarray = None,
     initial_solutions=None,
     pop_size=100,
     ngen=50,
@@ -589,7 +574,7 @@ def generate_one_step_rule_variations(
 
 def select_best_metric(
     metrics: List[Dict],
-    removal_mode: Literal["or", "and"],
+    threshold: dict,
 ) -> Optional[int]:
     """
     Select index of the best metric from a list of metric dicts.
@@ -611,39 +596,13 @@ def select_best_metric(
         Index of the selected metric in the list, or None if none pass acceptance
     """
 
-    threshold = {
-        "or": {
-            False: {  # removal in negated term false -> is positive term
-                "acceptance_metric": "tp_gain",
-                "acceptance_threshold": -0.1,
-                "removal_threshold": -0.01,
-            },
-            True: {
-                "acceptance_metric": "precision_gain",
-                "acceptance_threshold": -0.1,
-                "removal_threshold": -0.01,
-            },
-        },
-        "and": {
-            False: {
-                "acceptance_metric": "precision_gain",
-                "acceptance_threshold": -0.1,
-                "removal_threshold": -0.01,
-            },
-            True: {
-                "acceptance_metric": "precision_gain",
-                "acceptance_threshold": -0.1,
-                "removal_threshold": -0.01,
-            },
-        },
-    }
-
     best_idx = None
     best_f = -float("inf")
 
     remove_old = False
     # First, filter only metrics passing acceptance_threshold
     for i, m in enumerate(metrics):
+        removal_mode = m["mode"]
         in_neg_term = m["removal_in_negated_term"]
         acceptance_metric = threshold[removal_mode][in_neg_term]["acceptance_metric"]
         value = m[acceptance_metric]
@@ -683,9 +642,11 @@ def prune_rule_greedy(
     X,
     y,
     rule: Rule,
-    histories: set[FrozenSet[Rule]],
+    histories: set[list[Rule]],
     rule_stats: dict[Rule, dict], # changed in place
+    pruning_thresholds: dict,
     beta: float = 0.1,
+    feature_names = None,
 ):
     """
     Greedy prune a single rule in two stages:
@@ -717,97 +678,121 @@ def prune_rule_greedy(
         "tp": tp_old,
         "returned": ret_old,
     }
-    
-    for mode in ["and", "or"]:
-        while True:
-            if current_rule not in rule_stats:
-                rule_stats[current_rule] = best_metric
-            else:
-                for h in histories:
-                    if len(current_rule) > 1 and current_rule in h:
-                        # smaller_rules = {
-                        #     r
-                        #     for r in h
-                        #     if rule_size(r) <= rule_size(current_rule)
-                        #     if r != current_rule
-                        # }
-                        # sorted_rules = sorted(smaller_rules, key=rule_size, reverse=True)
-                        rule_idx = h.index(current_rule) + 1
-                        history += h[rule_idx:]
-                        return history
+    # old_rule = None
+    print("START")
+    while True:
+        print()
+        # import difflib
+        print(rules_to_pubmed_query([current_rule], feature_names=feature_names)[0])
+        # if old_rule:
+        #     d = difflib.ndiff(old_rule.split(), new_rule.split())
+        #     print("removed", [word for word in d if word.startswith("- ")])
+        #     print(old_rule)
+        # old_rule = new_rule #TODO REMOVE
+        
+        if current_rule not in rule_stats:
+            rule_stats[current_rule] = best_metric
+        else:
+            for h in histories:
+                if len(current_rule) > 1 and current_rule in h:
+                    # smaller_rules = {
+                    #     r
+                    #     for r in h
+                    #     if rule_size(r) <= rule_size(current_rule)
+                    #     if r != current_rule
+                    # }
+                    # sorted_rules = sorted(smaller_rules, key=rule_size, reverse=True)
+                    rule_idx = h.index(current_rule) + 1
+                    history += h[rule_idx:]
+                    return history
 
-            # best_candidate = None
-            # best_metrics = None
-            # best_f = -np.inf
-            metrics = []
-            # iterate over terms
-            candidate_rules, removal_in_negated_term = (
-                generate_one_step_rule_variations(
-                    rule=current_rule,
-                    mode=mode,
-                )
+        # best_candidate = None
+        # best_metrics = None
+        # best_f = -np.inf
+        metrics = []
+        # iterate over terms
+        and_cand_rules, and_removal_in_negated_term = (
+            generate_one_step_rule_variations(
+                rule=current_rule,
+                mode="and",
+            )
+        )
+        or_cand_rules, or_removal_in_negated_term = (
+            generate_one_step_rule_variations(
+                rule=current_rule,
+                mode="or",
+            )
+        )
+        candidate_rules = or_cand_rules + and_cand_rules
+        removal_in_negated_term = or_removal_in_negated_term + and_removal_in_negated_term
+        
+        if not candidate_rules:
+            break
+        
+        for i, (cand_rule, removal_in_neg) in enumerate(zip(
+            candidate_rules, removal_in_negated_term
+        )):
+            mode = "or" if i < len(or_cand_rules) else "and"
+            
+            # compute metrics
+            mask_c = coverage_of_rule(X, cand_rule)
+            p_new, r_new, tp_new, ret_new, _ = metrics_from_mask(mask_c, y)
+            f_new = f_beta(p_new, r_new, beta)
+            # print("candidate", cand_rule)
+            # print("mode", mode)
+            # print("tp_new", tp_new)
+            # print("tp_old", tp_old)
+            tp_gain = (tp_new - tp_old) / tp_old
+            precision_gain = (p_new - p_old) / tp_old
+
+            metrics.append(
+                {
+                    "f": f_new,
+                    "precision": p_new,
+                    "recall": r_new,
+                    "tp": tp_new,
+                    "returned": ret_new,
+                    "tp_gain": tp_gain,
+                    "precision_gain": precision_gain,
+                    "removal_in_negated_term": removal_in_neg,
+                    "mode": mode,
+                }
             )
 
-            if not candidate_rules:
-                break
-            for cand_rule, removal_in_neg in zip(
-                candidate_rules, removal_in_negated_term
-            ):
-                # compute metrics
-                mask_c = coverage_of_rule(X, cand_rule)
-                p_new, r_new, tp_new, ret_new, _ = metrics_from_mask(mask_c, y)
-                f_new = f_beta(p_new, r_new, beta)
-                # print("candidate", cand_rule)
-                # print("mode", mode)
-                # print("tp_new", tp_new)
-                # print("tp_old", tp_old)
-                tp_gain = (tp_new - tp_old) / tp_old
-                precision_gain = p_new - p_old
+        best_candidate_index, remove_old = select_best_metric(
+            metrics,
+            pruning_thresholds,
+        )
+        if best_candidate_index is None:
+            break
+        best_rule = candidate_rules[best_candidate_index]
+        
+        best_metric = metrics[best_candidate_index]
 
-                metrics.append(
-                    {
-                        "f": f_new,
-                        "precision": p_new,
-                        "recall": r_new,
-                        "tp": tp_new,
-                        "returned": ret_new,
-                        "tp_gain": tp_gain,
-                        "precision_gain": precision_gain,
-                        "removal_in_negated_term": removal_in_neg,
-                    }
-                )
+        # accept the new rule
+        current_rule = best_rule
 
-            best_candidate_index, remove_old = select_best_metric(
-                metrics,
-                removal_mode=mode,
-            )
-            if best_candidate_index is None:
-                break
-            best_rule = candidate_rules[best_candidate_index]
-            best_metric = metrics[best_candidate_index]
+        # update old metrics
+        p_old, r_old = best_metric["precision"], best_metric["recall"]
 
-            # accept the new rule
-            current_rule = best_rule
+        print("====MODE====", best_metric["mode"])
+        if remove_old:
+            print("======remove old==========")
+            # remove the previous rule from memory (i.e., drop the version before the last)
+            # We keep only the most recent one in history when removal condition met.
+            if len(history) >= 1:
+                # drop the second-to-last (the previous state) because "new rule is so good"
+                history.pop(-1)
 
-            # update old metrics
-            p_old, r_old = best_metric["precision"], best_metric["recall"]
+        assert current_rule is not None
+        assert len(current_rule) > 0
+        assert not any([not term[0] for term in current_rule])
 
-            if remove_old:
-                # remove the previous rule from memory (i.e., drop the version before the last)
-                # We keep only the most recent one in history when removal condition met.
-                if len(history) >= 1:
-                    # drop the second-to-last (the previous state) because "new rule is so good"
-                    history.pop(-1)
-
-            assert current_rule is not None
-            assert current_rule != []
-            assert not any([not term[0] for term in current_rule])
-
-            history.append(current_rule)
-            # history_meta.append(best_metric)
-            tp_old = best_metric["tp"]
-            p_old = best_metric["precision"]
-            r_old = best_metric["recall"]
-            ret_old = best_metric["returned"]
-            f_old = f_beta(p_old, r_old, beta)
+        history.append(current_rule)
+        # history_meta.append(best_metric)
+        tp_old = best_metric["tp"]
+        p_old = best_metric["precision"]
+        r_old = best_metric["recall"]
+        ret_old = best_metric["returned"]
+        f_old = f_beta(p_old, r_old, beta)
     return history

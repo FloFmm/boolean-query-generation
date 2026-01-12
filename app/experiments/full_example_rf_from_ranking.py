@@ -11,28 +11,55 @@ total_docs = 433660
 end_year = 2018
 QG_PARAMS = {
     "min_tree_occ": 0.05,
-    "min_rule_occ": 0.05,
+    "min_rule_occ": 0.02,
     "cost_factor": 0.002, # 50 ANDs are worth 0.1 F3 score
-    "min_rule_precision": 0.01,
+    "min_rule_precision": 0.001,
     "beta": 0.7,
+    "pruning_thresholds": {
+            "or": {
+                False: {  # removal in negated term false -> is positive term
+                    "acceptance_metric": "tp_gain",
+                    "acceptance_threshold": -0.1,
+                    "removal_threshold": -0.01,
+                },
+                True: {
+                    "acceptance_metric": "precision_gain",
+                    "acceptance_threshold": -0.1,
+                    "removal_threshold": -0.01,
+                },
+            },
+            "and": {
+                False: {
+                    "acceptance_metric": "precision_gain",
+                    "acceptance_threshold": -0.1,
+                    "removal_threshold": -0.01,
+                },
+                True: {
+                    "acceptance_metric": "precision_gain",
+                    "acceptance_threshold": -0.1,
+                    "removal_threshold": -0.01,
+                },
+            },
+        }
     }
 RF_PARAMS = {
-    "n_estimators": 3,
+    "n_estimators": 32,
     "max_depth": 4,
     "min_samples_split": 2,
     "min_weight_fraction_leaf": 0.00005,
-    "max_features": "sqrt",
+    "max_features": 0.1,#"sqrt",
     "randomize_max_feature": 1,
     "min_impurity_decrease_range": (0.01, 0.01),
     "randomize_min_impurity_decrease_range": 1,
     "bootstrap": True,
-    "n_jobs": None,
+    "n_jobs": 32,
     "random_state": None,
     "verbose": True,
     "class_weight": 0.2,
     "max_samples": None,
     "top_k_or_candidates": 500,
-    "prefer_pos_splits": 1.1
+    "prefer_pos_splits": 1.1,
+    "max_or_features": 10,
 }
 
 SORTED_IDS_PATH = f"data/tmp/sorted_ids_qid={query_id}_d={total_docs}.pkl"
@@ -76,6 +103,7 @@ pubmed_query_str, query_size = rf.pubmed_query(
     cost_factor=QG_PARAMS["cost_factor"],
     min_rule_precision=QG_PARAMS["min_rule_precision"],
     beta=QG_PARAMS["beta"],
+    pruning_thresholds=QG_PARAMS["pruning_thresholds"],
 )
 # pubmed_query_str = f'({pubmed_query_str}) AND ("1800"[DP] : "{end_year}"[DP])'
 print("PubMed Query:", pubmed_query_str)
