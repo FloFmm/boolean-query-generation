@@ -195,6 +195,8 @@ def extract_and_vectorize_rules(
             desc="Pruning rule greedily",
             total=len(rule_tree_map),
         )
+        
+    X = X.tocsc() # makes compute_rule_coverage much faster (needed for greeddy pruning)
     for rule, tree_indices in rule_tree_map_iter:
         history = prune_rule_greedy(
             X, y, rule, histories=histories, rule_stats=rule_stats
