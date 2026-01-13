@@ -38,7 +38,7 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
         for split, reviews in dataset.items():
             for review_name, review_data in reviews.items():
                 for split_name in review_data["data"].keys():  # train/val/test
-                    for doc in tqdm(review_data["data"][split_name], desc="Processing docs"):
+                    for doc in tqdm(review_data["data"][split_name], desc="Processing docs"): #TODO this takes ages (up to 44min per iterion)
                         doc_id = doc["pmid"]
 
                         # Avoid duplicates
