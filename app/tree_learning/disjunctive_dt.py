@@ -555,7 +555,7 @@ class GreedyORDecisionTree:
         node["features"] = [self._feature_names[f] for f in or_features]
         node["feature_indices"] = or_features
         node["left"] = (
-            self._grow(  # TODO performance instead of passing masked X,y and sampleweight only pass rows (no copies of X,y and smapleweight -> speed?)
+            self._grow(  
                 X[combined_mask],
                 y[combined_mask],
                 depth + 1,

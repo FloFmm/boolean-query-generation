@@ -46,7 +46,7 @@ def bag_of_words_path(**args):
 
 def synonym_map_path(**args):
     """params: total_docs, lower_case, mesh_ancestors, rm_numbers, rm_punct"""
-    return Path(f"../systematic-review-datasets/data/bag_of_words/synonym_map,{abbreviate_params(**args)}.jsonl")
+    return Path(f"../systematic-review-datasets/data/bag_of_words/synonym_map,{abbreviate_params(**args)}.json")
 
 def statistics_sub_folder_path(model, **args):
     """params: model, total_docs, min_df, max_df, positive_selection_conf, mesh"""
@@ -69,7 +69,7 @@ def vectors_path(**args):
     return Path(f"{data_base_path()}/bag_of_words/vectors,{abbreviate_params(**args)}.pkl")
 
 def load_synonym_map(total_docs):
-    with open(synonym_map_path(total_docs), "r", encoding="utf-8") as f:
+    with open(synonym_map_path(total_docs=total_docs), "r", encoding="utf-8") as f:
         synonym_map = json.load(f)
     return synonym_map
 
@@ -159,7 +159,7 @@ def load_qrels_from_rankings(ranking_files, positive_selection_conf):
             raise NotImplementedError("Not implemented yet. positive_selection_conf['type']=", positive_selection_conf["type"])
     return qrels_by_query_id
 
-def generate_labels(qrels, ordered_pmids, sample_prob=1.0):
+def generate_labels_old(qrels, ordered_pmids, sample_prob=1.0):
     keep_indices = []
     labels = []
     neutral_pmids = set(qrels["neutral"])
@@ -178,6 +178,51 @@ def generate_labels(qrels, ordered_pmids, sample_prob=1.0):
             labels.append(0)
         keep_indices.append(i)
     return keep_indices, labels
+
+def generate_labels_and_sample_weights(
+    ordered_pmids,
+    sorted_ids,
+    k,
+    max_weight=100,
+):
+    N = len(ordered_pmids)
+
+    # map pmid -> index in X
+    pmid_to_index = {
+        str(pmid): i
+        for i, pmid in enumerate(ordered_pmids)
+    }
+
+    # defaults: very irrelevant (set to max weight)
+    y = np.zeros(N, dtype=np.int8)
+    sample_weight = np.full(N, max_weight, dtype=np.int32)
+
+    # iterate only over ranked PMIDs
+    for r, pmid in enumerate(sorted_ids):
+        if r >= 3 * k:
+            break
+        
+        pmid = str(pmid)
+        idx = pmid_to_index[pmid]
+
+        # top ramp (100 -> 0)
+        if r < k:
+            y[idx] = 1
+            sample_weight[idx] = max(1, round(
+                max_weight * (1 - r / k)
+            ))
+        # flat zero region
+        elif r < 2 * k:
+            y[idx] = 0
+            sample_weight[idx] = 0
+        # bottom ramp (0 -> 100)
+        else: # 2k <= r < 3k
+            y[idx] = 0
+            sample_weight[idx] = max(1, round(
+                max_weight * ((r - 2 * k) / k)
+            ))
+
+    return y, sample_weight
 
 def load_bow(total_docs: int, mesh: bool = True):
     bow_by_pmid = {}

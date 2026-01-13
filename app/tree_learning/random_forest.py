@@ -137,14 +137,6 @@ class RandomForest:
         Note that these weights will be multiplied with sample_weight (passed
         through the fit method) if sample_weight is specified.
 
-    ccp_alpha : TODO non-negative float, default=0.0
-        Complexity parameter used for Minimal Cost-Complexity Pruning. The
-        subtree with the largest cost complexity that is smaller than
-        ``ccp_alpha`` will be chosen. By default, no pruning is performed. See
-        :ref:`minimal_cost_complexity_pruning` for details. See
-        :ref:`sphx_glr_auto_examples_tree_plot_cost_complexity_pruning.py`
-        for an example of such pruning.
-
     max_samples : int or float, default=None
         If bootstrap is True, the number of samples to draw from X
         to train each base estimator.
@@ -418,7 +410,10 @@ class RandomForest:
         min_rule_occ=0.05,
         cost_factor=0.002,
         min_rule_precision=0.01,
-        beta=2.0,
+        cover_beta=2.0,
+        pruning_beta:float = 0.1,
+        mh_noexp = False, 
+        tiab = False,
     ):
         if X is None or labels is None:
             all_rules, rule_tree_map = self.get_tree_paths()
@@ -438,8 +433,10 @@ class RandomForest:
                 verbose=self.verbose,
                 feature_names=feature_names,
                 pruning_thresholds=pruning_thresholds,
+                pruning_beta=pruning_beta,
             )
             rules = vec_result["rules"]
+            print("NUMBER OF RULES", len(rules))
             if len(rules) > 1:
                 # kept_variables = vec_result["kept_variables"]
                 coverage = vec_result["coverage"]
@@ -450,16 +447,18 @@ class RandomForest:
                     rule_costs=rule_costs,
                     cost_factor=cost_factor,
                     initial_solutions=vec_result["initial_solutions_binary"],
-                    beta=beta,
+                    beta=cover_beta,
                 )
                 rules = [rules[i] for i in selection_result["selected_rule_indices"]]
             pubmed_query = rules_to_pubmed_query(
                 rules=rules,
                 feature_names=feature_names,
                 term_expansions=term_expansions,
+                tiab=tiab,
+                mh_noexp=mh_noexp,
             )
 
-            # TODO REMOVE
+            # REMOVE
             print("INITIAL SOLUTIONS")
             for tree, rs in vec_result["initial_solutions"].items():
                 print(
@@ -471,7 +470,7 @@ class RandomForest:
                     )[0].replace("[tiab]", ""),
                 )
 
-            return pubmed_query
+            return pubmed_query, rules
 
     def _find_optimal_threshold(self, **args):
         for tree in self.estimators_:

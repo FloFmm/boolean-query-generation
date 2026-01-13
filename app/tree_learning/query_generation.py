@@ -134,6 +134,7 @@ def extract_and_vectorize_rules(
     min_rule_precision=0.01,
     verbose: bool = False,
     feature_names=None,
+    pruning_beta: float = 0.1,
 ) -> List[Rule]:
     """
     Full pipeline for AND-of-OR rules.
@@ -173,22 +174,30 @@ def extract_and_vectorize_rules(
             continue
         
         history = prune_rule_greedy(
-            X, y, rule, histories=histories, rule_stats=rule_stats, feature_names=feature_names, pruning_thresholds=pruning_thresholds
+            X, 
+            y, 
+            rule, 
+            histories=histories, 
+            rule_stats=rule_stats, 
+            feature_names=feature_names, 
+            pruning_thresholds=pruning_thresholds,
+            beta=pruning_beta,
         )
         
         try:
             x = set(history)
         except:
+            print("rule")
+            print(rule)
             print()
             print("history")
             print(history)
             print()
             print("histories")
             print(histories)
-            # somtimes happens (TODO fix this bug)
+            # somtimes happens (TODO fix this bug) (probably fixed)
             assert False
-        
-        history = tuple(r for r in history if rule_stats[r]["precision"] > min_rule_precision)
+        history = tuple(r for r in history if rule_stats[r]["precision"] >= min_rule_precision)
         
         if not history:
             continue
@@ -217,6 +226,7 @@ def extract_and_vectorize_rules(
 
     # pruned_rules = deduplicate_rules(pruned_rules) # deduplicate twice for speed?
     coverage = compute_rule_coverage(X, pruned_rules, verbose=forest.verbose)
+    
     return {
         "rules": pruned_rules,
         "kept_variables": kept_vars,
@@ -226,23 +236,37 @@ def extract_and_vectorize_rules(
     }
 
 
-def expand_term(term_expansions, feature):
-    if feature.endswith("[mh]"):
-        # mesh terms
-        # TODO maybe only add :noexp on negative meshterms
-        return feature.replace("[mh]", "[mh:noexp]")
-    # Helper: get PubMed-safe name for a feature, expand terms
+def expand_term(term_expansions, 
+                feature, 
+                is_positive: bool,
+                mh_noexp: bool, 
+                tiab: bool):
+    
+    if feature.endswith("[mh]"): # mesh terms
+        if mh_noexp:
+            return feature
+        else:
+            return feature.replace("[mh]", "[mh:noexp]")
     if term_expansions is None:
         terms = [feature]
     else:
         terms = term_expansions.get(feature, [feature])
-    # TODO remove [tiab] title abstract. but needed since NOT diagnsis matches mesh term diagnsos otherwise
-    terms = [f + "[tiab]" for f in terms]
+    if tiab or not is_positive: # negative terms always get [tiab]
+        terms = [f + "[tiab]" for f in terms]
     return " SYNONYM_OR ".join(terms)
 
 
-def literal_to_pubmed(features, is_positive, term_expansions):
-    clause = " ADDED_OR ".join(expand_term(term_expansions, f) for f in features)
+def literal_to_pubmed(features, 
+                      is_positive, 
+                      term_expansions,
+                      tiab: bool = False,
+                      mh_noexp: bool = False
+                      ):
+    clause = " ADDED_OR ".join(expand_term(term_expansions, 
+                                           f, 
+                                           is_positive=is_positive,
+                                           tiab=tiab, 
+                                           mh_noexp=mh_noexp) for f in features)
 
     if "OR" in clause:
         clause = f"({clause})"
@@ -257,6 +281,8 @@ def rules_to_pubmed_query(
     rules: List[Rule],
     feature_names,
     term_expansions: dict = None,
+    tiab: bool = False,
+    mh_noexp: bool = False
 ):
     """
     Converts extracted AND-of-OR rules into a PubMed DNF boolean query.
@@ -269,14 +295,14 @@ def rules_to_pubmed_query(
             continue
         pos_literals = [
             literal_to_pubmed(
-                [feature_names[i] for i in features_indices], is_pos, term_expansions
+                [feature_names[i] for i in features_indices], is_pos, term_expansions, mh_noexp=mh_noexp, tiab=tiab
             )
             for features_indices, is_pos in rule
             if is_pos
         ]
         neg_literals = [
             literal_to_pubmed(
-                [feature_names[i] for i in features_indices], is_pos, term_expansions
+                [feature_names[i] for i in features_indices], is_pos, term_expansions, mh_noexp=mh_noexp, tiab=tiab
             )
             for features_indices, is_pos in rule
             if not is_pos
@@ -358,13 +384,14 @@ def select_rules_via_ga(
     y: np.ndarray,
     rule_costs: np.ndarray = None,
     initial_solutions=None,
-    pop_size=100,
+    pop_size=10000,
     ngen=50,
     cxpb=0.5,
     mutpb=0.2,
     seed=42,
     cost_factor=0.002,
     beta=3, # -> f3 score is amximized
+    max_rules=10,
 ):
     """
     Select a subset of rules using a Genetic Algorithm.
@@ -394,18 +421,27 @@ def select_rules_via_ga(
     # ----------------------------
     # DEAP setup
     # ----------------------------
-    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-    creator.create("Individual", list, fitness=creator.FitnessMax)
+    if not hasattr(creator, "FitnessMax"):
+        creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+    if not hasattr(creator, "Individual"):
+        creator.create("Individual", list, fitness=creator.FitnessMax)
 
     toolbox = base.Toolbox()
     toolbox.register("attr_bool", rng.integers, 0, 2)
-    toolbox.register(
-        "individual",
-        tools.initRepeat,
-        creator.Individual,
-        toolbox.attr_bool,
-        n=n_rules,
-    )
+    # toolbox.register(
+    #     "individual",
+    #     tools.initRepeat,
+    #     creator.Individual,
+    #     toolbox.attr_bool,
+    #     n=n_rules,
+    # )
+    def sparse_individual():
+        ind = np.zeros(n_rules, dtype=int)
+        k = rng.integers(1, max_rules)
+        idx = rng.choice(n_rules, size=k, replace=False)
+        ind[idx] = 1
+        return creator.Individual(ind.tolist())
+    toolbox.register("individual", sparse_individual)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
     # ----------------------------
@@ -413,7 +449,7 @@ def select_rules_via_ga(
     # ----------------------------
     def evaluate(individual):
         mask = np.asarray(individual, dtype=bool)
-        if not mask.any():
+        if not mask.any() or mask.sum() > max_rules:
             return (-np.inf,)
 
         # OR over selected rules → predicted positives
@@ -547,12 +583,14 @@ def generate_one_step_rule_variations(
     """
     pruned_rules: list[Rule] = []
     removal_in_negated_term: list[bool] = []
+    removed_features: list[set[int]] = []
     if mode == "or":
         for term in rule:
             feat_inds, is_pos = term
             if len(feat_inds) <= 1:
                 continue
             for f in feat_inds:
+                removed_features.append({f})
                 new_inds = feat_inds - {f}
                 new_term = (new_inds, is_pos)
                 new_rule = (rule - {term}) | {new_term}
@@ -562,6 +600,7 @@ def generate_one_step_rule_variations(
         if len(rule) > 1:
             for term in rule:
                 pruned_rules.append(rule - {term})
+                removed_features.append(set(term[0]))
                 removal_in_negated_term.append(not term[-1])
     else:
         raise ValueError(f"Unknown mode: {mode}")
@@ -569,7 +608,7 @@ def generate_one_step_rule_variations(
     # Filter out rules that have only negative terms
     pruned_rules = [r for r in pruned_rules if any(t[-1] for t in r)]
 
-    return pruned_rules, removal_in_negated_term
+    return pruned_rules, removal_in_negated_term, removed_features
 
 
 def select_best_metric(
@@ -658,7 +697,6 @@ def prune_rule_greedy(
       - AND-term removal: accept if precision_gain > -0.1 ; remove old if precision_gain > -0.01
 
     Returns:
-      best_rule: pruned rule (in same format)
       history: list of remembered rules (each rule is a deep copy)
     """
     # Prepare
@@ -669,7 +707,7 @@ def prune_rule_greedy(
     mask = coverage_of_rule(X, current_rule)
     p_old, r_old, tp_old, ret_old, pos_count = metrics_from_mask(mask, y)
     if tp_old == 0:
-        return None, [], []
+        return []
     f_old = f_beta(p_old, r_old, beta)
     best_metric = {
         "f": f_old,
@@ -683,7 +721,7 @@ def prune_rule_greedy(
     while True:
         print()
         # import difflib
-        print(rules_to_pubmed_query([current_rule], feature_names=feature_names)[0])
+        print(rules_to_pubmed_query([current_rule], feature_names=feature_names, tiab=True, mh_noexp=True)[0])
         # if old_rule:
         #     d = difflib.ndiff(old_rule.split(), new_rule.split())
         #     print("removed", [word for word in d if word.startswith("- ")])
@@ -711,13 +749,13 @@ def prune_rule_greedy(
         # best_f = -np.inf
         metrics = []
         # iterate over terms
-        and_cand_rules, and_removal_in_negated_term = (
+        and_cand_rules, and_removal_in_negated_term, and_removed_features = (
             generate_one_step_rule_variations(
                 rule=current_rule,
                 mode="and",
             )
         )
-        or_cand_rules, or_removal_in_negated_term = (
+        or_cand_rules, or_removal_in_negated_term, or_removed_features = (
             generate_one_step_rule_variations(
                 rule=current_rule,
                 mode="or",
@@ -725,12 +763,13 @@ def prune_rule_greedy(
         )
         candidate_rules = or_cand_rules + and_cand_rules
         removal_in_negated_term = or_removal_in_negated_term + and_removal_in_negated_term
+        removed_features = or_removed_features + and_removed_features
         
         if not candidate_rules:
             break
         
-        for i, (cand_rule, removal_in_neg) in enumerate(zip(
-            candidate_rules, removal_in_negated_term
+        for i, (cand_rule, removal_in_neg, rem_f) in enumerate(zip(
+            candidate_rules, removal_in_negated_term, removed_features
         )):
             mode = "or" if i < len(or_cand_rules) else "and"
             
@@ -743,7 +782,7 @@ def prune_rule_greedy(
             # print("tp_new", tp_new)
             # print("tp_old", tp_old)
             tp_gain = (tp_new - tp_old) / tp_old
-            precision_gain = (p_new - p_old) / tp_old
+            precision_gain = (p_new - p_old) / p_old
 
             metrics.append(
                 {
@@ -756,6 +795,7 @@ def prune_rule_greedy(
                     "precision_gain": precision_gain,
                     "removal_in_negated_term": removal_in_neg,
                     "mode": mode,
+                    "removed_features": rem_f,
                 }
             )
 
@@ -776,6 +816,8 @@ def prune_rule_greedy(
         p_old, r_old = best_metric["precision"], best_metric["recall"]
 
         print("====MODE====", best_metric["mode"])
+        print("====REMOVED FEATURES====", [feature_names[f] for f in best_metric["removed_features"]])
+        print(best_metric)
         if remove_old:
             print("======remove old==========")
             # remove the previous rule from memory (i.e., drop the version before the last)
