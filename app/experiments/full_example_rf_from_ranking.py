@@ -12,7 +12,6 @@ query_id = "CD009784"#"CD002115"#"CD008760"
 total_docs = 433660
 end_year = 2018
 QG_PARAMS = {
-    "top_k": 200,
     "min_tree_occ": 0.05,
     "min_rule_occ": 0.02,
     "cost_factor": 0.002, # 50 ANDs are worth 0.1 F3 score
@@ -50,6 +49,7 @@ QG_PARAMS = {
         }
     }
 RF_PARAMS = {
+    "top_k": {"recall": 0.7, "factor": 1.5},#200, # 0.7 means k where we reach 0.7 recall multipled by factor
     "n_estimators": 32,
     "max_depth": 4,
     "min_samples_split": 2,
@@ -68,8 +68,6 @@ RF_PARAMS = {
     "prefer_pos_splits": 1.1,
     "max_or_features": 10,
 }
-RET_PARAMS = {
-}
 term_expansions = load_synonym_map(total_docs)
 
 SORTED_IDS_PATH = f"data/tmp/sorted_ids_qid={query_id}_d={total_docs}.pkl"
@@ -87,10 +85,11 @@ print("Examples:")
 for i in range(10):
     print('"' + feature_names[i] + '"')
 
-labels, sample_weight = generate_labels_and_sample_weights(k=QG_PARAMS["top_k"],
+labels, sample_weight = generate_labels_and_sample_weights(k=RF_PARAMS["top_k"], #TODO
                                                            ordered_pmids=ordered_pmids, 
                                                            sorted_ids=sorted_ids, 
-                                                           max_weight=100)
+                                                           max_weight=100,
+                                                           num_positives=num_positives)
 rf = RandomForest(**RF_PARAMS)
 rf.fit(
     X, np.array(labels), feature_names=feature_names, sample_weight=sample_weight

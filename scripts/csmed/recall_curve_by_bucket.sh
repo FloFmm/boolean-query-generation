@@ -14,9 +14,9 @@
 
 CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
 
-cd systematic-review-datasets
-$CSMED_PY csmed/experiments/statistics_from_rankings.py
-cd ../boolean-query-generation
-$CSMED_PY app/visualization/recall_curve_by_bucket.py
+# cd systematic-review-datasets
+# $CSMED_PY -m csmed.experiments.statistics_from_rankings
+# cd ../boolean-query-generation
+$CSMED_PY -m app.visualization.recall_curve_by_bucket
 
 # /data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python csmed/experiments/csmed_cochrane_retrieval.py
