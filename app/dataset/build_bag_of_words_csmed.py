@@ -48,7 +48,7 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
         mesh_ancestor_data = None
     
     dataset = load_dataset()
-    global_corpus = build_global_corpus(dataset)[:1000]
+    global_corpus = build_global_corpus(dataset)
     # texts = [d["text"] for d in global_corpus]
     # doc_meta = [((d["id"], d["title"], d["abstract"], d["mesh_terms"])) for d in global_corpus]
     print("Finished building global corpus", flush=True)
