@@ -72,10 +72,10 @@ def bag_of_words(text: str, mesh_terms: list[str], conf: dict, mesh_ancestor_dat
     # BOW from text
     synonym_map = lemmatize_with_synonyms(text, conf)
     bow_words = list(synonym_map.keys())
-    bow_words = [
-        f'"{w}"[tiab]' if " " in w else w
-        for w in bow_words
-    ]
+    # bow_words = [
+    #     f'"{w}"[tiab]' if " " in w else w
+    #     for w in bow_words
+    # ]
     # BOW from MeSH terms
     bow_mesh = [f'"{term}"[mh]' for term in expanded_mesh]
 

@@ -4,6 +4,14 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 import json
 
+def strip_mesh_term(term: str) -> str:
+    term = term.strip()
+
+    if term.startswith("(") and term.endswith(")"):
+        term = term[1:-1].strip()
+
+    return term.lower()
+
 def get_ancestors_by_name(mesh_data, descriptor_name):
     """
     Given a descriptor name, return ALL ancestor names in the MeSH hierarchy.
@@ -11,11 +19,13 @@ def get_ancestors_by_name(mesh_data, descriptor_name):
 
     # name -> list of UIs
     name_to_ui = {
-        data["name"]: ui for ui, data in mesh_data.items()
+        data["name"].lower(): ui for ui, data in mesh_data.items()
     }
 
     if descriptor_name not in name_to_ui:
-        raise ValueError(f"Descriptor not found: {descriptor_name}")
+        print(f"warning {descriptor_name} not in mesh term data")
+        return {descriptor_name}
+        # raise ValueError(f"Descriptor not found: {descriptor_name}")
 
     ui = name_to_ui[descriptor_name]
     record = mesh_data[ui]
@@ -34,7 +44,7 @@ def get_ancestors_by_name(mesh_data, descriptor_name):
         for i in range(1, len(parts)):
             prefix = ".".join(parts[:i])
             if prefix in tree_to_name:
-                ancestors.add(tree_to_name[prefix])
+                ancestors.add(tree_to_name[prefix].lower())
 
     return list(ancestors)
 

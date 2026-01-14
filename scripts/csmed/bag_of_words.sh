@@ -1,8 +1,7 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --gpus=1
 #SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=64
 #SBATCH --time=12:00:00
 #SBATCH --mail-type=end
 #SBATCH --mail-user=florian_maurus.mueller@mailbox.tu-dresden.de
