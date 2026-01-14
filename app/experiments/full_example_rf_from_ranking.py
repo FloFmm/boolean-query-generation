@@ -50,6 +50,7 @@ QG_PARAMS = {
     }
 RF_PARAMS = {
     "top_k": {"recall": 0.7, "factor": 1.5},#200, # 0.7 means k where we reach 0.7 recall multipled by factor
+    "rank_weight": 1.5, # how much more weighted shall rank 1 be than rank k
     "n_estimators": 32,
     "max_depth": 4,
     "min_samples_split": 2,
@@ -77,6 +78,8 @@ with open(SORTED_IDS_PATH, "rb") as f:
 REVIEWS_PATH = f"data/tmp/reviews_qid={query_id}_d={total_docs}.pkl"
 with open(REVIEWS_PATH, "rb") as f:
     reviews = pickle.load(f)
+positives = set([str(doc["pmid"]) for doc in reviews[query_id]["data"]["train"] if int(doc["label"])==1])         # relevant PMIDs
+                
                 
 ### Train Decision Tree ###
 X, ordered_pmids, feature_names = load_vectors(total_docs, min_df=10, max_df=0.2, mesh=True)
@@ -85,11 +88,11 @@ print("Examples:")
 for i in range(10):
     print('"' + feature_names[i] + '"')
 
-labels, sample_weight = generate_labels_and_sample_weights(k=RF_PARAMS["top_k"], #TODO
+labels, sample_weight, top_k = generate_labels_and_sample_weights(k=RF_PARAMS["top_k"],
                                                            ordered_pmids=ordered_pmids, 
                                                            sorted_ids=sorted_ids, 
-                                                           max_weight=100,
-                                                           num_positives=num_positives)
+                                                           max_weight=RF_PARAMS["rank_weight"],
+                                                           num_positives=len(positives))
 rf = RandomForest(**RF_PARAMS)
 rf.fit(
     X, np.array(labels), feature_names=feature_names, sample_weight=sample_weight
@@ -122,7 +125,7 @@ coverage = compute_rule_coverage(X=X, rules=rules)
 subset_preds = np.any(coverage, axis=0).astype(np.uint8)
 label_lookup = {doc["pmid"]: int(doc["label"]) for doc in reviews[query_id]["data"]["train"]}
 ground_truth = [label_lookup.get(pmid, 0) for pmid in ordered_pmids]
-pseudo_relevant = set(sorted_ids[:QG_PARAMS["top_k"]])
+pseudo_relevant = set(sorted_ids[:top_k])
 pseudo_ground_truth = [pmid in pseudo_relevant  for pmid in ordered_pmids]
 subset_precision = precision_score(ground_truth, subset_preds)
 subset_recall = recall_score(ground_truth, subset_preds)
@@ -153,7 +156,6 @@ for tiab in [True, False]:
             if query_id is not None:
                 retrieved = search_pubmed_dynamic(pubmed_query_str, end_year=end_year)
                 retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
-                positives = set([str(doc["pmid"]) for doc in reviews[query_id]["data"]["train"] if int(doc["label"])==1])         # relevant PMIDs
                 print("Positives:", positives)
                 true_positives = retrieved & positives
                 TP = len(true_positives)

@@ -384,13 +384,13 @@ def select_rules_via_ga(
     y: np.ndarray,
     rule_costs: np.ndarray = None,
     initial_solutions=None,
-    pop_size=10000,
+    pop_size=100,
     ngen=50,
     cxpb=0.5,
     mutpb=0.2,
     seed=42,
     cost_factor=0.002,
-    beta=3, # -> f3 score is amximized
+    beta=3, # -> f3 score is maximized
     max_rules=10,
 ):
     """

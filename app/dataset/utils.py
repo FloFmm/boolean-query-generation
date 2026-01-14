@@ -2,11 +2,14 @@ import json
 import os
 import random
 import numpy as np
-import re
+import math
 import pandas as pd
 import pickle
 from pathlib import Path
 from sklearn.feature_extraction.text import CountVectorizer
+from app.config.config import TOP_K
+from app.parameter_tuning.compute_top_k import approximate_y
+
 
 ABBREVIATIONS = {
     "total_docs": "d",
@@ -183,8 +186,11 @@ def generate_labels_and_sample_weights(
     ordered_pmids,
     sorted_ids,
     k,
-    max_weight=100,
+    max_weight:float=1.5,
+    num_positives=None,
 ):
+    if isinstance(k, dict):
+        top_k = math.ceil(approximate_y(TOP_K[k["recall"]][0], TOP_K[k["recall"]][1], num_positives) * k["factor"])
     N = len(ordered_pmids)
 
     # map pmid -> index in X
@@ -195,34 +201,38 @@ def generate_labels_and_sample_weights(
 
     # defaults: very irrelevant (set to max weight)
     y = np.zeros(N, dtype=np.int8)
-    sample_weight = np.full(N, max_weight, dtype=np.int32)
+    
+    max_weight = int(max_weight*100)
+    min_weight = 100
+    avg_weight = int((max_weight + min_weight) / 2)
+    sample_weight = np.full(N, avg_weight, dtype=np.int32) # negatives get average weight
 
     # iterate only over ranked PMIDs
     for r, pmid in enumerate(sorted_ids):
-        if r >= 3 * k:
+        if r >= 3 * top_k:
             break
         
         pmid = str(pmid)
         idx = pmid_to_index[pmid]
 
         # top ramp (100 -> 0)
-        if r < k:
+        if r < top_k:
             y[idx] = 1
             sample_weight[idx] = max(1, round(
-                max_weight * (1 - r / k)
+                (max_weight-min_weight) * (1 - r / top_k) + min_weight
             ))
         # flat zero region
-        elif r < 2 * k:
+        elif r < 3 * top_k:
             y[idx] = 0
             sample_weight[idx] = 0
         # bottom ramp (0 -> 100)
-        else: # 2k <= r < 3k
+        else: # 3k <= r < 4k
             y[idx] = 0
             sample_weight[idx] = max(1, round(
-                max_weight * ((r - 2 * k) / k)
+                avg_weight * ((r - 2 * top_k) / top_k)
             ))
 
-    return y, sample_weight
+    return y, sample_weight, top_k
 
 def load_bow(total_docs: int, mesh: bool = True):
     bow_by_pmid = {}
