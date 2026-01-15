@@ -1,0 +1,152 @@
+import os
+CUSTOM_HF_PATH = "../systematic-review-datasets/data/huggingface"
+os.environ["HF_HOME"] = CUSTOM_HF_PATH # has to be up here
+from collections import defaultdict
+from app.dataset.utils import review_id_to_dataset
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
+from csmed.experiments.csmed_cochrane_retrieval import load_dataset, build_global_corpus
+# from csmed.csmed.csmed_cochrane import CSMED_COCHRANE_REVIEWS
+from csmed.csmed_cochrane.prepare_dataset import prepare_dataset
+
+def read_qrels_first_column_set(file_path):
+    """
+    Reads a qrels file and returns a set of the first column values.
+
+    :param file_path: Path to the qrels file
+    :return: Set of values from the first column
+    """
+    first_column_set = set()
+    
+    with open(file_path, 'r') as f:
+        for line in f:
+            if line.strip():  # ignore empty lines
+                first_col = line.split()[0]
+                first_column_set.add(first_col)
+    
+    return first_column_set
+
+def get_filenames_set(path):
+    """
+    Returns a set of file names (without extensions) in the given directory.
+
+    :param path: Directory path as a string
+    :return: Set of file names without extensions
+    """
+    filenames = []
+    
+    for entry in os.listdir(path):
+        full_path = os.path.join(path, entry)
+        if os.path.isfile(full_path):
+            name_without_ext = os.path.splitext(entry)[0]
+            filenames.append(name_without_ext)
+    
+    return filenames
+
+def get_tar_review_ids(year=2018):
+    if year == 2017:
+        tar2017_train = read_qrels_first_column_set("/data/horse/ws/flml293c-master-thesis/tar/2017-TAR/training/qrels/train.combined.qrels")
+        tar2017_test = read_qrels_first_column_set("/data/horse/ws/flml293c-master-thesis/tar/2017-TAR/testing/qrels/test.combined.qrels")
+        print("Overlap:", len(tar2017_test & tar2017_train))
+        print("Number:", len(tar2017_test | tar2017_train))
+        print("tar2017_train", sorted(tar2017_train))
+        print("tar2017_test", sorted(tar2017_test))
+    if year == 2018:
+        tar2018_train = set(get_filenames_set("/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Training/protocols"))
+        tar2018_train |= set(get_filenames_set("/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Training/protocols_revised_03092018"))
+        tar2018_test = set(get_filenames_set("/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Testing/protocols"))
+        tar2018_test |= set(get_filenames_set("/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Testing/protocols_revised_20180708"))
+        print("Overlap:", len(tar2018_test & tar2018_train))
+        print("Number:", len(tar2018_test | tar2018_train))
+        print("tar2018_train", sorted(tar2018_train))
+        print("tar2018_test", sorted(tar2018_test))
+
+
+def compute_dataset_statistics():
+    dataset = load_dataset()
+    gc = build_global_corpus(dataset)
+    # print(len(gc))
+    global_doc_ids = {d["id"] for d in gc}
+    
+    group_stats = defaultdict(lambda: {
+        "ratio_sum": 0.0,
+        "pos_sum": 0,
+        "neg_sum": 0,
+        "n_reviews": 0,
+        "empty_abstract_in_pos": 0,
+    })
+    missing_relevant_docs = defaultdict(list)
+    count_dict = defaultdict(int)
+    doc_ids = set()
+    review_names = set()
+    
+    # r = defaultdict(set)
+    for split, reviews in dataset.items():
+        print("split", split)
+        for review_name, review_data in reviews.items():
+            # review_data has keys []'review_name', 'dataset_details', 'data']
+            # review_data["dataset_details"] has keys ['title', 'abstract', 'review_type', 'doi', 'review_id', 'criteria', 'search_strategy']
+            dataset_name, split, year = review_id_to_dataset(review_name)
+            count_dict[dataset_name] += 1
+
+            pos = 0
+            neg = 0
+
+            for split_name, docs in review_data["data"].items():
+                for doc in docs:
+                    # doc has keys [review_id pmid, title, abstract, label, mesh_terms]
+                    label = doc["label"]
+                    doc_id = doc.get("pmid")
+
+                    if label == 1:
+                        pos += 1
+                        assert doc_id in global_doc_ids, (
+                            f"Missing relevant doc {doc_id} in {dataset_name}"
+                        )
+                        if len(doc["abstract"]) < 20:
+                            group_stats[dataset_name]["empty_abstract_in_pos"] += 1
+                            if not(doc["abstract"] == "nan" or doc["abstract"] == "?"):
+                                print(doc["abstract"])
+                                assert False
+                    else:
+                        neg += 1
+
+            total = pos + neg
+            
+            review_ratio = pos / total
+
+            stats = group_stats[dataset_name]
+            stats["ratio_sum"] += review_ratio
+            stats["pos_sum"] += pos
+            stats["neg_sum"] += neg
+            stats["n_reviews"] += 1
+            
+    count_dict["tar2019sum"] = count_dict["tar2019"] + count_dict["tar2018"] + count_dict["tar2017"]
+    print(count_dict)
+    from app.config.config import CSMED_COCHRANE_REVIEWS
+    expected = {name: len(set(reviews)) for name, reviews in CSMED_COCHRANE_REVIEWS.items()}
+    print("expected:", expected)
+    print()
+    
+    print("\n=== Dataset-level macro statistics ===")
+
+    for dataset_name, stats in sorted(group_stats.items()):
+        n = stats["n_reviews"]
+
+        avg_ratio = stats["ratio_sum"] / n
+        avg_pos = stats["pos_sum"] / n
+        avg_neg = stats["neg_sum"] / n
+        empty_abstract_in_pos = stats["empty_abstract_in_pos"]
+
+        print(
+            f"{dataset_name}: "
+            f"avg_ratio={avg_ratio:.3f}, "
+            f"avg_pos={avg_pos:.1f}, "
+            f"avg_neg={avg_neg:.1f}, "
+            f"empty_abstract_in_pos={empty_abstract_in_pos}, "
+            f"n_reviews={n}",
+        )
+        
+if __name__ == "__main__":
+    compute_dataset_statistics()
+    

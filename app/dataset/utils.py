@@ -7,9 +7,8 @@ import pandas as pd
 import pickle
 from pathlib import Path
 from sklearn.feature_extraction.text import CountVectorizer
-from app.config.config import TOP_K
 from app.parameter_tuning.compute_top_k import approximate_y
-
+from app.config.config import TAR2017_TRAIN, TAR2017_TEST, TAR2018_TEST, CSMED_COCHRANE_REVIEWS, TOP_K
 
 ABBREVIATIONS = {
     "total_docs": "d",
@@ -460,3 +459,24 @@ def load_statistics_data(filter_vars=None, qg=True, metrics=None):
     if qg:
         params = list(set(params) | set(params_qg.keys()))
     return df, params
+
+def review_id_to_dataset(review_id):
+    # there is some overlap between my custom created TAR2017/TAR2018 and sr_updates 
+    # -> we have to check first whether review_id is in review_id in CSMED_COCHRANE_REVIEWS["tar2019"]
+    review_id = str(review_id)
+    if review_id in CSMED_COCHRANE_REVIEWS["tar2019"]:
+        if review_id in review_id in TAR2017_TRAIN:
+            return "tar2017", "TRAIN", 2017
+        if review_id in review_id in TAR2017_TEST:
+            return "tar2017", "TEST", 2017
+        if review_id in review_id in TAR2018_TEST:
+            return "tar2018", "TEST", 2018
+        if review_id in review_id in TAR2018_TEST:
+            return "tar2018", "TEST", 2018
+        return "tar2019", None, 2019
+    if review_id in CSMED_COCHRANE_REVIEWS["sigir2017"]:
+        return "sigir2017", None, 2017
+    if review_id in CSMED_COCHRANE_REVIEWS["sr_updates"]:
+        return "sr_updates", None, 2019
+    
+    return "unknown", None, -1

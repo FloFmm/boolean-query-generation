@@ -6,6 +6,7 @@ import spacy
 import re
 import string
 from app.pubmed.mesh_term import expand_mesh_terms
+from app.config.config import FORBIDDEN_FEATURES
 # Load spaCy model (English, small is usually enough)
 nlp = spacy.load("../systematic-review-datasets/data/spacy/en_core_web_lg-3.7.1/en_core_web_lg/en_core_web_lg-3.7.1", disable=["ner", "parser"])
 
@@ -78,6 +79,9 @@ def bag_of_words(text: str, mesh_terms: list[str], conf: dict, mesh_ancestor_dat
     ]
     # BOW from MeSH terms
     bow_mesh = [f'"{term}"[mh]' for term in expanded_mesh]
+
+    # remove forbidden terms
+    bow_words = [w for w in bow_words if w not in FORBIDDEN_FEATURES]
 
     # Combine both with uniqueness
     bag = sorted(bow_words) + sorted(bow_mesh)
