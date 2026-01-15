@@ -1,4 +1,5 @@
 import os
+import random
 CUSTOM_HF_PATH = "../systematic-review-datasets/data/huggingface"
 os.environ["HF_HOME"] = CUSTOM_HF_PATH # has to be up here
 from collections import defaultdict
@@ -74,7 +75,7 @@ def compute_dataset_statistics():
         "neg_sum": 0,
         "n_reviews": 0,
         "empty_abstract_in_pos": 0,
-        "reviews_with_more_than_50_positives": 0,
+        "reviews_ge_25_positives": 0,
     })
     missing_relevant_docs = defaultdict(list)
     count_dict = defaultdict(int)
@@ -121,8 +122,8 @@ def compute_dataset_statistics():
             stats["pos_sum"] += pos
             stats["neg_sum"] += neg
             stats["n_reviews"] += 1
-            if pos >= 50:
-                stats["reviews_with_more_than_50_positives"] += 1
+            if pos >= 25:
+                stats["reviews_ge_25_positives"] += 1
             
     count_dict["tar2019sum"] = count_dict["tar2019"] + count_dict["tar2018"] + count_dict["tar2017"]
     print(count_dict)
@@ -140,7 +141,7 @@ def compute_dataset_statistics():
         avg_pos = stats["pos_sum"] / n
         avg_neg = stats["neg_sum"] / n
         empty_abstract_in_pos = stats["empty_abstract_in_pos"]
-        reviews_with_more_than_50_positives = stats["reviews_with_more_than_50_positives"]
+        reviews_ge_25_positives = stats["reviews_ge_25_positives"]
 
         print(
             f"{dataset_name}: "
@@ -149,9 +150,90 @@ def compute_dataset_statistics():
             f"avg_neg={avg_neg:.1f}, "
             f"empty_abstract_in_pos={empty_abstract_in_pos}, "
             f"n_reviews={n}",
-            f"reviews_with_more_than_50_positives={reviews_with_more_than_50_positives}",
+            f"reviews_ge_25_positives={reviews_ge_25_positives}",
         )
         
+def compute_train_review_ids(
+    total_samples=25,
+    min_positives=25,
+    seed=42,
+):
+    random.seed(seed)
+    
+    dataset = load_dataset()
+    eligible = defaultdict(list)
+
+    # 1️⃣ collect eligible reviews per dataset
+    for split, reviews in dataset.items():
+        for review_name, review_data in reviews.items():
+            dataset_name, _, _ = review_id_to_dataset(review_name)
+
+            pos = 0
+            for docs in review_data["data"].values():
+                for doc in docs:
+                    if doc["label"] == 1:
+                        pos += 1
+
+            if pos >= min_positives:
+                eligible[dataset_name].append(review_name)
+
+    # 2️⃣ compute totals
+    counts = {k: len(v) for k, v in eligible.items()}
+    total_eligible = sum(counts.values())
+
+    assert total_eligible >= total_samples, "Not enough eligible reviews"
+
+    # 3️⃣ proportional allocation
+    allocation = {
+        k: int(round(total_samples * c / total_eligible))
+        for k, c in counts.items()
+    }
+
+    # 4️⃣ fix rounding
+    diff = total_samples - sum(allocation.values())
+
+    datasets_sorted = sorted(
+        counts.keys(),
+        key=lambda k: counts[k],
+        reverse=True,
+    )
+
+    i = 0
+    while diff != 0:
+        d = datasets_sorted[i % len(datasets_sorted)]
+        if diff > 0:
+            allocation[d] += 1
+            diff -= 1
+        elif allocation[d] > 0:
+            allocation[d] -= 1
+            diff += 1
+        i += 1
+
+    # 5️⃣ sample and PRINT
+    sampled = {}
+
+    print("\n=== Selected trains reviews (stratified) ===")
+    print(f"Total samples: {total_samples}\n")
+    
+
+    for dataset_name in sorted(allocation.keys()):
+        k = allocation[dataset_name]
+        selected = random.sample(
+            eligible[dataset_name],
+            min(k, len(eligible[dataset_name]))
+        )
+        sampled[dataset_name] = selected
+
+        print(
+            f"{dataset_name}: {len(selected)} / {counts[dataset_name]} eligible"
+        )
+        for r in selected:
+            print(f"  - {r}")
+        print()
+    print(f"Samples:", sampled)
+    return sampled
+
 if __name__ == "__main__":
-    compute_dataset_statistics()
+    # compute_dataset_statistics()
+    compute_train_review_ids()
     
