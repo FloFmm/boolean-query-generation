@@ -20,7 +20,8 @@ from csmed.experiments.csmed_cochrane_retrieval import load_dataset, build_globa
 
 def process_doc(doc, conf, mesh_ancestor_data):
     mesh_terms = [strip_mesh_term(m) for m in doc["mesh_terms"]]
-    bow, synonym_map = bag_of_words(doc["text"], mesh_terms, conf, mesh_ancestor_data)
+    text = doc["title"] + "\n\n" + doc["abstract"]
+    bow, synonym_map = bag_of_words(text, mesh_terms, conf, mesh_ancestor_data)
     return {
         "id": doc["id"],
         "title": doc["title"],

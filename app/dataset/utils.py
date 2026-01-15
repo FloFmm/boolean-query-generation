@@ -20,7 +20,13 @@ ABBREVIATIONS = {
     "optimization": "om", 
     "constraint": "c", 
     "ret_config": "rc",
+    "lower_case": "lc",
+    "mesh_ancestors": "ma",
+    "rm_numbers": "rmn",
+    "rm_punct": "rmp",
+    "related_words": "rw",
 }
+
 ABBREVIATIONS_REV = {v: k for k, v in ABBREVIATIONS.items()}
 
 EVAL_QUERY_IDS = ["CD011602", "CD011926", "CD010225", "CD003137", "CD002069", "CD011724", "CD010633", "CD007497", "CD011549", "CD007103", "CD010411", "CD011447", "CD009925", "CD000384", "CD009669", "CD009780", "CD010387", "CD010653", "CD004288", "CD011732", "CD007379", "CD010139", "CD011472", "CD012009", "CD012216", "CD008366", "CD003344", "CD006342", "CD010685", "CD005055", "CD010226", "CD008760", "CD008170", "CD002898", "CD006995", "CD011515", "CD009782", "CD006839", "CD002115", "CD009784"]
@@ -71,8 +77,8 @@ def vectors_path(**args):
     """params: total_docs, min_df, max_df, mesh"""
     return Path(f"{data_base_path()}/bag_of_words/vectors,{abbreviate_params(**args)}.pkl")
 
-def load_synonym_map(total_docs):
-    with open(synonym_map_path(total_docs=total_docs), "r", encoding="utf-8") as f:
+def load_synonym_map(**args):
+    with open(synonym_map_path(**args), "r", encoding="utf-8") as f:
         synonym_map = json.load(f)
     return synonym_map
 
@@ -90,11 +96,11 @@ def load_completed(jsonl_path: Path):
                 continue
     return completed
 
-def load_vectors(total_docs: int, min_df: int, max_df: int, mesh: bool):
-    X_path = vectors_path(total_docs=total_docs, min_df=min_df, max_df=max_df, mesh=mesh)
-    features_path = faeature_names_path(total_docs=total_docs, min_df=min_df, max_df=max_df, mesh=mesh)
+def load_vectors(bow_arg_dict: dict, min_df: int, max_df: int, mesh: bool):
+    X_path = vectors_path(**bow_arg_dict, min_df=min_df, max_df=max_df, mesh=mesh)
+    features_path = faeature_names_path(**bow_arg_dict, min_df=min_df, max_df=max_df, mesh=mesh)
     
-    bow = load_bow(total_docs=total_docs, mesh=mesh)
+    bow = load_bow(bow_arg_dict=bow_arg_dict, mesh=mesh)
     ordered_pmids = list(bow.keys())
 
     # If cached vectors exist → load and return
@@ -234,9 +240,9 @@ def generate_labels_and_sample_weights(
 
     return y, sample_weight, top_k
 
-def load_bow(total_docs: int, mesh: bool = True):
+def load_bow(bow_arg_dict: dict, mesh: bool = True):
     bow_by_pmid = {}
-    with open(bag_of_words_path(total_docs=total_docs), "r", encoding="utf-8") as f:
+    with open(bag_of_words_path(**bow_arg_dict), "r", encoding="utf-8") as f:
         for line in f:
             entry = json.loads(line)
             pmid = entry["id"]
