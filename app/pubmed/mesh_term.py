@@ -157,6 +157,9 @@ def expand_mesh_terms(mesh_list, mesh_ancestor_data=None):
     """
     expanded = set()
     for mesh_str in mesh_list:
+        if mesh_str == "purpura, schoenlein-henoch":
+            mesh_str = "iga vasculitis"
+        
         mesh_str = mesh_str.replace('&', 'and')
         mesh_str = mesh_str.replace('*', '')
         parts = mesh_str.split('/')
@@ -173,5 +176,13 @@ def expand_mesh_terms(mesh_list, mesh_ancestor_data=None):
 if __name__ == "__main__":
     mesh = download_mesh_xml(2025)
     print("Loaded", len(mesh), "descriptors")
-    anc = get_ancestors_by_name(mesh, "Humans")
+    anc = expand_mesh_terms(["purpura, schoenlein-henoch"], mesh_ancestor_data=mesh)
     print("Ancestors:", anc)
+    # anc = get_ancestors_by_name(mesh, "l cells, cell line")
+    # print("Ancestors:", anc)
+    # anc = get_ancestors_by_name(mesh, "l cells")
+    # print("Ancestors:", anc)
+    # anc = get_ancestors_by_name(mesh, "l cell")
+    # print("Ancestors:", anc)
+    # anc = get_ancestors_by_name(mesh, "outcome assessment")
+    # print("Ancestors:", anc)

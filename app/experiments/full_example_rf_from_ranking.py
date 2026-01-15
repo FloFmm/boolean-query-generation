@@ -2,17 +2,18 @@ import pickle
 import numpy as np
 from app.dataset.utils import load_vectors, load_synonym_map
 from app.tree_learning.random_forest import RandomForest
-from app.dataset.utils import generate_labels_and_sample_weights#, generate_labels
+from app.dataset.utils import generate_labels_and_sample_weights, review_id_to_dataset#, generate_labels
 from app.pubmed.retrieval import search_pubmed_dynamic
 from app.tree_learning.query_generation import compute_rule_coverage, rules_to_pubmed_query
 from sklearn.metrics import recall_score, precision_score
 from app.config.config import QG_PARAMS, RF_PARAMS, BOW_PARAMS
+
 print("finished imports")
 # Give either a custom query or a query_id 
 query_id = "CD009784"#"CD002115"#"CD008760"
-total_docs = 433660
+dataset_name, _, end_year = review_id_to_dataset(query_id)
+total_docs = 2000
 BOW_PARAMS["total_docs"] = total_docs
-end_year = 2018
 
 term_expansions = load_synonym_map(**BOW_PARAMS)
 

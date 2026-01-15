@@ -251,6 +251,10 @@ def expand_term(term_expansions,
         terms = [feature]
     else:
         terms = term_expansions.get(feature, [feature])
+    terms = [ 
+        f'"{w}"' if " " in w else w
+        for w in terms
+    ]
     if tiab or not is_positive: # negative terms always get [tiab]
         terms = [f + "[tiab]" for f in terms]
     return " SYNONYM_OR ".join(terms)
