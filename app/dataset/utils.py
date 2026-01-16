@@ -8,7 +8,7 @@ import pickle
 from pathlib import Path
 from sklearn.feature_extraction.text import CountVectorizer
 from app.parameter_tuning.compute_top_k import approximate_y
-from app.config.config import TAR2017_TRAIN, TAR2017_TEST, TAR2018_TEST, CSMED_COCHRANE_REVIEWS, TOP_K
+from app.config.config import TAR2017_TRAIN, TAR2017_TEST, TAR2018_TEST, CSMED_COCHRANE_REVIEWS, TOP_K, BOW_PARAMS
 
 ABBREVIATIONS = {
     "total_docs": "d",
@@ -16,7 +16,7 @@ ABBREVIATIONS = {
     "max_df": "maxdf",
     "positive_selection_conf": "psc",
     "mesh": "mesh",
-    "optimization": "om", 
+    "optimization": "opt", 
     "constraint": "c", 
     "ret_config": "rc",
     "lower_case": "lc",
@@ -24,21 +24,43 @@ ABBREVIATIONS = {
     "rm_numbers": "rmn",
     "rm_punct": "rmp",
     "related_words": "rw",
+    "bootstrap":"boot,",
+    "class_weight":"cw",
+    "max_depth": "maxd",
+    "max_features": "maxf",
+    "max_or_features": "mof",
+    "max_samples": "maxs",
+    "min_impurity_decrease_range": "midr",
+    "min_samples_split":"mins",
+    "min_weight_fraction_leaf": "mwfl",
+    "n_estimators": "ne",
+    # "n_jobs": "nj",
+    "prefer_pos_splits": "pfs",
+    # "random_state":"rs",
+    "randomize_max_feature": "rmf",
+    "randomize_min_impurity_decrease_range" : "rmidr",
+    "rank_weight": "rweight",
+    "top_k": "k",
+    "top_k_or_candidates": "tkoc",
+    # "verbose": "v",
 }
 
 ABBREVIATIONS_REV = {v: k for k, v in ABBREVIATIONS.items()}
 
-EVAL_QUERY_IDS = ["CD011602", "CD011926", "CD010225", "CD003137", "CD002069", "CD011724", "CD010633", "CD007497", "CD011549", "CD007103", "CD010411", "CD011447", "CD009925", "CD000384", "CD009669", "CD009780", "CD010387", "CD010653", "CD004288", "CD011732", "CD007379", "CD010139", "CD011472", "CD012009", "CD012216", "CD008366", "CD003344", "CD006342", "CD010685", "CD005055", "CD010226", "CD008760", "CD008170", "CD002898", "CD006995", "CD011515", "CD009782", "CD006839", "CD002115", "CD009784"]
+EVAL_QUERY_IDS_OLD = ["CD011602", "CD011926", "CD010225", "CD003137", "CD002069", "CD011724", "CD010633", "CD007497", "CD011549", "CD007103", "CD010411", "CD011447", "CD009925", "CD000384", "CD009669", "CD009780", "CD010387", "CD010653", "CD004288", "CD011732", "CD007379", "CD010139", "CD011472", "CD012009", "CD012216", "CD008366", "CD003344", "CD006342", "CD010685", "CD005055", "CD010226", "CD008760", "CD008170", "CD002898", "CD006995", "CD011515", "CD009782", "CD006839", "CD002115", "CD009784"]
 
 def abbreviate_params(**kwargs) -> str:
     """
     Converts keyword parameters into the "key=value" format
     using the ABBREVIATIONS dict.
     """
+    ignore = {}
     parts = []
     for full in sorted(kwargs):
+        if full in ignore:
+            continue
         value = kwargs[full]
-        abbr = ABBREVIATIONS.get(full, full)  # fallback: keep same
+        abbr = ABBREVIATIONS.get(full, full) # default take full
         parts.append(f"{abbr}={value}")
     return ",".join(parts)
 
@@ -46,15 +68,28 @@ def data_base_path():
     return "../systematic-review-datasets/data"
 
 def statistics_base_path():
-    return Path("../boolean-query-generation/data/statistics/csmed")
+    return Path("../boolean-query-generation/data/statistics")
 
 def bag_of_words_path(**args):
     """params: total_docs, lower_case, mesh_ancestors, rm_numbers, rm_punct"""
+    args = {k: v for k, v in args.items() if k not in ("min_df", "max_df", "mesh")}
     return Path(f"{data_base_path()}/bag_of_words/bag_of_words,{abbreviate_params(**args)}.jsonl")
 
 def synonym_map_path(**args):
     """params: total_docs, lower_case, mesh_ancestors, rm_numbers, rm_punct"""
+    args = {k: v for k, v in args.items() if k not in ("min_df", "max_df", "mesh")}
     return Path(f"../systematic-review-datasets/data/bag_of_words/synonym_map,{abbreviate_params(**args)}.json")
+
+def run_path(**bow_args):
+    return Path(os.path.join(statistics_base_path(), f"run,{abbreviate_params(**bow_args)}"))
+
+def rf_statistics_path(**args):
+    args = {k: v for k, v in args.items() if k not in ("verbose", "random_state", "n_jobs")}
+    return Path(os.path.join(run_path(**BOW_PARAMS), abbreviate_params(**args)))
+
+def qg_statistics_path(rf_args, qg_args):
+    qg_args = {k: v for k, v in qg_args.items() if k not in ("mh_noexp", "tiab", "pruning_thresholds", "term_expansions")}
+    return Path(f"{rf_statistics_path(**rf_args)}/{abbreviate_params(**qg_args)}")
 
 def statistics_sub_folder_path(model, **args):
     """params: model, total_docs, min_df, max_df, positive_selection_conf, mesh"""
@@ -95,11 +130,11 @@ def load_completed(jsonl_path: Path):
                 continue
     return completed
 
-def load_vectors(bow_arg_dict: dict, min_df: int, max_df: int, mesh: bool):
-    X_path = vectors_path(**bow_arg_dict, min_df=min_df, max_df=max_df, mesh=mesh)
-    features_path = faeature_names_path(**bow_arg_dict, min_df=min_df, max_df=max_df, mesh=mesh)
+def load_vectors(**bow_args):
+    X_path = vectors_path(**bow_args)
+    features_path = faeature_names_path(**bow_args)
     
-    bow = load_bow(bow_arg_dict=bow_arg_dict, mesh=mesh)
+    bow = load_bow(**bow_args)
     ordered_pmids = list(bow.keys())
 
     # If cached vectors exist → load and return
@@ -239,9 +274,10 @@ def generate_labels_and_sample_weights(
 
     return y, sample_weight, top_k
 
-def load_bow(bow_arg_dict: dict, mesh: bool = True):
+def load_bow(**bow_args):
     bow_by_pmid = {}
-    with open(bag_of_words_path(**bow_arg_dict), "r", encoding="utf-8") as f:
+    mesh = bow_args["mesh"]
+    with open(bag_of_words_path(**bow_args), "r", encoding="utf-8") as f:
         for line in f:
             entry = json.loads(line)
             pmid = entry["id"]
@@ -251,7 +287,7 @@ def load_bow(bow_arg_dict: dict, mesh: bool = True):
                 bow_by_pmid[pmid] = [w for w in entry["bow"] if not "[mh]" in w]
     return bow_by_pmid
 
-def load_statistics_data_dt(filter_vars=None):
+def load_statistics_data_rf(filter_vars=None):
     """
     Load and aggregate JSONL experiment results by file.
 
@@ -265,7 +301,7 @@ def load_statistics_data_dt(filter_vars=None):
     """
     input_folder = statistics_base_path()
     records = []
-    for jsonl_file in input_folder.glob("*/results_dt.jsonl"):
+    for jsonl_file in input_folder.glob("*/results_rf.jsonl"):
         config_file = jsonl_file.parent / "config.json"
         with config_file.open("r", encoding="utf-8") as f:
             conf = json.load(f)
@@ -318,7 +354,7 @@ def load_statistics_data_dt(filter_vars=None):
 
     return pd.DataFrame(records)
 
-def load_statistics_data(filter_vars=None, qg=True, metrics=None):
+def load_statistics_data(input_folder, filter_vars=None, qg=True, metrics=None):
     """
     Load and aggregate JSONL experiment results by file.
 
@@ -330,62 +366,59 @@ def load_statistics_data(filter_vars=None, qg=True, metrics=None):
     Returns:
         pd.DataFrame: Averaged metrics per file and associated hyperparameters.
     """
-    input_folder = statistics_base_path()
-    
     # i = 0
-    # for results_file_dt in input_folder.glob("*/results_dt.jsonl"):
-    #     for results_file_qg in results_file_dt.parent.glob("*/results_qg.jsonl"):
+    # for results_file_rf in input_folder.glob("*/results_rf.jsonl"):
+    #     for results_file_qg in results_file_rf.parent.glob("*/results_qg.jsonl"):
     #         i+=1
     # print(i) 
     # exit(0)
     records = []
-    for results_file_dt in input_folder.glob("*/results_dt.jsonl"):
+    for results_file_rf in input_folder.glob("*/rf_results.jsonl"):
         
-        config_file_dt = results_file_dt.parent / "config.json"
-        with config_file_dt.open("r", encoding="utf-8") as f_dt:
-            conf_dt = json.load(f_dt)
+        config_file_rf = results_file_rf.parent / "rf_config.json"
+        with config_file_rf.open("r", encoding="utf-8") as f_rf:
+            conf_rf = json.load(f_rf)
             
         # Optional filter for other parameters in filename
-        if filter_vars and not all(conf_dt.get(k, v) == v for k, v in filter_vars.items()):
+        if filter_vars and not all(conf_rf.get(k, v) == v for k, v in filter_vars.items()):
             continue
             
-        params_dt = {
-            "file": str(results_file_dt.parent.name),
-            "max_depth": int(conf_dt["model_args"]["max_depth"]),
-            "min_samples_split": int(conf_dt["model_args"]["min_samples_split"]),
-            "min_impurity_decrease_start": float(conf_dt["model_args"]["min_impurity_decrease_range"][0]),
-            "min_impurity_decrease_end": float(conf_dt["model_args"]["min_impurity_decrease_range"][1]),
-            "top_k_or_candidates": int(conf_dt["model_args"]["top_k_or_candidates"]),
-            "class_weight": str(conf_dt["model_args"]["class_weight"]),
-            "total_docs": int(conf_dt["total_docs"]),
-            "min_df": int(conf_dt["min_df"]),
-            "max_df": float(conf_dt["max_df"]),
-            "mesh": bool(conf_dt["mesh"]),
+        params_rf = {
+            "file": str(results_file_rf.parent.name),
+            "max_depth": int(conf_rf["model_args"]["max_depth"]),
+            "min_samples_split": int(conf_rf["model_args"]["min_samples_split"]),
+            "min_impurity_decrease_start": float(conf_rf["model_args"]["min_impurity_decrease_range"][0]),
+            "min_impurity_decrease_end": float(conf_rf["model_args"]["min_impurity_decrease_range"][1]),
+            "top_k_or_candidates": int(conf_rf["model_args"]["top_k_or_candidates"]),
+            "class_weight": str(conf_rf["model_args"]["class_weight"]),
+            "min_df": int(conf_rf["min_df"]),
+            "max_df": float(conf_rf["max_df"]),
+            "mesh": bool(conf_rf["mesh"]),
         }
         
-        file_records_dt = []
-        with results_file_dt.open("r", encoding="utf-8") as f:
+        file_records_rf = []
+        with results_file_rf.open("r", encoding="utf-8") as f:
             for line in f:
                 data = json.loads(line)
                 if data["query_id"] not in EVAL_QUERY_IDS:
                     continue
-                data = {f"{k}_dt" if not k.endswith("_dt") else k: v for k, v in data.items()}
-                file_records_dt.append(data)
+                data = {f"{k}_rf" if not k.endswith("_rf") else k: v for k, v in data.items()}
+                file_records_rf.append(data)
                 
-        samples_dt = len(file_records_dt) 
+        samples_rf = len(file_records_rf) 
 
-        if not file_records_dt:
+        if not file_records_rf:
             continue
-        df_file_dt = pd.DataFrame(file_records_dt)
-        df_file_dt["f1_dt"] = 2 * df_file_dt["precision_dt"] * df_file_dt["recall_dt"] / (df_file_dt["precision_dt"] + df_file_dt["recall_dt"])
-        df_file_dt["f3_dt"] = (1 + 3**2) * (
-            df_file_dt["precision_dt"] * df_file_dt["recall_dt"]
-        ) / (3**2 * df_file_dt["precision_dt"] + df_file_dt["recall_dt"])
-        mean_metrics_dt = df_file_dt.mean(numeric_only=True).to_dict()
+        df_file_rf = pd.DataFrame(file_records_rf)
+        df_file_rf["f1_rf"] = 2 * df_file_rf["precision_rf"] * df_file_rf["recall_rf"] / (df_file_rf["precision_rf"] + df_file_rf["recall_rf"])
+        df_file_rf["f3_rf"] = (1 + 3**2) * (
+            df_file_rf["precision_rf"] * df_file_rf["recall_rf"]
+        ) / (3**2 * df_file_rf["precision_rf"] + df_file_rf["recall_rf"])
+        mean_metrics_rf = df_file_rf.mean(numeric_only=True).to_dict()
         
         if qg: 
-            for results_file_qg in results_file_dt.parent.glob("*/results_qg.jsonl"):
-                config_file_qg = results_file_qg.parent / "config.json"
+            for results_file_qg in results_file_rf.parent.glob("*/qg_results.jsonl"):
+                config_file_qg = results_file_qg.parent / "qg_config.json"
                 with config_file_qg.open("r", encoding="utf-8") as f_qg:
                     conf_qg = json.load(f_qg)
                     
@@ -425,27 +458,27 @@ def load_statistics_data(filter_vars=None, qg=True, metrics=None):
 
                 mean_metrics_qg = df_file_qg.mean(numeric_only=True).to_dict()
                 
-                data_dict = {**params_dt, 
+                data_dict = {**params_rf, 
                              **params_qg, 
                              **mean_metrics_qg, 
-                             **mean_metrics_dt,
+                             **mean_metrics_rf,
                              "samples_qg": samples_qg,
-                             "samples_dt": samples_dt,
+                             "samples_rf": samples_rf,
                              }
                 
                 if all([m[0] in data_dict.keys() for m in metrics]):
                     records.append(data_dict)
                 else:
-                    print("skipping file", results_file_dt)
+                    print("skipping file", results_file_rf)
         else:
-            data_dict = {**params_dt, 
-                         **mean_metrics_dt,
-                         "samples_dt": samples_dt,
+            data_dict = {**params_rf, 
+                         **mean_metrics_rf,
+                         "samples_rf": samples_rf,
                          }
             if all([m[0] in data_dict.keys() for m in metrics]):
                 records.append(data_dict)
             else:
-                print("skipping file", results_file_dt)
+                print("skipping file", results_file_rf)
 
     if not records:
         print("No matching files or records found.")
@@ -455,7 +488,7 @@ def load_statistics_data(filter_vars=None, qg=True, metrics=None):
     
     
 
-    params = list(params_dt.keys())
+    params = list(params_rf.keys())
     if qg:
         params = list(set(params) | set(params_qg.keys()))
     return df, params

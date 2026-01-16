@@ -474,7 +474,7 @@ class RandomForest:
                     )[0].replace("[tiab]", ""),
                 )
 
-            return pubmed_query, rules
+            return pubmed_query, rules, selection_result["objective"]
 
     def _find_optimal_threshold(self, **args):
         for tree in self.estimators_:

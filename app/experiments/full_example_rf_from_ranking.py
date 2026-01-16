@@ -46,7 +46,7 @@ rf.fit(
 print("finished fitting")
 ### Generate Pubmed Query ###
 # synonym_map = load_synonym_map(total_docs)
-(pubmed_query_str, query_size), rules = rf.pubmed_query(
+(pubmed_query_str, query_size), rules, opt_score = rf.pubmed_query(
     X=X,
     labels=labels,
     feature_names=feature_names,
@@ -57,7 +57,7 @@ print("finished fitting")
     cover_beta=QG_PARAMS["cover_beta"],
     pruning_beta=QG_PARAMS["pruning_beta"],
     pruning_thresholds=QG_PARAMS["pruning_thresholds"],
-    term_expansions=term_expansions if QG_PARAMS["synonym_expansion"] else None,
+    term_expansions=term_expansions if QG_PARAMS["term_expansions"] else None,
     mh_noexp=QG_PARAMS["mh_noexp"],
     tiab=QG_PARAMS["tiab"],
 )

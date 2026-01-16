@@ -13,6 +13,10 @@ BOW_PARAMS = {
     "rm_numbers": True,
     "rm_punct": True,
     "related_words": True,
+    "total_docs": 433660,
+    "min_df": 10,
+    "max_df": 0.2,
+    "mesh": True,
 }
 
 RF_PARAMS = {
@@ -44,7 +48,7 @@ QG_PARAMS = {
     "min_rule_precision": 0.01,
     "cover_beta": 2.0, # high to prefer covering training data fully
     "pruning_beta": 0.1, # low to prefer precise rules
-    "synonym_expansion": True,
+    "term_expansions": True,
     "mh_noexp": True,
     "tiab": True,
     "pruning_thresholds": {

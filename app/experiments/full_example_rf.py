@@ -119,7 +119,7 @@ rf.fit(
 print("finished fitting")
 ### Generate Pubmed Query ###
 # synonym_map = load_synonym_map(total_docs)
-pubmed_query_str, query_size = rf.pubmed_query(
+pubmed_query_str, query_size, opt_score = rf.pubmed_query(
     X=X,
     labels=labels,
     feature_names=feature_names,
