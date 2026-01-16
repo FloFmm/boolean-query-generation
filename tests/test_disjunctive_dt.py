@@ -2,7 +2,8 @@ import time
 import pytest
 import inspect
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics import precision_score, recall_score
+# from sklearn.metrics import precision_score, recall_score
+from app.config.config import RF_PARAMS, QG_PARAMS
 import numpy as np
 from app.tree_learning.disjunctive_dt import (
     generate_texts_from_boolean,
@@ -11,7 +12,6 @@ from app.tree_learning.disjunctive_dt import (
 from app.tree_learning.random_forest import RandomForest
 from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 from app.pubmed.utils import pubmed_query_to_lambda, remove_tags
-
 
 def run_tree_test(
     classifier,
@@ -83,7 +83,7 @@ def run_tree_test(
     if len(sig.parameters) == 1:
         generated_pubmed_query, query_size = classifier.pubmed_query()
     else:
-        generated_pubmed_query, query_size = classifier.pubmed_query(
+        (generated_pubmed_query, query_size), rules = classifier.pubmed_query(
             X=X,
             labels=labels,
             feature_names=feature_names,
@@ -91,6 +91,12 @@ def run_tree_test(
             min_rule_occ=qg_params["min_rule_occ"],
             cost_factor=qg_params["cost_factor"],
             min_rule_precision=qg_params["min_rule_precision"],
+            cover_beta=qg_params["cover_beta"],
+            pruning_beta=qg_params["pruning_beta"],
+            pruning_thresholds=qg_params["pruning_thresholds"],
+            term_expansions=None,
+            mh_noexp=qg_params["mh_noexp"],
+            tiab=qg_params["tiab"],
         )
         
     generated_pubmed_query = remove_tags(generated_pubmed_query)
@@ -115,8 +121,10 @@ def run_tree_test(
         ),
     )
     assert variables == generated_variables
-    assert len(pubmed_query.strip(" )(")) >= len(generated_pubmed_query.strip(" )("))
-
+    generated_pubmed_query = generated_pubmed_query.strip(" ")
+    if generated_pubmed_query[0] == "(" and generated_pubmed_query[-1] == ")":
+        generated_pubmed_query = generated_pubmed_query[1:-1]
+    assert len(pubmed_query) >= len(generated_pubmed_query)
 
 TEXT_PARAMS = {
     "error": 0.0,
@@ -134,30 +142,6 @@ TREE_PARAMS = {
     "min_samples_split": 1,
     "class_weight": "balanced",
 }
-RF_PARAMS = {
-    "n_estimators": 1,
-    "max_depth": 4,
-    "min_samples_split": 2,
-    "min_weight_fraction_leaf": 0.0005,
-    "max_features": "sqrt",
-    "randomize_max_feature": 1,
-    "min_impurity_decrease_range": (0.01, 0.01),
-    "randomize_min_impurity_decrease_range": 1,
-    "bootstrap": True,
-    "n_jobs": None,
-    "random_state": None,
-    "verbose": False,
-    "class_weight": "balanced",
-    "max_samples": None,
-    "top_k_or_candidates": 500,
-    "prefer_pos_splits": 1.1
-}
-QG_PARAMS = {
-    "min_tree_occ": 0.05,
-    "min_rule_occ": 0.05,
-    "cost_factor": 0.002, # 50 ANDs are worth 0.1 F3 score
-    "min_rule_precision": 0.01,
-    }
 
 FORMULAS = [
     # easy, solvable by single dt"

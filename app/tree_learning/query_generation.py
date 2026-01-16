@@ -441,7 +441,7 @@ def select_rules_via_ga(
     # )
     def sparse_individual():
         ind = np.zeros(n_rules, dtype=int)
-        k = rng.integers(1, max_rules)
+        k = rng.integers(1, min(max_rules, n_rules) + 1)
         idx = rng.choice(n_rules, size=k, replace=False)
         ind[idx] = 1
         return creator.Individual(ind.tolist())
