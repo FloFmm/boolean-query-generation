@@ -124,7 +124,7 @@ def optimize_with_optuna_parallel(
             "min_rule_occ": trial.suggest_float("min_rule_occ", 0.0, 0.1, step=0.01),
             "cover_beta": trial.suggest_float("cover_beta", 1.0, 5.0, step=0.1), # high to prefer covering training data fully
             "pruning_beta": trial.suggest_float("pruning_beta", 0.05, 1.0, step=0.05), # low to prefer precise rules
-            "term_expansions": trial.suggest_categorical("term_expansions", [True, False]),
+            "term_expansions": trial.suggest_categorical("term_expansions", [True, False]), # TODO do not chagne this but further down. something is rong with term_expansions. query gets true false isntead of term_expansions, but here Ture false is correct
             "mh_noexp": trial.suggest_categorical("mh_noexp", [True, False]),
             "tiab": trial.suggest_categorical("tiab", [True, False]),
         }
