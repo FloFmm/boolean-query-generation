@@ -60,8 +60,12 @@ def abbreviate_params(**kwargs) -> str:
         if full in ignore:
             continue
         value = kwargs[full]
+        if isinstance(value, float):
+            value_str = format(value, ".6g")
+        else:
+            value_str = str(value)
         abbr = ABBREVIATIONS.get(full, full) # default take full
-        parts.append(f"{abbr}={value}")
+        parts.append(f"{abbr}={value_str}")
     return ",".join(parts)
 
 def data_base_path():
@@ -88,7 +92,7 @@ def rf_statistics_path(**args):
     return Path(os.path.join(run_path(**BOW_PARAMS), abbreviate_params(**args)))
 
 def qg_statistics_path(rf_args, qg_args):
-    qg_args = {k: v for k, v in qg_args.items() if k not in ("mh_noexp", "tiab", "pruning_thresholds", "term_expansions")}
+    qg_args = {k: v for k, v in qg_args.items() if k not in ("pruning_thresholds")}
     return Path(f"{rf_statistics_path(**rf_args)}/{abbreviate_params(**qg_args)}")
 
 def statistics_sub_folder_path(model, **args):
@@ -229,8 +233,8 @@ def generate_labels_and_sample_weights(
     max_weight:float=1.5,
     num_positives=None,
 ):
-    if isinstance(k, dict):
-        top_k = math.ceil(approximate_y(TOP_K[k["recall"]][0], TOP_K[k["recall"]][1], num_positives) * k["factor"])
+    if isinstance(k, float):
+        top_k = math.ceil(approximate_y(TOP_K[0.7][0], TOP_K[0.7][1], num_positives) * k)
     N = len(ordered_pmids)
 
     # map pmid -> index in X

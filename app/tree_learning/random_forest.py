@@ -4,6 +4,7 @@ from joblib import Parallel, delayed
 from scipy.sparse import issparse
 from numbers import Integral, Real
 from collections import defaultdict
+from app.config.config import DEBUG
 from app.tree_learning.disjunctive_dt import (
     GreedyORDecisionTree,
     compute_class_weight,
@@ -397,10 +398,15 @@ class RandomForest:
 
         for t_idx, tree in enumerate(self.estimators_):
             tree_rules = tree.get_tree_paths()
+            if DEBUG:
+                print(tree.pretty_print(verbose=True))
+                print("tree_rules", tree_rules)
+                print("class_weight", tree.class_weight)
             # all_rules.extend(tree_rules)
             for r in tree_rules:
                 rule_tree_map[r].add(t_idx)
             # rule_tree_map.extend([t_idx] * len(tree_rules))
+        assert rule_tree_map
         return rule_tree_map
 
     def pubmed_query(
@@ -441,6 +447,7 @@ class RandomForest:
             )
             rules = vec_result["rules"]
             print("NUMBER OF RULES", len(rules))
+            cover_score = None
             if len(rules) > 1:
                 # kept_variables = vec_result["kept_variables"]
                 coverage = vec_result["coverage"]
@@ -454,6 +461,7 @@ class RandomForest:
                     beta=cover_beta,
                 )
                 rules = [rules[i] for i in selection_result["selected_rule_indices"]]
+                cover_score = selection_result["objective"]
             pubmed_query = rules_to_pubmed_query(
                 rules=rules,
                 feature_names=feature_names,
@@ -463,18 +471,19 @@ class RandomForest:
             )
 
             # REMOVE
-            print("INITIAL SOLUTIONS")
-            for tree, rs in vec_result["initial_solutions"].items():
-                print(
-                    tree,
-                    rules_to_pubmed_query(
-                        rules=rs,
-                        feature_names=feature_names,
-                        term_expansions=term_expansions,
-                    )[0].replace("[tiab]", ""),
-                )
+            if DEBUG:
+                print("INITIAL SOLUTIONS")
+                for tree, rs in vec_result["initial_solutions"].items():
+                    print(
+                        tree,
+                        rules_to_pubmed_query(
+                            rules=rs,
+                            feature_names=feature_names,
+                            term_expansions=term_expansions,
+                        )[0].replace("[tiab]", ""),
+                    )
 
-            return pubmed_query, rules, selection_result["objective"]
+            return pubmed_query, rules, cover_score
 
     def _find_optimal_threshold(self, **args):
         for tree in self.estimators_:

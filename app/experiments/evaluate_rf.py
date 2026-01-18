@@ -1,10 +1,12 @@
 
 import os
+import copy
 import sys
 import json
 import time
 import pickle
 import numpy as np
+from app.config.config import DEBUG
 from itertools import product
 from pathlib import Path
 from app.tree_learning.random_forest import RandomForest
@@ -33,13 +35,13 @@ def evalaute_rf(query_id, X, positives, feature_names, sorted_ids, ordered_pmids
     
     # check whether query already computed
     if qg_results_path.exists():
-        data = None
+        data = {}
         with open(qg_results_path, "r", encoding="utf-8") as f:
             for line in f:
                 obj = json.loads(line)
                 if obj.get("query_id") == query_id:
-                    data = obj
-                    break
+                    data[(obj["config"]["tiab"], obj["config"]["mh_noexp"], obj["config"]["term_expansions"])] = obj
+                    
         if data:
             print("results already exists")
             return data
@@ -90,13 +92,13 @@ def evalaute_rf(query_id, X, positives, feature_names, sorted_ids, ordered_pmids
     if qg_params["term_expansions"]:
         qg_params["term_expansions"] = term_expansions
     query_st = time.time()
-    _, rules, optimization_score = rf.pubmed_query(
+    (pubmed_query_str, query_size), rules, optimization_score = rf.pubmed_query(
         X=X,
         labels=pseudo_labels,
         feature_names=feature_names,
         **qg_params
     )
-    qg_time_seconds = query_st - time.time()
+    qg_time_seconds = time.time() - query_st
     # evaluate on local subset
     coverage = compute_rule_coverage(X=X, rules=rules)
     subset_preds = np.any(coverage, axis=0).astype(np.uint8)
@@ -107,49 +109,34 @@ def evalaute_rf(query_id, X, positives, feature_names, sorted_ids, ordered_pmids
     pseudo_precision = precision_score(pseudo_labels, subset_preds)
     pseudo_recall = recall_score(pseudo_labels, subset_preds)
 
-    ### Evaluate on PubMed ###
-    for tiab in [True, False]:
-        for mh_noexp in [True, False]:
-            for te in [term_expansions, None]:
-                pubmed_query_str, query_size = rules_to_pubmed_query(
-                    rules=rules,
-                    feature_names=feature_names,
-                    term_expansions=te,
-                    tiab=tiab,
-                    mh_noexp=mh_noexp,
-                )
-                retrieved = search_pubmed_dynamic(pubmed_query_str, end_year=end_year)
-                retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
-                true_positives = retrieved & positives
-                TP = len(true_positives)
-                pubmed_precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0
-                pubmed_recall = TP / len(positives) if len(positives) > 0 else 0.0
-                
-                qg_results = {
-                    "query_id": query_id,
-                    "num_positive": len(positives),
-                    "top_k": top_k,
-                    "pubmed_retrieved": len(retrieved),
-                    "pubmed_precision": pubmed_precision,
-                    "pubmed_recall": pubmed_recall, 
-                    "subset_retrieved": int(subset_preds.sum()),
-                    "subset_precision": subset_precision,
-                    "subset_recall": subset_recall,
-                    "pseudo_precision": pseudo_precision,
-                    "pseudo_recall": pseudo_recall,
-                    "optimization_score": optimization_score,
-                    "qg_time_seconds": qg_time_seconds,
-                    # "rf_time_seconds": rf_time_seconds,
-                    "config": {
-                        "tiab": tiab,
-                        "mh_noexp": mh_noexp,
-                        "term_expansions": te is not None,
-                    },
-                    "query_size": query_size,
-                    "pubmed_query": pubmed_query_str,
-                }
-                with open(qg_results_path, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(qg_results) + "\n")
+    retrieved = search_pubmed_dynamic(pubmed_query_str, end_year=end_year)
+    retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
+    true_positives = retrieved & positives
+    TP = len(true_positives)
+    pubmed_precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0
+    pubmed_recall = TP / len(positives) if len(positives) > 0 else 0.0
+    
+    qg_results = {
+        "query_id": query_id,
+        "num_positive": len(positives),
+        "top_k": top_k,
+        "pubmed_retrieved": len(retrieved),
+        "pubmed_precision": pubmed_precision,
+        "pubmed_recall": pubmed_recall, 
+        "subset_retrieved": int(subset_preds.sum()),
+        "subset_precision": subset_precision,
+        "subset_recall": subset_recall,
+        "pseudo_precision": pseudo_precision,
+        "pseudo_recall": pseudo_recall,
+        "optimization_score": optimization_score, # fromt he covering process
+        "qg_time_seconds": qg_time_seconds,
+        # "rf_time_seconds": rf_time_seconds,
+        "query_size": query_size,
+        "pubmed_query": pubmed_query_str,
+    }
+    with open(qg_results_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(qg_results) + "\n")
+    return qg_results
                 
 if __name__ == "__main__":
     query_ids = TRAIN_REVIEWS
@@ -175,6 +162,17 @@ if __name__ == "__main__":
             reviews = dataset["TRAIN"]
         positives[query_id] = set([str(doc["pmid"]) for doc in reviews[query_id]["data"]["train"] if int(doc["label"])==1]) 
     
+    DEBUG = True
+    buggy_config = {'max_depth': 14, 'min_weight_fraction_leaf': 0.002, 'top_k': 1.4, 'rank_weight': 1.2, 'max_features': 0.16, 'class_weight': 0.1, 'top_k_or_candidates': 500, 'min_tree_occ': 0.07, 'min_rule_occ': 0.08, 'cover_beta': 4.7, 'pruning_beta': 0.05}
+    rf_params = copy.deepcopy(RF_PARAMS)
+    qg_params = copy.deepcopy(QG_PARAMS)
+    for k, v in buggy_config.items():
+        if k in rf_params:
+            rf_params[k] = v
+    for k, v in buggy_config.items():
+        if k in qg_params:
+            qg_params[k] = v
+            
     results = []
     for query_id in positives.keys(): # TODO change positives.keys( to all queries but some ranking are missing)
         r = evalaute_rf(query_id=query_id, 
@@ -183,7 +181,7 @@ if __name__ == "__main__":
                     feature_names=feature_names, 
                     sorted_ids=sorted_ids[query_id], 
                     ordered_pmids=ordered_pmids, 
-                    rf_params=RF_PARAMS, 
-                    qg_params=QG_PARAMS, 
+                    rf_params=rf_params, 
+                    qg_params=qg_params, 
                     term_expansions=term_expansions)
         results.append(r)

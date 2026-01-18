@@ -6,7 +6,7 @@ import copy
 import scipy.sparse as sp
 from deap import base, creator, tools, algorithms
 from app.helper.helper import f_beta
-
+from app.config.config import DEBUG # TODO remove
 
 # Rule = List[Tuple[List[int], List[str], bool]]
 Rule = FrozenSet[Tuple[FrozenSet[int], bool]]
@@ -66,8 +66,9 @@ def prune_rare_features(
         new_terms = []
         for feat_inds, is_pos in rule:
             kept_feat_ind = feat_inds & kept_vars
-            for f in feat_inds - kept_vars:
-                print(feature_names[f])
+            if DEBUG:
+                for f in feat_inds - kept_vars:
+                    print(feature_names[f])
             if not kept_feat_ind:
                 break
 
@@ -145,7 +146,7 @@ def extract_and_vectorize_rules(
         rule_tree_map,
         n_trees=len(forest.estimators_),
     )
-
+    assert rule_tree_map
     rule_tree_map, kept_vars = prune_rare_features(
         rule_tree_map,
         tree_freq,
@@ -160,6 +161,7 @@ def extract_and_vectorize_rules(
     rule_stats: dict[Rule, dict] = {} # changed in place by prune_rule_greedy
     initial_solutions: dict[int, set[Rule]] = defaultdict(set)
     
+    assert rule_tree_map
     rule_tree_map_iter = rule_tree_map.items()
     if verbose:
         rule_tree_map_iter = tqdm(
@@ -183,6 +185,7 @@ def extract_and_vectorize_rules(
             pruning_thresholds=pruning_thresholds,
             beta=pruning_beta,
         )
+        assert history
         
         try:
             x = set(history)
@@ -198,7 +201,6 @@ def extract_and_vectorize_rules(
             # somtimes happens (TODO fix this bug) (probably fixed)
             assert False
         history = tuple(r for r in history if rule_stats[r]["precision"] >= min_rule_precision)
-        
         if not history:
             continue
         
@@ -210,11 +212,13 @@ def extract_and_vectorize_rules(
         for r in history:
             new_rule_tree_map[r].update(tree_indices)
     
+    assert new_rule_tree_map
+    
     if verbose:
         rule_tree_map_iter.close()
     rule_tree_map = new_rule_tree_map
     pruned_rules = list(rule_tree_map.keys())
-
+    assert len(pruned_rules) > 0
     rule_to_idx = {r: i for i, r in enumerate(pruned_rules)}
     initial_solutions_binary = [
         np.isin(
@@ -516,7 +520,7 @@ def select_rules_via_ga(
         ngen=ngen,
         stats=stats,
         halloffame=hof,
-        verbose=True,
+        verbose=DEBUG,
     )
 
     # ----------------------------
@@ -721,17 +725,12 @@ def prune_rule_greedy(
         "returned": ret_old,
     }
     # old_rule = None
-    print("START")
+    if DEBUG:
+        print("START")
     while True:
-        print()
-        # import difflib
-        print(rules_to_pubmed_query([current_rule], feature_names=feature_names, tiab=True, mh_noexp=True)[0])
-        # if old_rule:
-        #     d = difflib.ndiff(old_rule.split(), new_rule.split())
-        #     print("removed", [word for word in d if word.startswith("- ")])
-        #     print(old_rule)
-        # old_rule = new_rule #TODO REMOVE
-        
+        if DEBUG:
+            print()
+            print(rules_to_pubmed_query([current_rule], feature_names=feature_names, tiab=True, mh_noexp=True)[0])
         if current_rule not in rule_stats:
             rule_stats[current_rule] = best_metric
         else:
@@ -781,10 +780,6 @@ def prune_rule_greedy(
             mask_c = coverage_of_rule(X, cand_rule)
             p_new, r_new, tp_new, ret_new, _ = metrics_from_mask(mask_c, y)
             f_new = f_beta(p_new, r_new, beta)
-            # print("candidate", cand_rule)
-            # print("mode", mode)
-            # print("tp_new", tp_new)
-            # print("tp_old", tp_old)
             tp_gain = (tp_new - tp_old) / tp_old
             precision_gain = (p_new - p_old) / p_old
 
@@ -819,11 +814,13 @@ def prune_rule_greedy(
         # update old metrics
         p_old, r_old = best_metric["precision"], best_metric["recall"]
 
-        print("====MODE====", best_metric["mode"])
-        print("====REMOVED FEATURES====", [feature_names[f] for f in best_metric["removed_features"]])
-        print(best_metric)
+        if DEBUG:
+            print("====MODE====", best_metric["mode"])
+            print("====REMOVED FEATURES====", [feature_names[f] for f in best_metric["removed_features"]])
+            print(best_metric)
         if remove_old:
-            print("======remove old==========")
+            if DEBUG:
+                print("======remove old==========")
             # remove the previous rule from memory (i.e., drop the version before the last)
             # We keep only the most recent one in history when removal condition met.
             if len(history) >= 1:

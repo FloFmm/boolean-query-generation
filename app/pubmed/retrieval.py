@@ -6,6 +6,7 @@ from sklearn.manifold import TSNE  # or UMAP if you prefer
 from tqdm import tqdm
 from collections import defaultdict
 import random
+import optuna
 import json
 import os
 import torch
@@ -13,6 +14,7 @@ import subprocess
 import json
 import time
 import datetime
+from app.config.config import DEBUG
 Entrez.email = "florian_maurus.mueller@mailbox.tu-dresden.de"
 
 Entrez.tool = "YearMonthSplitter"
@@ -63,7 +65,12 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=95
             maxdate = end_date.strftime("%Y/%m/%d"),
         )["Count"]
     )
-    print(f"Total expected PMIDs: {total_expected}")
+    if total_expected > 50_000:
+        print("Tried to retrieve more than 50k PubMed documents")
+        raise optuna.exceptions.TrialPruned()
+    
+    if DEBUG:
+        print(f"Total expected PMIDs: {total_expected}")
     
     all_pmids = set()
     current_end = end_date 
@@ -77,19 +84,22 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=95
         record = search_pubmed_date_range(query, mindate, maxdate)
         pmids = list(record["IdList"])
         count_pmids = int(record["Count"])
-        print(f"{mindate}-{maxdate}: {count_pmids} results (window {int(window_days)} days)")
+        if DEBUG:
+            print(f"{mindate}-{maxdate}: {count_pmids} results (window {int(window_days)} days)")
 
         if count_pmids >= 9999:
             if window_days <= 1:
                 return []
             # Too many results: reduce window proportionally
             window_days = max(1, window_days * target_count / count_pmids)
-            print(f"  Too many results, reducing window to {int(window_days)} days")
+            if DEBUG:
+                print(f"  Too many results, reducing window to {int(window_days)} days")
             continue
         elif count_pmids == 0:
             # No results: increase window
             window_days = max(1, window_days * 2)
-            print(f"  No results, increasing window to {int(window_days)} days")
+            if DEBUG:
+                print(f"  No results, increasing window to {int(window_days)} days")
             continue
         elif count_pmids != target_count:
             # Adjust window to aim for target_count
@@ -101,19 +111,21 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=95
 
         # If remaining PMIDs are below 9999, fetch all remaining time
         remaining = total_expected - len(all_pmids)
-        print("remaining: ", remaining)
+        if DEBUG:
+            print("remaining: ", remaining)
         if remaining < 9999:
             record = search_pubmed_date_range(query, start_date.strftime('%Y/%m/%d'), current_end.strftime('%Y/%m/%d'))
             pmids = record["IdList"]
             count_pmids = record["Count"]
-            print(f"{start_date.strftime('%Y/%m/%d')}-{current_end.strftime('%Y/%m/%d')}: {count_pmids} results")
+            if DEBUG:
+                print(f"{start_date.strftime('%Y/%m/%d')}-{current_end.strftime('%Y/%m/%d')}: {count_pmids} results")
             all_pmids.update(pmids)
             break
 
         time.sleep(0.34)
-
-    print(f"\nExpected PMIDs: {total_expected}")
-    print(f"Retrieved PMIDs: {len(all_pmids)}")
+    if DEBUG:
+        print(f"\nExpected PMIDs: {total_expected}")
+        print(f"Retrieved PMIDs: {len(all_pmids)}")
     return list(all_pmids)
 
 def search_pubmed(term, retmax=9999, retries=50):

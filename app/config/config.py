@@ -5,6 +5,8 @@ TOP_K = {
         )
     }
 
+DEBUG = False # TODO remove
+
 FORBIDDEN_FEATURES = {"nan"} # used as empty abstract in csmed
 
 BOW_PARAMS = {
@@ -20,7 +22,7 @@ BOW_PARAMS = {
 }
 
 RF_PARAMS = {
-    "top_k": {"recall": 0.7, "factor": 1.5},#200, # 0.7 means k where we reach 0.7 recall multipled by factor
+    "top_k": 1.5,#200, # 0.7 means k where we reach 0.7 recall multipled by factor
     "rank_weight": 1.5, # how much more weighted shall rank 1 be than rank k
     "n_estimators": 32,
     "max_depth": 4,
