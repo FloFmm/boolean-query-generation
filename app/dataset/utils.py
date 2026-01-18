@@ -84,16 +84,16 @@ def synonym_map_path(**args):
     args = {k: v for k, v in args.items() if k not in ("min_df", "max_df", "mesh")}
     return Path(f"../systematic-review-datasets/data/bag_of_words/synonym_map,{abbreviate_params(**args)}.json")
 
-def run_path(**bow_args):
-    return Path(os.path.join(statistics_base_path(), f"run,{abbreviate_params(**bow_args)}"))
+def run_path(run_name, **bow_args):
+    return Path(os.path.join(statistics_base_path(), "optuna", run_name, f"{abbreviate_params(**bow_args)}"))
 
-def rf_statistics_path(**args):
+def rf_statistics_path(run_name, **args):
     args = {k: v for k, v in args.items() if k not in ("verbose", "random_state", "n_jobs")}
-    return Path(os.path.join(run_path(**BOW_PARAMS), abbreviate_params(**args)))
+    return Path(os.path.join(run_path(run_name=run_name, **BOW_PARAMS), abbreviate_params(**args)))
 
-def qg_statistics_path(rf_args, qg_args):
+def qg_statistics_path(run_name, rf_args, qg_args):
     qg_args = {k: v for k, v in qg_args.items() if k not in ("pruning_thresholds")}
-    return Path(f"{rf_statistics_path(**rf_args)}/{abbreviate_params(**qg_args)}")
+    return Path(f"{rf_statistics_path(run_name=run_name, **rf_args)}/{abbreviate_params(**qg_args)}")
 
 def statistics_sub_folder_path(model, **args):
     """params: model, total_docs, min_df, max_df, positive_selection_conf, mesh"""

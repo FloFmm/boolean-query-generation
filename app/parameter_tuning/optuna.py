@@ -6,6 +6,8 @@ from pathlib import Path
 import optuna
 import sys
 import os
+import math
+from datetime import datetime
 import numpy as np
 from pathlib import Path
 from app.config.config import BOW_PARAMS, QG_PARAMS, RF_PARAMS, TRAIN_REVIEWS
@@ -15,7 +17,40 @@ from app.dataset.utils import load_vectors, load_synonym_map
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset
 
+def check_repeated_trial(trial):
+  optuna_study = trial.study
+  
+
+  for past_trial in optuna_study.get_trials():
+    if past_trial.number == trial.number:
+      continue
+
+    past_params = past_trial.params
+    repeated_trial = True
+    if set(trial.params.keys()) != set(past_params.keys()):
+        repeated_trial = False
+    for key in trial.params:
+        a = trial.params[key]
+        b = past_params[key]
+        if isinstance(a, float) and isinstance(b, float):
+            if not math.isclose(a, b, rel_tol=1e-9):
+                repeated_trial = False
+                break
+        else:
+            if a != b:
+                repeated_trial = False
+                break
+    
+    if repeated_trial is True:
+      print(f"past Trial: {past_trial.number}, current Trial: {trial.number}")
+      print(f"Params of past Trial: {past_params}")
+      print(f"Params of current Trial: {trial.params}")
+      return past_trial.value
+
+  return None
+
 def optimize_with_optuna_parallel(
+    run_name,
     query_ids, 
     ret_config,
     study_name="rf_optimization",
@@ -76,26 +111,29 @@ def optimize_with_optuna_parallel(
             "top_k_or_candidates": trial.suggest_categorical("top_k_or_candidates", [500, 1000, 1500]),
             "randomize_max_feature": trial.suggest_float("randomize_max_feature", 0.0, 3.0, step=0.3),
             "randomize_min_impurity_decrease_range": trial.suggest_float("randomize_min_impurity_decrease_range", 0.0, 3.0, step=0.3),
-            # TODO make optuna parallel not the tree computation
-            
-            "n_jobs": None, # TODO is that good?
+            "n_jobs": None,
             "verbose": False,
-            "n_estimators": 1, #TODO change back
+            "n_estimators": 1, # TODO set back to 50
         }
         for k, v in rf_opt_params.items():
             rf_params[k] = v
         qg_params = copy.deepcopy(QG_PARAMS)
         
-        te = trial.suggest_categorical("term_expansions", [True, False])
         qg_opt_params = {
             "min_tree_occ": trial.suggest_float("min_tree_occ", 0.0, 0.1, step=0.01),
             "min_rule_occ": trial.suggest_float("min_rule_occ", 0.0, 0.1, step=0.01),
             "cover_beta": trial.suggest_float("cover_beta", 1.0, 5.0, step=0.1), # high to prefer covering training data fully
             "pruning_beta": trial.suggest_float("pruning_beta", 0.05, 1.0, step=0.05), # low to prefer precise rules
-            "term_expansions": term_expansions if te else None,
+            "term_expansions": trial.suggest_categorical("term_expansions", [True, False]),
             "mh_noexp": trial.suggest_categorical("mh_noexp", [True, False]),
             "tiab": trial.suggest_categorical("tiab", [True, False]),
         }
+        
+        # check for repeated parameter combintation
+        # repeated_value = check_repeated_trial(trial)
+        # if repeated_value is not None:
+        #     return repeated_value
+        
         for k, v in qg_opt_params.items():
             qg_params[k] = v
 
@@ -104,6 +142,7 @@ def optimize_with_optuna_parallel(
         for query_id in positives.keys():
             try:
                 qg_results = evalaute_rf(
+                    run_name=run_name,
                     query_id=query_id,
                     X=X,
                     positives=positives[query_id],
@@ -121,7 +160,6 @@ def optimize_with_optuna_parallel(
                 raise optuna.exceptions.TrialPruned()
                 
             results_list.append(qg_results)
-            break # TODO remove
         # TODO use pruning to not always have to evalaute all 25
         
         trial.set_user_attr("results_list", results_list)
@@ -170,12 +208,17 @@ def optimize_with_optuna_parallel(
 
 if __name__ == "__main__":
     time_out = 300
-    run_name = "run2"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_name = f"run_{timestamp}"
+    run_path = f"/data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/statistics/optuna/{run_name}"
+    os.makedirs(run_path, exist_ok=True)
+    
     study = optimize_with_optuna_parallel(
+        run_name=run_name,
         query_ids=TRAIN_REVIEWS,
         ret_config={"model": "pubmedbert", "query_type": "title"},
         study_name="rf_optimization",
-        db_path=f"sqlite:////data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/statistics/optuna/{run_name}/optuna_rf_parallel.db?timeout={time_out}",
-        n_trials=32,
-        n_jobs=32  # Run 8 trials in parallel
+        db_path=f"sqlite:///{run_path}/optuna_rf_parallel.db?timeout={time_out}",
+        n_trials=10,
+        n_jobs=2,
     )
