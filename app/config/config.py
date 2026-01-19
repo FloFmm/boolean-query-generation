@@ -23,19 +23,20 @@ BOW_PARAMS = {
 
 RF_PARAMS = {
     "top_k": 1.5,#200, # 0.7 means k where we reach 0.7 recall multipled by factor
-    "rank_weight": 1.5, # how much more weighted shall rank 1 be than rank k
-    "n_estimators": 32,
+    "rank_weight": 1.4, # how much more weighted shall rank 1 be than rank k
+    "n_estimators": 50,
     "max_depth": 4,
-    "min_samples_split": 2,
-    "min_weight_fraction_leaf": 0.00005,
-    "max_features": 0.1,#"sqrt",
-    "randomize_max_feature": 1,
-    "min_impurity_decrease_range": (0.01, 0.01),
-    "randomize_min_impurity_decrease_range": 1,
+    # "min_samples_split": 2,
+    "min_weight_fraction_leaf": 0.0002,
+    "max_features": 0.5,#"sqrt",
+    "randomize_max_feature": 0.9,
+    "min_impurity_decrease_range_start": 0.001,
+    "min_impurity_decrease_range_end": 0.001,
+    "randomize_min_impurity_decrease_range": 0.9,
     "bootstrap": True,
-    "n_jobs": 32,
+    "n_jobs": None,
     "random_state": None,
-    "verbose": True,
+    "verbose": False,
     "class_weight": 0.2,
     "max_samples": None,
     "top_k_or_candidates": 500,

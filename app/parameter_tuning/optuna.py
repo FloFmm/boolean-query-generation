@@ -12,42 +12,13 @@ import numpy as np
 from pathlib import Path
 from app.config.config import BOW_PARAMS, QG_PARAMS, RF_PARAMS, TRAIN_REVIEWS
 from app.experiments.evaluate_rf import evalaute_rf
-from app.dataset.utils import load_vectors, load_synonym_map
+from app.dataset.utils import load_vectors, load_synonym_map, qg_statistics_path
+from app.helper.helper import f_beta
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset
 
-def check_repeated_trial(trial):
-  optuna_study = trial.study
-  
-
-  for past_trial in optuna_study.get_trials():
-    if past_trial.number == trial.number:
-      continue
-
-    past_params = past_trial.params
-    repeated_trial = True
-    if set(trial.params.keys()) != set(past_params.keys()):
-        repeated_trial = False
-    for key in trial.params:
-        a = trial.params[key]
-        b = past_params[key]
-        if isinstance(a, float) and isinstance(b, float):
-            if not math.isclose(a, b, rel_tol=1e-9):
-                repeated_trial = False
-                break
-        else:
-            if a != b:
-                repeated_trial = False
-                break
-    
-    if repeated_trial is True:
-      print(f"past Trial: {past_trial.number}, current Trial: {trial.number}")
-      print(f"Params of past Trial: {past_params}")
-      print(f"Params of current Trial: {trial.params}")
-      return past_trial.value
-
-  return None
+LAST_RF_P = None
 
 def optimize_with_optuna_parallel(
     run_name,
@@ -66,9 +37,10 @@ def optimize_with_optuna_parallel(
     n_jobs : int
         Number of parallel trials to run.
     """
-
+    print("started loading dataset")
     # --- Load data once ---
     dataset = load_dataset()
+    print("finished loading dataset")
     X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
     term_expansions = load_synonym_map(**BOW_PARAMS)
 
@@ -98,23 +70,50 @@ def optimize_with_optuna_parallel(
 
     # --- Define Optuna objective ---
     def objective(trial):
+        global LAST_RF_P
         rf_params = copy.deepcopy(RF_PARAMS)
-        rf_opt_params = {
-            "max_depth": trial.suggest_int("max_depth", 3, 10),
-            "min_weight_fraction_leaf": trial.suggest_float("min_weight_fraction_leaf", 0.0, 0.002, step=0.0002), # 0.002 = 1000 docs for {1:1, 0:1} (1000/500k)
-            "top_k": trial.suggest_float("top_k", 0.5, 2.0, step=0.1),
-            "rank_weight": trial.suggest_float("rank_weight", 1.0, 5.0, step=0.1), # how much more weighted shall rank 1 be than rank k
-            "max_features": trial.suggest_float("max_features", 0.01, 1.00, step=0.01),
-            # "min_impurity_decrease_range_start": trial.suggest_float("min_impurity_decrease_range_start", 0.001, 1.0, step=0.001),
-            # "min_impurity_decrease_range_end": trial.suggest_float("min_impurity_decrease_range_end", 0.001, 1.0, step=0.001), # TODO split start and end here
-            "class_weight": trial.suggest_float("class_weight", 0.0, 1.0, step=0.1),
-            "top_k_or_candidates": trial.suggest_categorical("top_k_or_candidates", [500, 1000, 1500]),
-            "randomize_max_feature": trial.suggest_float("randomize_max_feature", 0.0, 3.0, step=0.3),
-            "randomize_min_impurity_decrease_range": trial.suggest_float("randomize_min_impurity_decrease_range", 0.0, 3.0, step=0.3),
-            "n_jobs": None,
-            "verbose": False,
-            "n_estimators": 1, # TODO set back to 50
-        }
+        rf_change_prob = 0.1 
+        if np.random.rand() < rf_change_prob or LAST_RF_P is None:
+            rf_opt_params = {
+                "max_depth": trial.suggest_int("max_depth", 3, 10),
+                "min_weight_fraction_leaf": trial.suggest_float("min_weight_fraction_leaf", 0.0, 0.002, step=0.0002), # 0.002 = 1000 docs for {1:1, 0:1} (1000/500k)
+                "top_k": trial.suggest_float("top_k", 0.5, 2.0, step=0.1),
+                "rank_weight": trial.suggest_float("rank_weight", 1.0, 5.0, step=0.4), # how much more weighted shall rank 1 be than rank k
+                "max_features": trial.suggest_float("max_features", 0.01, 1.00, step=0.01),
+                "min_impurity_decrease_range_start": trial.suggest_float("min_impurity_decrease_range_start", 0.001, 0.05, step=0.0035), # gini can at msot reduce by 0.5
+                "min_impurity_decrease_range_end": trial.suggest_float("min_impurity_decrease_range_end", 0.001, 0.05, step=0.0035),
+                "class_weight": trial.suggest_float("class_weight", 0.0, 1.0, step=0.1),
+                "top_k_or_candidates": trial.suggest_int("top_k_or_candidates", 500, 1500, step=500),
+                "randomize_max_feature": trial.suggest_float("randomize_max_feature", 0.0, 3.0, step=0.3),
+                "randomize_min_impurity_decrease_range": trial.suggest_float("randomize_min_impurity_decrease_range", 0.0, 3.0, step=0.3),
+                "n_jobs": None,
+                "verbose": False,
+                "n_estimators": 50,
+            }
+            LAST_RF_P = copy.deepcopy(rf_opt_params)
+        else:
+            rf_opt_params = {
+                "max_depth": trial.suggest_int("max_depth", LAST_RF_P["max_depth"], LAST_RF_P["max_depth"]),
+                "min_weight_fraction_leaf": trial.suggest_float("min_weight_fraction_leaf",
+                                                                LAST_RF_P["min_weight_fraction_leaf"],
+                                                                LAST_RF_P["min_weight_fraction_leaf"]),
+                "top_k": trial.suggest_float("top_k", LAST_RF_P["top_k"], LAST_RF_P["top_k"]),
+                "rank_weight": trial.suggest_float("rank_weight", LAST_RF_P["rank_weight"], LAST_RF_P["rank_weight"]),
+                "max_features": trial.suggest_float("max_features", LAST_RF_P["max_features"], LAST_RF_P["max_features"]),
+                "min_impurity_decrease_range_start": trial.suggest_float("min_impurity_decrease_range_start", LAST_RF_P["min_impurity_decrease_range_start"], LAST_RF_P["min_impurity_decrease_range_start"]),
+                "min_impurity_decrease_range_end": trial.suggest_float("min_impurity_decrease_range_end", LAST_RF_P["min_impurity_decrease_range_end"], LAST_RF_P["min_impurity_decrease_range_end"]),
+                "class_weight": trial.suggest_float("class_weight", LAST_RF_P["class_weight"], LAST_RF_P["class_weight"]),
+                "top_k_or_candidates": trial.suggest_int("top_k_or_candidates", LAST_RF_P["top_k_or_candidates"],
+                                                            LAST_RF_P["top_k_or_candidates"]),
+                "randomize_max_feature": trial.suggest_float("randomize_max_feature", LAST_RF_P["randomize_max_feature"],
+                                                            LAST_RF_P["randomize_max_feature"]),
+                "randomize_min_impurity_decrease_range": trial.suggest_float(
+                    "randomize_min_impurity_decrease_range",
+                    LAST_RF_P["randomize_min_impurity_decrease_range"],
+                    LAST_RF_P["randomize_min_impurity_decrease_range"]
+                ),
+            }
+            
         for k, v in rf_opt_params.items():
             rf_params[k] = v
         qg_params = copy.deepcopy(QG_PARAMS)
@@ -124,22 +123,28 @@ def optimize_with_optuna_parallel(
             "min_rule_occ": trial.suggest_float("min_rule_occ", 0.0, 0.1, step=0.01),
             "cover_beta": trial.suggest_float("cover_beta", 1.0, 5.0, step=0.1), # high to prefer covering training data fully
             "pruning_beta": trial.suggest_float("pruning_beta", 0.05, 1.0, step=0.05), # low to prefer precise rules
-            "term_expansions": trial.suggest_categorical("term_expansions", [True, False]), # TODO do not chagne this but further down. something is rong with term_expansions. query gets true false isntead of term_expansions, but here Ture false is correct
+            "term_expansions": trial.suggest_categorical("term_expansions", [True, False]),
             "mh_noexp": trial.suggest_categorical("mh_noexp", [True, False]),
             "tiab": trial.suggest_categorical("tiab", [True, False]),
         }
         
-        # check for repeated parameter combintation
-        # repeated_value = check_repeated_trial(trial)
-        # if repeated_value is not None:
-        #     return repeated_value
-        
         for k, v in qg_opt_params.items():
             qg_params[k] = v
-
+            
+        trial.set_user_attr("qg_params", copy.deepcopy(qg_params))
+        trial.set_user_attr("rf_params", copy.deepcopy(rf_params))
+        
+        qg_base_path = qg_statistics_path(run_name=run_name, rf_args=rf_params, qg_args=qg_params)
+        qg_results_path = Path(qg_base_path) / "qg_results.jsonl"
+        try: # do not recompute the same result
+            qg_results_path.parent.mkdir(parents=True, exist_ok=True)
+            qg_results_path.touch(exist_ok=False)
+        except FileExistsError:
+            raise optuna.exceptions.TrialPruned()
         # Evaluate all queries
         results_list = []
-        for query_id in positives.keys():
+        opt_scores = []
+        for i, query_id in enumerate(positives.keys()):
             try:
                 qg_results = evalaute_rf(
                     run_name=run_name,
@@ -149,40 +154,38 @@ def optimize_with_optuna_parallel(
                     feature_names=feature_names,
                     sorted_ids=sorted_ids[query_id],
                     ordered_pmids=ordered_pmids,
-                    rf_params=rf_params,
-                    qg_params=qg_params,
+                    rf_params=copy.deepcopy(rf_params),
+                    qg_params=copy.deepcopy(qg_params),
                     term_expansions=term_expansions
                 )
             except Exception as e:
                 # Prune the Optuna trial
                 traceback.print_exc()
                 # trial.report(float("nan"), step=0)
+                LAST_RF_P = None # dont repeat bad parameters actively
                 raise optuna.exceptions.TrialPruned()
                 
             results_list.append(qg_results)
-        # TODO use pruning to not always have to evalaute all 25
         
-        trial.set_user_attr("results_list", results_list)
-        trial.set_user_attr("qg_params", qg_params)
-        trial.set_user_attr("rf_params", rf_params)
-        
-        f_scores = []
-        beta = 3
-        beta2 = beta ** 2
-        for d in results_list:
-            p = d.get("pubmed_precision", 0.0)
-            r = d.get("pubmed_recall", 0.0)
+            f_score = f_beta(
+                precision=qg_results.get("pubmed_precision", 0.0),
+                recall=qg_results.get("pubmed_recall", 0.0),
+                beta=3.0
+            )
+            opt_scores.append(f_score)
+            
+            # report intermediate average to Optuna
+            running_avg = sum(opt_scores) / len(opt_scores)
+            trial.report(running_avg, step=i)
 
-            denom = (1 + beta2) * p * r + (r * beta2 + p - beta2 * p * r)  # simplified below
-            # standard F_beta formula: F_beta = (1 + beta^2) * P * R / (beta^2 * P + R)
-            if p == 0 and r == 0:
-                f3 = 0.0
-            else:
-                f3 = (1 + beta2) * p * r / (beta2 * p + r)
-            f_scores.append(f3)
+            # prune early if necessary
+            if trial.should_prune():
+                raise optuna.exceptions.TrialPruned()
+                
+        trial.set_user_attr("results_list", results_list)
         
-        if f_scores:
-            return sum(f_scores) / len(f_scores)
+        if opt_scores:
+            return sum(opt_scores) / len(opt_scores)
         else:
             return 0.0
     
@@ -194,11 +197,14 @@ def optimize_with_optuna_parallel(
         storage=db_path,
         load_if_exists=True
     )
+    
+    initial_good_params = copy.deepcopy(QG_PARAMS) | copy.deepcopy(RF_PARAMS)
+    study.enqueue_trial(initial_good_params)
 
     # --- Run optimization in parallel ---
     study.optimize(objective, n_trials=n_trials, n_jobs=n_jobs)
 
-    print("Best trial:")
+    print("Best trial:") 
     print(study.best_trial.params)
     print(f"Best value: {study.best_value}")
 
@@ -207,6 +213,7 @@ def optimize_with_optuna_parallel(
 
 
 if __name__ == "__main__":
+    print("finished imports")
     time_out = 300
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_name = f"run_{timestamp}"
@@ -219,6 +226,7 @@ if __name__ == "__main__":
         ret_config={"model": "pubmedbert", "query_type": "title"},
         study_name="rf_optimization",
         db_path=f"sqlite:///{run_path}/optuna_rf_parallel.db?timeout={time_out}",
-        n_trials=10,
-        n_jobs=2,
+        n_trials=64,
+        n_jobs=32,
     )
+ 

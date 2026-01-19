@@ -35,113 +35,115 @@ def evalaute_rf(run_name, query_id, X, positives, feature_names, sorted_ids, ord
     os.makedirs(qg_base_path, exist_ok=True)
     
     # check whether query already computed
-    with FileLock(qg_results_path.with_suffix(".lock")): # hold for the entire duration the lock for qg_results file
-        if qg_results_path.exists():
-            data = {}
-            with open(qg_results_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    obj = json.loads(line)
-                    if obj.get("query_id") == query_id:
-                        data = obj
-                        break
+    # with FileLock(qg_results_path.with_suffix(".lock")): # hold for the entire duration the lock for qg_results file
+    #     if qg_results_path.exists():
+    #         data = {}
+    #         with open(qg_results_path, "r", encoding="utf-8") as f:
+    #             for line in f:
+    #                 obj = json.loads(line)
+    #                 if obj.get("query_id") == query_id:
+    #                     data = obj
+    #                     break
                         
-            if data:
-                print("results already exists")
-                return data
-        else:
-            with open(qg_config_path, "w", encoding="utf-8") as f:
-                json.dump(qg_params, f, indent=4) 
+    #         if data:
+    #             print("results already exists")
+    #             return data
+    #     else:
+    with open(qg_config_path, "w", encoding="utf-8") as f:
+        json.dump(qg_params, f, indent=4) 
     
-        pseudo_labels, sample_weight, top_k = generate_labels_and_sample_weights(k=rf_params["top_k"],
-                                                        ordered_pmids=ordered_pmids, 
-                                                        sorted_ids=sorted_ids, 
-                                                        max_weight=rf_params["rank_weight"],
-                                                        num_positives=len(positives))
+    pseudo_labels, sample_weight, top_k = generate_labels_and_sample_weights(k=rf_params["top_k"],
+                                                    ordered_pmids=ordered_pmids, 
+                                                    sorted_ids=sorted_ids, 
+                                                    max_weight=rf_params["rank_weight"],
+                                                    num_positives=len(positives))
+    
+    with FileLock(rf_model_path.with_suffix(".lock")): # hold for the time of the generation of the rf the lock to the model
+        # check whether rf already exists
+        if rf_model_path.exists():
+            print("exists")
+            with open(rf_model_path, "rb") as f:
+                rf = pickle.load(f)
+                print("loaded existing rf model from disc")
+            # with open(rf_results_path, "r", encoding="utf-8") as f: # get rf stats for the qg result files
+            #     for line in f:
+            #         obj = json.loads(line)
+            #         if obj.get("query_id") == query_id:
+            #             rf_time_seconds = obj["time_seconds"]
+            #             break
+        else:
+            with open(rf_config_path, "w", encoding="utf-8") as f:
+                json.dump(rf_params, f, indent=4) 
+            rf = RandomForest(**rf_params)
+            st=time.time()
+            rf.fit(
+                X, np.array(pseudo_labels), feature_names=feature_names, sample_weight=sample_weight
+            )
+            rf_time_seconds = time.time() - st
+            with open(rf_model_path, "wb") as f:
+                pickle.dump(rf, f)
+                
+            rf_results = {
+                "query_id": query_id,
+                "num_positive": len(positives),
+                "top_k": top_k,
+                "time_seconds": rf_time_seconds,
+            }
+            with open(rf_results_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(rf_results) + "\n")
+            print("finished fitting")
         
-        with FileLock(rf_model_path.with_suffix(".lock")): # hold for the time of the generation of the rf the lock to the model
-            # check whether rf already exists
-            if rf_model_path.exists():
-                print("exists")
-                with open(rf_model_path, "rb") as f:
-                    rf = pickle.load(f)
-                    print("loaded existing rf model from disc")
-                # with open(rf_results_path, "r", encoding="utf-8") as f: # get rf stats for the qg result files
-                #     for line in f:
-                #         obj = json.loads(line)
-                #         if obj.get("query_id") == query_id:
-                #             rf_time_seconds = obj["time_seconds"]
-                #             break
-            else:
-                with open(rf_config_path, "w", encoding="utf-8") as f:
-                    json.dump(rf_params, f, indent=4) 
-                rf = RandomForest(**rf_params)
-                st=time.time()
-                rf.fit(
-                    X, np.array(pseudo_labels), feature_names=feature_names, sample_weight=sample_weight
-                )
-                rf_time_seconds = time.time() - st
-                with open(rf_model_path, "wb") as f:
-                    pickle.dump(rf, f)
-                    
-                rf_results = {
-                    "query_id": query_id,
-                    "num_positive": len(positives),
-                    "top_k": top_k,
-                    "time_seconds": rf_time_seconds,
-                }
-                with open(rf_results_path, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(rf_results) + "\n")
-                print("finished fitting")
-            
-        ### Generate Pubmed Query ###
-        if qg_params["term_expansions"]:
-            qg_params["term_expansions"] = term_expansions
-        query_st = time.time()
-        (pubmed_query_str, query_size), rules, optimization_score = rf.pubmed_query(
-            X=X,
-            labels=pseudo_labels,
-            feature_names=feature_names,
-            **qg_params
-        )
-        qg_time_seconds = time.time() - query_st
-        # evaluate on local subset
-        coverage = compute_rule_coverage(X=X, rules=rules)
-        subset_preds = np.any(coverage, axis=0).astype(np.uint8)
-        
-        ground_truth_labels = [pmid in positives for pmid in ordered_pmids]
-        subset_precision = precision_score(ground_truth_labels, subset_preds)
-        subset_recall = recall_score(ground_truth_labels, subset_preds)
-        pseudo_precision = precision_score(pseudo_labels, subset_preds)
-        pseudo_recall = recall_score(pseudo_labels, subset_preds)
+    ### Generate Pubmed Query ###
+    if qg_params["term_expansions"]:
+        qg_params["term_expansions"] = term_expansions
+    else:
+        qg_params["term_expansions"] = None
+    query_st = time.time()
+    (pubmed_query_str, query_size), rules, optimization_score = rf.pubmed_query(
+        X=X,
+        labels=pseudo_labels,
+        feature_names=feature_names,
+        **qg_params
+    )
+    qg_time_seconds = time.time() - query_st
+    # evaluate on local subset
+    coverage = compute_rule_coverage(X=X, rules=rules)
+    subset_preds = np.any(coverage, axis=0).astype(np.uint8)
+    
+    ground_truth_labels = [pmid in positives for pmid in ordered_pmids]
+    subset_precision = precision_score(ground_truth_labels, subset_preds)
+    subset_recall = recall_score(ground_truth_labels, subset_preds)
+    pseudo_precision = precision_score(pseudo_labels, subset_preds)
+    pseudo_recall = recall_score(pseudo_labels, subset_preds)
 
-        retrieved = search_pubmed_dynamic(pubmed_query_str, end_year=end_year)
-        retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
-        true_positives = retrieved & positives
-        TP = len(true_positives)
-        pubmed_precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0
-        pubmed_recall = TP / len(positives) if len(positives) > 0 else 0.0
-        
-        qg_results = {
-            "query_id": query_id,
-            "num_positive": len(positives),
-            "top_k": top_k,
-            "pubmed_retrieved": len(retrieved),
-            "pubmed_precision": pubmed_precision,
-            "pubmed_recall": pubmed_recall, 
-            "subset_retrieved": int(subset_preds.sum()),
-            "subset_precision": subset_precision,
-            "subset_recall": subset_recall,
-            "pseudo_precision": pseudo_precision,
-            "pseudo_recall": pseudo_recall,
-            "optimization_score": optimization_score, # fromt he covering process
-            "qg_time_seconds": qg_time_seconds,
-            # "rf_time_seconds": rf_time_seconds,
-            "query_size": query_size,
-            "pubmed_query": pubmed_query_str,
-        }
-        with open(qg_results_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(qg_results) + "\n")
-        return qg_results
+    retrieved = search_pubmed_dynamic(pubmed_query_str, end_year=end_year)
+    retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
+    true_positives = retrieved & positives
+    TP = len(true_positives)
+    pubmed_precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0
+    pubmed_recall = TP / len(positives) if len(positives) > 0 else 0.0
+    
+    qg_results = {
+        "query_id": query_id,
+        "num_positive": len(positives),
+        "top_k": top_k,
+        "pubmed_retrieved": len(retrieved),
+        "pubmed_precision": pubmed_precision,
+        "pubmed_recall": pubmed_recall, 
+        "subset_retrieved": int(subset_preds.sum()),
+        "subset_precision": subset_precision,
+        "subset_recall": subset_recall,
+        "pseudo_precision": pseudo_precision,
+        "pseudo_recall": pseudo_recall,
+        "optimization_score": optimization_score, # fromt he covering process
+        "qg_time_seconds": qg_time_seconds,
+        # "rf_time_seconds": rf_time_seconds,
+        "query_size": query_size,
+        "pubmed_query": pubmed_query_str,
+    }
+    with open(qg_results_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(qg_results) + "\n")
+    return qg_results
                 
 if __name__ == "__main__":
     query_ids = TRAIN_REVIEWS

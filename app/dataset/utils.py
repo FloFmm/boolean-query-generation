@@ -30,7 +30,8 @@ ABBREVIATIONS = {
     "max_features": "maxf",
     "max_or_features": "mof",
     "max_samples": "maxs",
-    "min_impurity_decrease_range": "midr",
+    "min_impurity_decrease_range_start": "midrs",
+    "min_impurity_decrease_range_end": "midre",
     "min_samples_split":"mins",
     "min_weight_fraction_leaf": "mwfl",
     "n_estimators": "ne",
@@ -42,12 +43,29 @@ ABBREVIATIONS = {
     "rank_weight": "rweight",
     "top_k": "k",
     "top_k_or_candidates": "tkoc",
+    "term_expansions": "te",
     # "verbose": "v",
 }
 
 ABBREVIATIONS_REV = {v: k for k, v in ABBREVIATIONS.items()}
 
 EVAL_QUERY_IDS_OLD = ["CD011602", "CD011926", "CD010225", "CD003137", "CD002069", "CD011724", "CD010633", "CD007497", "CD011549", "CD007103", "CD010411", "CD011447", "CD009925", "CD000384", "CD009669", "CD009780", "CD010387", "CD010653", "CD004288", "CD011732", "CD007379", "CD010139", "CD011472", "CD012009", "CD012216", "CD008366", "CD003344", "CD006342", "CD010685", "CD005055", "CD010226", "CD008760", "CD008170", "CD002898", "CD006995", "CD011515", "CD009782", "CD006839", "CD002115", "CD009784"]
+
+def abbreviate_value(value) -> str:
+    if isinstance(value, float):
+        return format(value, ".6g")
+
+    if isinstance(value, dict):
+        items = []
+        for k in sorted(value):
+            abbr_k = ABBREVIATIONS.get(k, k)
+            items.append(f"{abbr_k}:{abbreviate_value(value[k])}")
+        return "{" + ",".join(items) + "}"
+
+    if isinstance(value, (list, tuple)):
+        return "[" + ",".join(abbreviate_value(v) for v in value) + "]"
+
+    return str(value)
 
 def abbreviate_params(**kwargs) -> str:
     """
@@ -59,12 +77,14 @@ def abbreviate_params(**kwargs) -> str:
     for full in sorted(kwargs):
         if full in ignore:
             continue
-        value = kwargs[full]
-        if isinstance(value, float):
-            value_str = format(value, ".6g")
-        else:
-            value_str = str(value)
-        abbr = ABBREVIATIONS.get(full, full) # default take full
+        # value = kwargs[full]
+        # if isinstance(value, float):
+        #     value_str = format(value, ".6g")
+        # else:
+        #     value_str = str(value)
+        # abbr = ABBREVIATIONS.get(full, full) # default take full
+        abbr = ABBREVIATIONS.get(full, full)
+        value_str = abbreviate_value(kwargs[full])
         parts.append(f"{abbr}={value_str}")
     return ",".join(parts)
 
@@ -315,8 +335,8 @@ def load_statistics_data_rf(filter_vars=None):
             "file": str(jsonl_file.parent.name),
             "max_depth": int(conf["model_args"]["max_depth"]),
             "min_samples_split": int(conf["model_args"]["min_samples_split"]),
-            "min_impurity_decrease_start": int(conf["model_args"]["min_impurity_decrease_range"][0]),
-            "min_impurity_decrease_end": int(conf["model_args"]["min_impurity_decrease_range"][1]),
+            "min_impurity_decrease_start": int(conf["model_args"]["min_impurity_decrease_range_start"]),
+            "min_impurity_decrease_end": int(conf["model_args"]["min_impurity_decrease_range_end"]),
             "top_k_or_candidates": int(conf["model_args"]["top_k_or_candidates"]),
             "class_weight": str(conf["model_args"]["class_weight"]),
             "total_docs": int(conf["total_docs"]),
@@ -391,8 +411,8 @@ def load_statistics_data(input_folder, filter_vars=None, qg=True, metrics=None):
             "file": str(results_file_rf.parent.name),
             "max_depth": int(conf_rf["model_args"]["max_depth"]),
             "min_samples_split": int(conf_rf["model_args"]["min_samples_split"]),
-            "min_impurity_decrease_start": float(conf_rf["model_args"]["min_impurity_decrease_range"][0]),
-            "min_impurity_decrease_end": float(conf_rf["model_args"]["min_impurity_decrease_range"][1]),
+            "min_impurity_decrease_start": float(conf_rf["model_args"]["min_impurity_decrease_range_start"]),
+            "min_impurity_decrease_end": float(conf_rf["model_args"]["min_impurity_decrease_range_end"]),
             "top_k_or_candidates": int(conf_rf["model_args"]["top_k_or_candidates"]),
             "class_weight": str(conf_rf["model_args"]["class_weight"]),
             "min_df": int(conf_rf["min_df"]),
@@ -517,3 +537,4 @@ def review_id_to_dataset(review_id):
         return "sr_updates", None, 2019
     
     return "unknown", None, -1
+

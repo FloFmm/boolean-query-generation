@@ -187,7 +187,8 @@ class RandomForest:
         min_weight_fraction_leaf=0.0,
         max_features="sqrt",
         randomize_max_feature=None,
-        min_impurity_decrease_range=(0.01, 0.01),
+        min_impurity_decrease_range_start=0.01,
+        min_impurity_decrease_range_end=0.01,
         randomize_min_impurity_decrease_range=None,
         bootstrap=True,
         n_jobs=None,
@@ -214,7 +215,8 @@ class RandomForest:
         self.min_weight_fraction_leaf = min_weight_fraction_leaf
         self.max_features = max_features
         self.randomize_max_feature = randomize_max_feature
-        self.min_impurity_decrease_range = min_impurity_decrease_range
+        self.min_impurity_decrease_range_start = min_impurity_decrease_range_start
+        self.min_impurity_decrease_range_end = min_impurity_decrease_range_end
         self.randomize_min_impurity_decrease_range = (
             randomize_min_impurity_decrease_range
         )
@@ -319,7 +321,8 @@ class RandomForest:
         for i in range(self.n_estimators):
             tree_max_features = self.max_features
             tree_randomize_max_feature = self.randomize_max_feature
-            tree_min_impurity_decrease_range = self.min_impurity_decrease_range
+            tree_min_impurity_decrease_range_start = self.min_impurity_decrease_range_start
+            tree_min_impurity_decrease_range_end = self.min_impurity_decrease_range_end
             if i == 0:
                 if (
                     self.randomize_max_feature
@@ -328,21 +331,20 @@ class RandomForest:
                     tree_randomize_max_feature = False
             else:
                 if self.randomize_min_impurity_decrease_range:
-                    tree_min_impurity_decrease_range = [
-                        biased_random(
-                            low=self.min_impurity_decrease_range[0],
+                    tree_min_impurity_decrease_range_start = biased_random(
+                            low=self.min_impurity_decrease_range_start,
                             high=1.0,
                             exponent=self.randomize_min_impurity_decrease_range,
-                        ),
-                        biased_random(
-                            low=self.min_impurity_decrease_range[1],
-                            high=1.0,
-                            exponent=self.randomize_min_impurity_decrease_range,
-                        ),
-                    ]
+                        )
+                    tree_min_impurity_decrease_range_end =  biased_random(
+                        low=self.min_impurity_decrease_range_end,
+                        high=1.0,
+                        exponent=self.randomize_min_impurity_decrease_range,
+                    )
             tree_config = {
                 "max_depth": self.max_depth,
-                "min_impurity_decrease_range": tree_min_impurity_decrease_range,
+                "min_impurity_decrease_range_start": tree_min_impurity_decrease_range_start,
+                "min_impurity_decrease_range_end": tree_min_impurity_decrease_range_end,
                 "top_k_or_candidates": self.top_k_or_candidates,
                 "verbose": self.verbose
                 and not self.n_jobs,  # has to be set to false because of tqdm breaking Parallel

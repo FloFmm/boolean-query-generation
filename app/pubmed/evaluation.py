@@ -349,7 +349,8 @@ if __name__ == "__main__":
         GreedyORDecisionTree(
             max_depth=4,
             min_samples_split=2,
-            min_impurity_decrease_range=[0.01, 0.03],
+            min_impurity_decrease_range_start=0.01,
+            min_impurity_decrease_range_end=0.03,
             top_k_or_candidates=500,
             class_weight={1: 1, 0: 1},  # 1.0,
             verbose=True,
@@ -366,10 +367,8 @@ if __name__ == "__main__":
                             GreedyORDecisionTree(
                                 max_depth=4,
                                 min_samples_split=min_samples_split,
-                                min_impurity_decrease_range=[
-                                    min_impurity_d_start,
-                                    min_impurity_d_end,
-                                ],
+                                min_impurity_decrease_range_start=min_impurity_d_start,
+                                min_impurity_decrease_range_end=min_impurity_d_end,
                                 top_k_or_candidates=top_k_or_candidates,
                                 class_weight=class_weight,  # 1.0,
                                 verbose=True,

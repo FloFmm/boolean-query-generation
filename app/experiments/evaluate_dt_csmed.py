@@ -131,7 +131,8 @@ if __name__ == "__main__":
         "model_args": {
             "max_depth": md,
             "min_samples_split": mss,
-            "min_impurity_decrease_range": [mid_s, mid_e],
+            "min_impurity_decrease_range_start": mid_s,
+            "min_impurity_decrease_range_end": mid_e,
             "top_k_or_candidates": topk,
             "class_weight": cw,
             "verbose": True,

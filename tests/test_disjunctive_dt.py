@@ -83,7 +83,7 @@ def run_tree_test(
     if len(sig.parameters) == 1:
         generated_pubmed_query, query_size = classifier.pubmed_query()
     else:
-        (generated_pubmed_query, query_size), rules = classifier.pubmed_query(
+        (generated_pubmed_query, query_size), rules, cover_score = classifier.pubmed_query(
             X=X,
             labels=labels,
             feature_names=feature_names,
@@ -136,7 +136,8 @@ TEXT_PARAMS = {
 }
 TREE_PARAMS = {
     "max_depth": 4,
-    "min_impurity_decrease_range": [0.001, 0.001],
+    "min_impurity_decrease_range_start": 0.001,
+    "min_impurity_decrease_range_end": 0.001,
     "top_k_or_candidates": 500,
     "verbose": True,
     "min_samples_split": 1,

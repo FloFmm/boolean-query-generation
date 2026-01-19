@@ -79,7 +79,8 @@ for i in range(10):
 model_args = {
             "max_depth": 5,
             "min_samples_split": 2,
-            "min_impurity_decrease_range": [0.01, 0.01],
+            "min_impurity_decrease_range_start": 0.01,
+            "min_impurity_decrease_range_end": 0.01,
             "top_k_or_candidates": 1000,
             "class_weight": {1:2, 0:1},
             "verbose": True,

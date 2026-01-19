@@ -370,7 +370,8 @@ class GreedyORDecisionTree:
         max_depth=3,
         min_samples_split=2,
         min_weight_fraction_leaf=0.01,
-        min_impurity_decrease_range=[0.01, 0.03],
+        min_impurity_decrease_range_start=0.01,
+        min_impurity_decrease_range_end=0.03,
         top_k_or_candidates=500,
         class_weight=None,
         max_features=None,
@@ -383,7 +384,8 @@ class GreedyORDecisionTree:
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
         self.min_weight_fraction_leaf = min_weight_fraction_leaf
-        self.min_impurity_decrease_range = min_impurity_decrease_range
+        self.min_impurity_decrease_range_start = min_impurity_decrease_range_start
+        self.min_impurity_decrease_range_end = min_impurity_decrease_range_end
         self.top_k_or_candidates = top_k_or_candidates
         self.class_weight = class_weight
         self._tree = None
@@ -582,7 +584,8 @@ class GreedyORDecisionTree:
             Number of samples in the current node.
         n_total : int
             Total number of samples at the root.
-        min_impurity_decrease_range : [float, float]
+        min_impurity_decrease_range_start : float
+        min_impurity_decrease_range_end : float
             [min_value_at_root, max_value_at_small_nodes]
 
         Returns
@@ -590,7 +593,8 @@ class GreedyORDecisionTree:
         float
             Scaled min_impurity_decrease for this node.
         """
-        min_val, max_val = self.min_impurity_decrease_range
+        min_val = self.min_impurity_decrease_range_start 
+        max_val = self.min_impurity_decrease_range_end
         # Linear interpolation: goes from min_val (root) → max_val (deep)
         fraction = 1 - (n_samples / self._n_samples)
         return min_val + (max_val - min_val) * fraction
@@ -1095,7 +1099,8 @@ def main():
 
     tree = GreedyORDecisionTree(
         max_depth=4,
-        min_impurity_decrease_range=[0.01, 0.03],
+        min_impurity_decrease_range_start=0.01,
+        min_impurity_decrease_range_end=0.03,
         top_k_or_candidates=500,
         verbose=True,
         min_samples_split=1,
