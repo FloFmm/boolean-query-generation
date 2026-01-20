@@ -174,7 +174,6 @@ def extract_and_vectorize_rules(
     for rule, tree_indices in rule_tree_map_iter:
         if not rule:
             continue
-        
         history = prune_rule_greedy(
             X, 
             y, 
@@ -185,7 +184,10 @@ def extract_and_vectorize_rules(
             pruning_thresholds=pruning_thresholds,
             beta=pruning_beta,
         )
-        assert history
+        # history can be empty
+        if not history:
+            continue
+        # assert history, f"rule: {rules_to_pubmed_query([rule], feature_names=feature_names)}\n {forest.estimators_[next(iter(tree_indices))].pretty_print(feature_names=feature_names, verbose=True)}"
         
         try:
             x = set(history)
@@ -716,6 +718,7 @@ def prune_rule_greedy(
     p_old, r_old, tp_old, ret_old, pos_count = metrics_from_mask(mask, y)
     if tp_old == 0:
         return []
+    
     f_old = f_beta(p_old, r_old, beta)
     best_metric = {
         "f": f_old,

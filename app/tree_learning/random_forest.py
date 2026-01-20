@@ -568,11 +568,11 @@ def _parallel_build_trees(
             )
         return None  # Early exit
 
-    tree.fit(
+    successful = tree.fit(
         X,
         y,
         sample_weight=curr_sample_weight,
         feature_names=feature_names,
     )
 
-    return tree
+    return tree if successful else None

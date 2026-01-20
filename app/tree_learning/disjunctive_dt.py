@@ -422,7 +422,7 @@ class GreedyORDecisionTree:
         n_class_0 = self._n_samples - n_class_1
         if n_class_0 == 0 or n_class_1 == 0:
             print("All sample are of the same class")
-            return -1
+            return False
 
         # Initialize tqdm progress bar
         if self._verbose:
@@ -445,14 +445,8 @@ class GreedyORDecisionTree:
         if self._verbose:
             self._pbar.close()
 
-        # self._find_optimal_threshold(
-        #     X,
-        #     y,
-        #     metric="f2",
-        #     constraint="recall",
-        #     constraint_value=0.7,
-        # )
-
+        return True
+        
     def _calc_node_stats(self, y, sample_weight=None):
         n_class_1 = int(np.sum(y))
         n_class_0 = int((len(y) - n_class_1))
