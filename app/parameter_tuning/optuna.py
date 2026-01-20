@@ -7,6 +7,7 @@ import optuna
 import sys
 import os
 import math
+from filelock import FileLock
 from datetime import datetime
 import numpy as np
 from pathlib import Path
@@ -136,11 +137,15 @@ def optimize_with_optuna_parallel(
         
         qg_base_path = qg_statistics_path(run_name=run_name, rf_args=rf_params, qg_args=qg_params)
         qg_results_path = Path(qg_base_path) / "qg_results.jsonl"
-        try: # do not recompute the same result
-            qg_results_path.parent.mkdir(parents=True, exist_ok=True)
-            qg_results_path.touch(exist_ok=False)
-        except FileExistsError:
-            raise optuna.exceptions.TrialPruned()
+        with FileLock(qg_results_path.with_suffix(".lock")):
+            if qg_results_path.exists():
+                # Someone already computed this configuration or is currently at computing it
+                raise optuna.exceptions.TrialPruned()
+
+            # Mark "in progress"
+            qg_results_path.touch()
+        
+        
         # Evaluate all queries
         results_list = []
         opt_scores = []

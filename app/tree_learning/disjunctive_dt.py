@@ -483,6 +483,7 @@ class GreedyORDecisionTree:
             or np.sum(sample_weight) / self.total_sample_weight
             < self.min_weight_fraction_leaf
             or len(np.unique(y)) == 1
+            or not features
         ):
             return self._create_leaf(y, sample_weight=sample_weight)
 
