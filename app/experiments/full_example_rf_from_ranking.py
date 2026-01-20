@@ -35,17 +35,19 @@ print("Examples:")
 for i in range(10):
     print('"' + feature_names[i] + '"')
 
+lg_time = time.time()
 labels, sample_weight, top_k = generate_labels_and_sample_weights(k=RF_PARAMS["top_k"],
                                                            ordered_pmids=ordered_pmids, 
                                                            sorted_ids=sorted_ids, 
                                                            max_weight=RF_PARAMS["rank_weight"],
                                                            num_positives=len(positives))
-rf = RandomForest(**RF_PARAMS)
+lg_time = time.time() - lg_time
 rf_time = time.time()
+rf = RandomForest(**RF_PARAMS)
 rf.fit(
     X, np.array(labels), feature_names=feature_names, sample_weight=sample_weight
 )
-rf_time = time.time() - rf_st
+rf_time = time.time() - rf_time
 print("finished fitting")
 ### Generate Pubmed Query ###
 # synonym_map = load_synonym_map(total_docs)
@@ -89,6 +91,7 @@ print(f"Subset Precision: {subset_precision:.10f}")
 print(f"Subset Recall: {subset_recall:.10f}")
 print("rf_time", rf_time)
 print("qg_time", qg_time)
+print("lg_time", lg_time)
 
 print()
 base_str = pubmed_query_str

@@ -359,29 +359,45 @@ class RandomForest:
             }
             trees.append(GreedyORDecisionTree(**tree_config))
 
-        trees = Parallel(
-            n_jobs=self.n_jobs,
-            verbose=self.verbose,
-            prefer="processes",
-        )(
-            delayed(_parallel_build_trees)(
-                t,
-                self.bootstrap,
-                X,
-                y,
-                sample_weight,
-                i,
-                len(trees),
+
+        if self.n_jobs is not None and self.n_jobs > 1:
+            fitted_trees = Parallel(
+                n_jobs=self.n_jobs,
                 verbose=self.verbose,
-                n_samples_bootstrap=n_samples_bootstrap,
-                feature_names=feature_names,
+                prefer="processes",
+            )(
+                delayed(fit_tree_bootstraped)(
+                    t,
+                    self.bootstrap,
+                    X,
+                    y,
+                    sample_weight,
+                    len(trees),
+                    verbose=self.verbose,
+                    n_samples_bootstrap=n_samples_bootstrap,
+                    feature_names=feature_names,
+                )
+                for i, t in enumerate(trees)
             )
-            for i, t in enumerate(trees)
-        )
+        else:
+            fitted_trees = []
+            for i, t in enumerate(trees):
+                fitted_t = fit_tree_bootstraped(
+                    t,
+                    self.bootstrap,
+                    X,
+                    y,
+                    sample_weight,
+                    len(trees),
+                    verbose=self.verbose,
+                    n_samples_bootstrap=n_samples_bootstrap,
+                    feature_names=feature_names,
+                )
+                fitted_trees.append(fitted_t)
 
         # Collect newly grown trees
-        trees = [t for t in trees if t is not None]
-        self.estimators_.extend(trees)
+        fitted_trees = [t for t in fitted_trees if t is not None]
+        self.estimators_.extend(fitted_trees)
         
         return self
 
@@ -525,23 +541,19 @@ def _get_n_samples_bootstrap(n_samples, max_samples):
         return max(round(n_samples * max_samples), 1)
 
 
-def _parallel_build_trees(
+def fit_tree_bootstraped(
     tree,
     bootstrap,
     X,
     y,
     sample_weight,
     tree_idx,
-    n_trees,
     verbose=0,
     n_samples_bootstrap=None,
     feature_names=None,
 ):
     """
     Private function used to fit a single tree in parallel."""
-    if verbose > 1:
-        print("building tree %d of %d" % (tree_idx + 1, n_trees))
-
     if bootstrap:
         n_samples = X.shape[0]
         if sample_weight is None:

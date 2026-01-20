@@ -403,7 +403,7 @@ class GreedyORDecisionTree:
         self.prefer_pos_splits = prefer_pos_splits
         self.max_or_features = max_or_features
 
-    def fit(self, X, y, feature_names=None, sample_weight=None):
+    def fit(self, X, y, feature_names=None, sample_weight=None):#, good_first_split_features=None):
         # self._n_samples = X.shape[0]
         self._grow_counter = 0
         self._feature_names = (
@@ -495,7 +495,7 @@ class GreedyORDecisionTree:
             )
         else:
             features_subset = None
-
+            
         (
             best_feature,
             best_impurity,
@@ -513,6 +513,7 @@ class GreedyORDecisionTree:
             features_subset=features_subset,
             prefer_pos_splits=self.prefer_pos_splits
         )
+        
         if best_feature is None or initial_impurity - best_impurity <= 0:
             return self._create_leaf(y, sample_weight=sample_weight)
 
