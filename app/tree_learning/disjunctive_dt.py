@@ -403,7 +403,7 @@ class GreedyORDecisionTree:
         self.prefer_pos_splits = prefer_pos_splits
         self.max_or_features = max_or_features
 
-    def fit(self, X, y, feature_names=None, sample_weight=None):#, good_first_split_features=None):
+    def fit(self, X, y, feature_names=None, sample_weight=None):
         # self._n_samples = X.shape[0]
         self._grow_counter = 0
         self._feature_names = (
