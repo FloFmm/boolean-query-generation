@@ -1,5 +1,6 @@
 import pickle
 import numpy as np
+import time
 from app.dataset.utils import load_vectors, load_synonym_map
 from app.tree_learning.random_forest import RandomForest
 from app.dataset.utils import generate_labels_and_sample_weights, review_id_to_dataset#, generate_labels
@@ -12,7 +13,7 @@ print("finished imports")
 # Give either a custom query or a query_id 
 query_id = "CD009784"#"CD002115"#"CD008760"
 dataset_name, _, end_year = review_id_to_dataset(query_id)
-total_docs = 2000
+total_docs = 433660
 BOW_PARAMS["total_docs"] = total_docs
 
 term_expansions = load_synonym_map(**BOW_PARAMS)
@@ -28,7 +29,7 @@ positives = set([str(doc["pmid"]) for doc in reviews[query_id]["data"]["train"] 
                 
                 
 ### Train Decision Tree ###
-X, ordered_pmids, feature_names = load_vectors(bow_arg_dict=BOW_PARAMS, min_df=10, max_df=0.2, mesh=True)
+X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
 print("Num Features:", len(feature_names))
 print("Examples:")
 for i in range(10):
@@ -40,12 +41,16 @@ labels, sample_weight, top_k = generate_labels_and_sample_weights(k=RF_PARAMS["t
                                                            max_weight=RF_PARAMS["rank_weight"],
                                                            num_positives=len(positives))
 rf = RandomForest(**RF_PARAMS)
+rf_time = time.time()
 rf.fit(
     X, np.array(labels), feature_names=feature_names, sample_weight=sample_weight
 )
+rf_time = time.time() - rf_st
 print("finished fitting")
 ### Generate Pubmed Query ###
 # synonym_map = load_synonym_map(total_docs)
+
+qg_time = time.time()
 (pubmed_query_str, query_size), rules, opt_score = rf.pubmed_query(
     X=X,
     labels=labels,
@@ -61,6 +66,7 @@ print("finished fitting")
     mh_noexp=QG_PARAMS["mh_noexp"],
     tiab=QG_PARAMS["tiab"],
 )
+qg_time = time.time() - qg_time
 # pubmed_query_str = f'({pubmed_query_str}) AND ("1800"[DP] : "{end_year}"[DP])'
 print()
 print("PubMed Query:", pubmed_query_str)
@@ -81,6 +87,8 @@ print(f"Pseudolabel Precision: {pseudo_precision:.10f}")
 print(f"Pseudolabel Recall: {pseudo_recall:.10f}")
 print(f"Subset Precision: {subset_precision:.10f}")
 print(f"Subset Recall: {subset_recall:.10f}")
+print("rf_time", rf_time)
+print("qg_time", qg_time)
 
 print()
 base_str = pubmed_query_str
