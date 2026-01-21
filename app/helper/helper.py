@@ -31,3 +31,18 @@ def f_beta(precision: float, recall: float, beta: float) -> float:
         return 0.0
     b2 = beta * beta
     return (1 + b2) * (precision * recall) / (b2 * precision + recall)
+
+def precision_score(TP: int, FP: int) -> float:
+    """Compute precision = TP / (TP + FP)"""
+    denom = TP + FP
+    if denom == 0:
+        return 0.0
+    return TP / denom
+
+
+def recall_score(TP: int, FN: int) -> float:
+    """Compute recall = TP / (TP + FN)"""
+    denom = TP + FN
+    if denom == 0:
+        return 0.0
+    return TP / denom
