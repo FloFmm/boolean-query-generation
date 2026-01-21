@@ -146,21 +146,22 @@ TREE_PARAMS = {
 
 FORMULAS = [
     # easy, solvable by single dt"
-    # """((cats OR dogs OR mice) NOT (x OR y)) OR ((cats OR dogs OR mice) AND (bowl OR box) AND (house OR wohnung))""",
-    # """((cats OR dogs OR mice) NOT (bowl OR box OR house OR wohnung)) OR ((bowl OR box) AND (house OR wohnung) NOT (cats OR dogs OR mice))""",
-    # """NOT (cats OR dogs OR mice) AND (house OR wohnung) AND (bowl OR box)""",
-    # """(A AND (B OR C)) OR (NOT A AND C) OR D""",
-    # """NOT A AND B""",
-    # """A""",
-    # """XX OR (YY NOT XX NOT (AA OR BB OR CC OR DD))""",
-    # """hello AND bye AND (nope OR never)""",
-    # """A NOT B""",
+    """((cats OR dogs OR mice) NOT (x OR y)) OR ((cats OR dogs OR mice) AND (bowl OR box) AND (house OR wohnung))""",
+    """((cats OR dogs OR mice) NOT (bowl OR box OR house OR wohnung)) OR ((bowl OR box) AND (house OR wohnung) NOT (cats OR dogs OR mice))""",
+    """NOT (cats OR dogs OR mice) AND (house OR wohnung) AND (bowl OR box)""",
+    """(A AND (B OR C)) OR (NOT A AND C) OR D""",
+    """NOT A AND B""",
+    """A""",
+    """XX OR (YY NOT XX NOT (AA OR BB OR CC OR DD))""",
+    """hello AND bye AND (nope OR never)""",
+    """A NOT B""",
     # middle sometimes solved by single tree
     """((X OR Y OR Z) AND B) OR ((U OR V OR W) NOT B)""", # reuires pruning of rules
     # hard 
-    # """(A AND B) OR (C AND D) OR (E AND F)""",
-    # """(A AND B AND C) OR (D AND E AND F)""",
-    # """((A OR X) AND B NOT C) OR (D AND (E OR Y) NOT F)""",
+    """(A AND B) OR (C AND D) OR (E AND F)""",
+    """(A AND B AND C) OR (D AND E AND F)""",
+    """((A OR X) AND B NOT C) OR (D AND (E OR Y) NOT F)""",
+    """((A OR B) AND (C OR D)) OR (B AND D NOT E) OR (E AND F AND A) OR (C AND X AND Y)""",
 ]
 
 @pytest.mark.parametrize("formula", FORMULAS, ids=lambda f: f[:40])
@@ -182,6 +183,8 @@ def main():
         test_basic_formulas_rf(formula=f)
 
 if __name__ == "__main__":
+    RF_PARAMS["n_estimators"] = 10
+    RF_PARAMS["verbose"] = True
     from line_profiler import LineProfiler
 
     lp = LineProfiler()

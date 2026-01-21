@@ -24,7 +24,7 @@ BOW_PARAMS = {
 RF_PARAMS = {
     "top_k": 1.5,#200, # 0.7 means k where we reach 0.7 recall multipled by factor
     "rank_weight": 1.4, # how much more weighted shall rank 1 be than rank k
-    "n_estimators": 50,
+    "n_estimators": 50, #TODO change back
     "max_depth": 4,
     # "min_samples_split": 2,
     "min_weight_fraction_leaf": 0.0002,
@@ -36,7 +36,7 @@ RF_PARAMS = {
     "bootstrap": True,
     "n_jobs": None,
     "random_state": None,
-    "verbose": True,
+    "verbose": False, #TODO set to false
     "class_weight": 0.2,
     "max_samples": None,
     "top_k_or_candidates": 500,

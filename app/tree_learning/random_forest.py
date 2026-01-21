@@ -13,10 +13,10 @@ from app.tree_learning.disjunctive_dt import (
 from app.tree_learning.query_generation import (
     rules_to_pubmed_query,
     extract_and_vectorize_rules,
-    select_rules_via_ga,
     query_size,
     query_cost,
 )
+from app.rule_covering.greedy import select_rules_greedy
 from app.helper.helper import biased_random
 
 
@@ -470,13 +470,14 @@ class RandomForest:
                 # kept_variables = vec_result["kept_variables"]
                 coverage = vec_result["coverage"]
                 rule_costs = np.array([query_cost(query_size([r])) for r in rules])
-                selection_result = select_rules_via_ga(
+                selection_result = select_rules_greedy(
                     coverage=coverage,
                     y=np.array(labels),
                     rule_costs=rule_costs,
                     cost_factor=cost_factor,
-                    initial_solutions=vec_result["initial_solutions_binary"],
+                    initial_solutions=vec_result["initial_solutions_list"],
                     beta=cover_beta,
+                    verbose=self.verbose,
                 )
                 rules = [rules[i] for i in selection_result["selected_rule_indices"]]
                 cover_score = selection_result["objective"]
