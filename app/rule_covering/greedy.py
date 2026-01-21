@@ -279,11 +279,11 @@ if __name__ == "__main__":
     rng = np.random.default_rng(1)
 
     # Problem size for demo
-    n_samples = 5_000
+    n_samples = 500_000
     n_rules = 250
 
     # Create a random sparse coverage: each rule covers ~p fraction of samples
-    p = 0.08
+    p = 0.01
     rows = []
     cols = []
     for r in range(n_rules):
@@ -307,7 +307,7 @@ if __name__ == "__main__":
 
     # some initial solutions: empty, random singletons, and some random pairs
     initial_solutions = [[]]
-    for _ in range(5):
+    for _ in range(50):
         initial_solutions.append(
             [int(x) for x in rng.choice(n_rules, size=6, replace=False)]
         )
