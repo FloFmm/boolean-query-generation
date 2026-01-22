@@ -232,6 +232,6 @@ if __name__ == "__main__":
         study_name="rf_optimization",
         db_path=f"sqlite:///{run_path}/optuna_rf_parallel.db?timeout={time_out}",
         n_trials=64,
-        n_jobs=32,
+        n_jobs=8, # TODO change to 100
     )
  

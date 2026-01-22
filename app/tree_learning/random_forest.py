@@ -368,7 +368,7 @@ class RandomForest:
             )(
                 delayed(fit_tree_bootstraped)(
                     t,
-                    self.bootstrap,
+                    False if i == 0 else self.bootstrap,
                     X,
                     y,
                     sample_weight,
@@ -384,7 +384,7 @@ class RandomForest:
             for i, t in enumerate(trees):
                 fitted_t = fit_tree_bootstraped(
                     t,
-                    self.bootstrap,
+                    False if i == 0 else self.bootstrap,
                     X,
                     y,
                     sample_weight,

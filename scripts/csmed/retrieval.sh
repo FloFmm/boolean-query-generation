@@ -5,6 +5,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --time=24:00:00
 #SBATCH --mail-type=end
+#SBATCH --mem=188130
 #SBATCH --mail-user=florian_maurus.mueller@mailbox.tu-dresden.de
 
 # export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK

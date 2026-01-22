@@ -7,7 +7,21 @@ from app.dataset.utils import generate_labels_and_sample_weights, review_id_to_d
 from app.pubmed.retrieval import search_pubmed_dynamic
 from app.tree_learning.query_generation import compute_rule_coverage, rules_to_pubmed_query
 from sklearn.metrics import recall_score, precision_score
-from app.config.config import QG_PARAMS, RF_PARAMS, BOW_PARAMS
+from app.config.config import QG_PARAMS, RF_PARAMS, BOW_PARAMS, DEBUG
+
+# test changes
+DEBUG = True
+RF_PARAMS["max_depth"] = 6
+RF_PARAMS["verbose"] = True
+RF_PARAMS["rank_weight"] = 1.0
+RF_PARAMS["min_weight_fraction_leaf"] = 0.0
+RF_PARAMS["class_weight"] = 0.0
+RF_PARAMS["rank_weight"] = 1.0
+RF_PARAMS["n_estimators"] = 1
+QG_PARAMS["min_rule_occ"] = 0
+QG_PARAMS["min_rule_occ"] = 0
+QG_PARAMS["cover_beta"] = 3.0
+
 
 print("finished imports")
 # Give either a custom query or a query_id 
@@ -141,3 +155,5 @@ for tiab in [True, False]:
                 print(positive_positions)
                 print("Positions of TP (0-based):")
                 print(tp_positions)
+
+print(rf.estimators_[0].pretty_print(verbose=True))

@@ -5,7 +5,7 @@ TOP_K = {
         )
     }
 
-DEBUG = True # TODO remove
+DEBUG = False # TODO remove
 
 FORBIDDEN_FEATURES = {"nan"} # used as empty abstract in csmed
 
@@ -22,7 +22,7 @@ BOW_PARAMS = {
 }
 
 RF_PARAMS = {
-    "top_k": 1.5,#200, # 0.7 means k where we reach 0.7 recall multipled by factor
+    "top_k": 1.5,
     "rank_weight": 1.4, # how much more weighted shall rank 1 be than rank k
     "n_estimators": 50, #TODO change back
     "max_depth": 4,
@@ -36,7 +36,7 @@ RF_PARAMS = {
     "bootstrap": True,
     "n_jobs": None,
     "random_state": None,
-    "verbose": False, #TODO set to false
+    "verbose": False, 
     "class_weight": 0.2,
     "max_samples": None,
     "top_k_or_candidates": 500,

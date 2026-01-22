@@ -8,6 +8,11 @@
 
 # export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+# Otherwise NumPy may spawn threads silently → catastrophic oversubscription.
+
 CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
 
 cd boolean-query-generation

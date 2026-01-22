@@ -171,6 +171,8 @@ def extract_and_vectorize_rules(
     for rule, tree_indices in rule_tree_map_iter:
         if not rule:
             continue
+        # history = [rule] 
+        # rule_stats[rule] = {"precision" : 0.1} 
         history = prune_rule_greedy(
             X, 
             y, 
