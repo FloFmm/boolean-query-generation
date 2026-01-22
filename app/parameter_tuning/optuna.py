@@ -13,7 +13,7 @@ import numpy as np
 from pathlib import Path
 from app.config.config import BOW_PARAMS, QG_PARAMS, RF_PARAMS, TRAIN_REVIEWS
 from app.experiments.evaluate_rf import evalaute_rf
-from app.dataset.utils import load_vectors, load_synonym_map, qg_statistics_path
+from app.dataset.utils import load_vectors, load_synonym_map, qg_statistics_path, get_sorted_ids
 from app.helper.helper import f_beta
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
@@ -51,14 +51,16 @@ def optimize_with_optuna_parallel(
     total_docs = BOW_PARAMS["total_docs"]
 
     for query_id in query_ids:
-        rankings_file = Path(
-            f"../systematic-review-datasets/data/rankings/{ret_config['model']}/{ret_config['query_type']}/docs={total_docs}/{query_id}.npz"
+        s_ids = get_sorted_ids(
+            retriever_name=ret_config['model'], 
+            query_type=ret_config['query_type'], 
+            total_docs=total_docs, 
+            query_id=query_id
         )
-        if not rankings_file.exists():
-            print(f"Skipping {rankings_file}, does not exist")
+        if s_ids is None:
+            print(f"Skipping {query_id},ranking rile does not exist")
             continue
-        arr = np.load(rankings_file)
-        sorted_ids[query_id] = arr["ids"]
+        sorted_ids[query_id] = s_ids
 
         # Ground truth
         if query_id in dataset["EVAL"]:

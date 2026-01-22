@@ -9,7 +9,7 @@ from tqdm.contrib.concurrent import process_map
 import json
 from joblib import Parallel, delayed
 from collections import defaultdict
-from app.preprocessing.text_preprocessing import bag_of_words, nlp
+from app.preprocessing.text_preprocessing import bag_of_words, nlp, remove_keys_which_appear_in_value
 from app.pubmed.mesh_term import strip_mesh_term
 from app.preprocessing.synonyms import build_dominating_map, transitive_closure
 from app.dataset.utils import bag_of_words_path, synonym_map_path
@@ -83,6 +83,11 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
             "abstract": r["abstract"],
             "bow": r["bow"]
         })
+
+    # remove lemmas which appear in some others lemma as synonym
+    global_synonym_map, change_map = remove_keys_which_appear_in_value(global_synonym_map)
+    for record in records:
+        record["bow"] = sorted(set([change_map.get(w, w) for w in record["bow"]]))
 
     if conf["related_words"]:
         all_lemmas = global_synonym_map.keys()

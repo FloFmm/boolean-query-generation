@@ -29,8 +29,9 @@ def lemmatize_with_synonyms(text: str, conf: dict):
 
     lemma_to_synonyms = defaultdict(set)
 
-    punct_to_remove = string.punctuation.replace('-', '') # minus may stay
-    PUNCT_RE = re.compile(f"[{re.escape(punct_to_remove)}]")
+    # punct_to_remove = string.punctuation.replace('-', '') # minus may stay
+    # PUNCT_RE = re.compile(f"[{re.escape(punct_to_remove)}]")
+    PUNCT_RE = re.compile(f"[^a-zA-Z0-9\s-]")
     MULTIPLE_RE = re.compile(r"[-\s]{2,}")
 
     for token in doc:
@@ -114,6 +115,53 @@ def process_folder(folder_path: str, skip_existing: bool):
     for file_path in jsonl_files:
         process_jsonl_file(file_path, skip_existing)
 
+def remove_keys_which_appear_in_value(d: dict[str, set[str]]) -> dict[str, set[str]]:
+    # reverse index: value -> keys containing it
+    value_to_keys = {}
+    for k, vals in d.items():
+        for v in vals:
+            value_to_keys.setdefault(v, []).append(k)
+
+    merged_into = {}
+
+    def find_target(k):
+        while k in merged_into:
+            k = merged_into[k]
+        return k
+
+    for k in list(d.keys()):
+        if k in value_to_keys:
+            for parent in value_to_keys[k]:
+                parent = find_target(parent)
+                if parent != k:
+                    d[parent].update(d[k])
+                    merged_into[k] = parent
+                    # break
+
+    # path compression (source -> final target)
+    for k in list(merged_into):
+        merged_into[k] = find_target(k)
+
+    # remove merged keys
+    for k in merged_into:
+        d.pop(k, None)
+
+    return d, merged_into
+
+
 if __name__ == "__main__":
+    # d = {
+    #     "a": ["b"],
+    #     "b": ["c"],
+    #     "c": ["x"],
+    #     "A": ["A", "B", "X"],
+    #     "X": ["X", "Y"],
+    #     "Y": ["X", "Z"],
+    #     "K": ["Y"],
+    # }
+    # new_d, merged_into = remove_keys_which_appear_in_value(d)
+    # print("new_d",new_d)
+    # print("merged_into",merged_into)
+    # exit()
     # Usage
     process_folder("data/pubmed/baseline", skip_existing = True)

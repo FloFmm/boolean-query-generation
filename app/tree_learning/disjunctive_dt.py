@@ -799,7 +799,7 @@ class GreedyORDecisionTree:
             return left_class
         return None  # Mixed classes
 
-    def pretty_print(self, feature_names=None, verbose=False, prune=False):
+    def pretty_print(self, feature_names=None, verbose=False, prune=False, X=None):
         """
         Prints _tree.
 
@@ -814,6 +814,20 @@ class GreedyORDecisionTree:
         -------
         str
         """
+        if verbose and X is not None:
+            # Ensure CSC for fast column access
+            if not hasattr(X, "tocsc"):
+                raise ValueError("X must be a scipy sparse matrix")
+
+            Xcsc = X.tocsc()
+            doc_freq = {
+                i: Xcsc[:, i].getnnz()
+                for i in range(Xcsc.shape[1])
+            }
+        else:
+            doc_freq = None
+        
+        
         if self._tree is None:
             raise ValueError("Tree has not been trained yet. Call fit() first.")
 
@@ -846,7 +860,13 @@ class GreedyORDecisionTree:
                     leaf_text += f" ({node['prob_class_1']:.10f}>={self._optimal_threshold:.10f}), {node['counts']})"
                 lines.append(leaf_text)
             else:
-                features = " OR ".join(get_name(f) for f in node["features"])
+                if verbose and doc_freq is not None:
+                    features = " OR ".join(
+                        f"{get_name(node['features'][i])} [df={doc_freq[f]}]"
+                        for i, f in enumerate(node["feature_indices"])
+                    )
+                else:
+                    features = " OR ".join(get_name(f) for f in node["features"])
                 lines.append(f"{indent}if ({features}):")
                 recurse(node["left"], indent + "    ")
                 lines.append(f"{indent}else:")

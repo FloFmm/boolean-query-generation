@@ -1,7 +1,10 @@
 import pickle
 import numpy as np
 import time
-from app.dataset.utils import load_vectors, load_synonym_map
+import sys
+import os
+from pathlib import Path
+from app.dataset.utils import load_vectors, load_synonym_map, get_sorted_ids
 from app.tree_learning.random_forest import RandomForest
 from app.dataset.utils import generate_labels_and_sample_weights, review_id_to_dataset#, generate_labels
 from app.pubmed.retrieval import search_pubmed_dynamic
@@ -9,36 +12,57 @@ from app.tree_learning.query_generation import compute_rule_coverage, rules_to_p
 from sklearn.metrics import recall_score, precision_score
 from app.config.config import QG_PARAMS, RF_PARAMS, BOW_PARAMS, DEBUG
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
+from csmed.experiments.csmed_cochrane_retrieval import load_dataset
+
 # test changes
 DEBUG = True
-RF_PARAMS["max_depth"] = 6
 RF_PARAMS["verbose"] = True
-RF_PARAMS["rank_weight"] = 1.0
-RF_PARAMS["min_weight_fraction_leaf"] = 0.0
-RF_PARAMS["class_weight"] = 0.0
-RF_PARAMS["rank_weight"] = 1.0
-RF_PARAMS["n_estimators"] = 1
-QG_PARAMS["min_rule_occ"] = 0
-QG_PARAMS["min_rule_occ"] = 0
-QG_PARAMS["cover_beta"] = 3.0
+RF_PARAMS["max_depth"] = 10
+# RF_PARAMS["rank_weight"] = 1.0
+# RF_PARAMS["min_weight_fraction_leaf"] = 0.0
+# RF_PARAMS["class_weight"] = 0.0
+# RF_PARAMS["rank_weight"] = 1.0
+RF_PARAMS["n_estimators"] = 5
+# QG_PARAMS["min_rule_occ"] = 0
+# QG_PARAMS["min_rule_occ"] = 0
+# QG_PARAMS["cover_beta"] = 3.0
 
 
 print("finished imports")
 # Give either a custom query or a query_id 
 query_id = "CD009784"#"CD002115"#"CD008760"
 dataset_name, _, end_year = review_id_to_dataset(query_id)
-total_docs = 433660
+total_docs = 503679 #433660
 BOW_PARAMS["total_docs"] = total_docs
 
 term_expansions = load_synonym_map(**BOW_PARAMS)
 
-SORTED_IDS_PATH = f"data/tmp/sorted_ids_qid={query_id}_d={total_docs}.pkl"
-with open(SORTED_IDS_PATH, "rb") as f:
-    sorted_ids = pickle.load(f)
+# SORTED_IDS_PATH = f"data/tmp/sorted_ids_qid={query_id}_d={total_docs}.pkl"
+# if SORTED_IDS_PATH.exits():
+#     with open(SORTED_IDS_PATH, "rb") as f:
+#         sorted_ids = pickle.load(f)
+# else:
+sorted_ids = get_sorted_ids(
+    retriever_name="pubmedbert", 
+    query_type="title_abstract", 
+    total_docs=total_docs, 
+    query_id=query_id
+)
+print("loaded rankings from file")
 
-REVIEWS_PATH = f"data/tmp/reviews_qid={query_id}_d={total_docs}.pkl"
-with open(REVIEWS_PATH, "rb") as f:
-    reviews = pickle.load(f)
+REVIEWS_PATH = Path(f"data/tmp/reviews_qid={query_id}_d={total_docs}.pkl")
+if REVIEWS_PATH.exists():
+    with open(REVIEWS_PATH, "rb") as f:
+        reviews = pickle.load(f)
+else:
+    dataset = load_dataset()
+    if query_id in dataset["EVAL"]:
+        reviews = dataset["EVAL"]
+    else:
+        reviews = dataset["TRAIN"]
+    with open(REVIEWS_PATH, "wb") as f:
+        pickle.dump(reviews, f)
 positives = set([str(doc["pmid"]) for doc in reviews[query_id]["data"]["train"] if int(doc["label"])==1])         # relevant PMIDs
                 
                 
@@ -156,4 +180,5 @@ for tiab in [True, False]:
                 print("Positions of TP (0-based):")
                 print(tp_positions)
 
-print(rf.estimators_[0].pretty_print(verbose=True))
+for t in rf.estimators_:
+    print(t.pretty_print(verbose=True, X=X))

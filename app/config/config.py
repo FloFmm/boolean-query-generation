@@ -15,9 +15,9 @@ BOW_PARAMS = {
     "rm_numbers": True,
     "rm_punct": True,
     "related_words": True,
-    "total_docs": 433660,
-    "min_df": 10,
-    "max_df": 0.2,
+    "total_docs": 503679, #433660,
+    "min_df": 100,
+    "max_df": 0.5,
     "mesh": True,
 }
 

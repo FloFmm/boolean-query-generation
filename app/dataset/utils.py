@@ -185,8 +185,8 @@ def load_vectors(**bow_args):
         token_pattern=None,
         binary=True,
         # stop_words="english",
-        min_df=min_df,
-        max_df=max_df
+        min_df=bow_args["min_df"],
+        max_df=bow_args["max_df"]
     )
     
     X = vectorizer.fit_transform(list(bow.values()))
@@ -201,50 +201,16 @@ def load_vectors(**bow_args):
     print("Done laoding vectors")
     return X, ordered_pmids, feature_names
 
-def load_qrels_from_rankings(ranking_files, positive_selection_conf):
-    """
-    Load relevant and non-relevant PMIDs from ranking .npz files.
-    Top 100 PMIDs are relevant (1), PMIDs below rank 200 are non-relevant (0).
-    Returns a dict: qrels[review_id] = {1: relevant_pmids, 0: non_relevant_pmids}
-    """
-    qrels_by_query_id = {}
+def ranking_file_path(retriever_name, query_type, total_docs, query_id):
+    return Path(f"../systematic-review-datasets/data/rankings/{retriever_name}/{query_type}/docs={total_docs}/{query_id}.npz")
 
-    for rankings_file in ranking_files:
-        arr = np.load(rankings_file)
-        pmids = arr["ids"]  # numpy array
-
-        # Extract review ID from filename (remove .npz)
-        review_id = Path(rankings_file).stem
-
-        qrels_by_query_id[review_id] = {}
-        if positive_selection_conf["type"] == "abs":
-            num_pos, num_neutral = positive_selection_conf["num_pos"], positive_selection_conf["num_neutral"]
-            qrels_by_query_id[review_id]["pos"] = pmids[:num_pos].tolist()     # relevant
-            # qrels_by_query_id[review_id]["neg"] = pmids[num_pos+num_neutral:].tolist()     # non-relevant
-            qrels_by_query_id[review_id]["neutral"] = pmids[num_pos:num_pos+num_neutral].tolist()     # non-relevant
-        else:
-            raise NotImplementedError("Not implemented yet. positive_selection_conf['type']=", positive_selection_conf["type"])
-    return qrels_by_query_id
-
-def generate_labels_old(qrels, ordered_pmids, sample_prob=1.0):
-    keep_indices = []
-    labels = []
-    neutral_pmids = set(qrels["neutral"])
-    pos_pmids = set(qrels["pos"])
-    rand = random.random
-    
-    for i, pmid in enumerate(ordered_pmids):
-        if pmid in neutral_pmids:
-            continue
-        
-        if pmid in pos_pmids:
-            labels.append(1)
-        else:
-            if sample_prob < 1.0 and rand() > sample_prob:
-                continue
-            labels.append(0)
-        keep_indices.append(i)
-    return keep_indices, labels
+def get_sorted_ids(retriever_name, query_type, total_docs, query_id):
+    rankings_file = ranking_file_path(retriever_name, query_type, total_docs, query_id)
+    if not rankings_file.exists():
+        return None
+    arr = np.load(rankings_file)
+    sorted_ids = arr["ids"]
+    return sorted_ids
 
 def generate_labels_and_sample_weights(
     ordered_pmids,
