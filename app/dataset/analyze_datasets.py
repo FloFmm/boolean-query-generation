@@ -228,12 +228,22 @@ def compute_train_review_ids(
             f"{dataset_name}: {len(selected)} / {counts[dataset_name]} eligible"
         )
         for r in selected:
-            print(f"  - {r}")
+            # count positives
+            review_data = dataset["TRAIN"][r] if r in dataset["TRAIN"] else dataset["EVAL"][r]
+            pos_count = sum(
+                doc["label"] == 1
+                for docs in review_data["data"].values()
+                for doc in docs
+            )
+            print(f"  - {r} (positives: {pos_count})")
         print()
     print(f"Samples:", sampled)
     return sampled
 
 if __name__ == "__main__":
     # compute_dataset_statistics()
-    compute_train_review_ids()
+    compute_train_review_ids(
+        total_samples=25,
+        min_positives=25
+    )
     

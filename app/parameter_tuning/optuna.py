@@ -1,15 +1,14 @@
-import optuna
 import traceback
 import copy
 import numpy as np
 from pathlib import Path
 import optuna
+from optuna.storages import JournalStorage
+from optuna.storages.journal import JournalFileBackend
 import sys
 import os
-import math
 from filelock import FileLock
 from datetime import datetime
-import numpy as np
 from pathlib import Path
 from app.config.config import BOW_PARAMS, QG_PARAMS, RF_PARAMS, TRAIN_REVIEWS
 from app.experiments.evaluate_rf import evalaute_rf
@@ -26,7 +25,7 @@ def optimize_with_optuna_parallel(
     query_ids, 
     ret_config,
     study_name="rf_optimization",
-    db_path="sqlite:///optuna_results.db",
+    run_path="sqlite:///optuna_results.db",
     n_trials=1000,
     n_jobs=4  # Number of parallel workers
 ):
@@ -38,10 +37,10 @@ def optimize_with_optuna_parallel(
     n_jobs : int
         Number of parallel trials to run.
     """
-    print("started loading dataset")
+    print("started loading dataset", flush=True)
     # --- Load data once ---
     dataset = load_dataset()
-    print("finished loading dataset")
+    print("finished loading dataset", flush=True)
     X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
     term_expansions = load_synonym_map(**BOW_PARAMS)
 
@@ -58,7 +57,7 @@ def optimize_with_optuna_parallel(
             query_id=query_id
         )
         if s_ids is None:
-            print(f"Skipping {query_id},ranking rile does not exist")
+            print(f"Skipping {query_id},ranking rile does not exist", flush=True)
             continue
         sorted_ids[query_id] = s_ids
 
@@ -139,10 +138,13 @@ def optimize_with_optuna_parallel(
         
         qg_base_path = qg_statistics_path(run_name=run_name, rf_args=rf_params, qg_args=qg_params)
         qg_results_path = Path(qg_base_path) / "qg_results.jsonl"
-        with FileLock(qg_results_path.with_suffix(".lock")):
+        with FileLock(qg_results_path.with_suffix(".privatelock")):
             if qg_results_path.exists():
                 # Someone already computed this configuration or is currently at computing it
-                raise optuna.exceptions.TrialPruned()
+                # raise optuna.exceptions.TrialPruned()
+                # do not use TrialPruned here as this can lead to still running trials being pruned
+                # only prune inside the currently running trial
+                return float("nan")  # This will mark the trial as failed
 
             # Mark "in progress"
             qg_results_path.touch()
@@ -196,14 +198,25 @@ def optimize_with_optuna_parallel(
         else:
             return 0.0
     
-
-    # --- Create or load study ---
-    study = optuna.create_study(
-        study_name=study_name,
-        direction="maximize",
-        storage=db_path,
-        load_if_exists=True
-    )
+    lock_path = Path(run_path) / "optuna.privatelock"
+    # Create a lock (only the first node to reach this shall create the db)
+    with FileLock(lock_path):
+        # storage = JournalStorage(JournalFileBackend(str(Path(run_path) / "optuna_journal.log")))
+        storage = optuna.storages.RDBStorage(
+            url=f"sqlite:///{run_path}/optuna.db",
+            engine_kwargs={
+                "connect_args": {"timeout": 300},
+                "pool_pre_ping": True,
+            },
+        )
+        # --- Create or load study ---
+        study = optuna.create_study(
+            study_name=study_name,
+            direction="maximize",
+            # storage=db_path,
+            storage=storage,
+            load_if_exists=True
+        )
     
     initial_good_params = copy.deepcopy(QG_PARAMS) | copy.deepcopy(RF_PARAMS)
     study.enqueue_trial(initial_good_params)
@@ -213,27 +226,30 @@ def optimize_with_optuna_parallel(
 
     print("Best trial:") 
     print(study.best_trial.params)
-    print(f"Best value: {study.best_value}")
+    print(f"Best value: {study.best_value}", flush=True)
 
     return study
 
 
 
 if __name__ == "__main__":
-    print("finished imports")
+    print("finished imports", flush=True)
     time_out = 300
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_name = f"run_{timestamp}"
+    run_name = f"run_2_nodes_10tasks_1cpu_per_task"
     run_path = f"/data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/statistics/optuna/{run_name}"
     os.makedirs(run_path, exist_ok=True)
+    
+    # db_path = Path(f"sqlite:///{run_path}/optuna_rf_parallel.db?timeout={time_out}")
+    # db_path = Path(run_path) / "optuna_journal.log"
     
     study = optimize_with_optuna_parallel(
         run_name=run_name,
         query_ids=TRAIN_REVIEWS,
-        ret_config={"model": "pubmedbert", "query_type": "title"},
+        ret_config={"model": "pubmedbert", "query_type": "title_abstract"},
         study_name="rf_optimization",
-        db_path=f"sqlite:///{run_path}/optuna_rf_parallel.db?timeout={time_out}",
+        run_path=run_path,
         n_trials=64,
-        n_jobs=8, # TODO change to 100
+        n_jobs=1, # this is threads (not using cpus-per-task)
     )
  

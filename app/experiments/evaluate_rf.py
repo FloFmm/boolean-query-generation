@@ -35,7 +35,7 @@ def evalaute_rf(run_name, query_id, X, positives, feature_names, sorted_ids, ord
     os.makedirs(qg_base_path, exist_ok=True)
     
     # check whether query already computed
-    # with FileLock(qg_results_path.with_suffix(".lock")): # hold for the entire duration the lock for qg_results file
+    # with FileLock(qg_results_path.with_suffix(".privatelock")): # hold for the entire duration the lock for qg_results file
     #     if qg_results_path.exists():
     #         data = {}
     #         with open(qg_results_path, "r", encoding="utf-8") as f:
@@ -58,13 +58,13 @@ def evalaute_rf(run_name, query_id, X, positives, feature_names, sorted_ids, ord
                                                     max_weight=rf_params["rank_weight"],
                                                     num_positives=len(positives))
     
-    with FileLock(rf_model_path.with_suffix(".lock")): # hold for the time of the generation of the rf the lock to the model
+    with FileLock(rf_model_path.with_suffix(".privatelock")): # hold for the time of the generation of the rf the lock to the model
         # check whether rf already exists
         if rf_model_path.exists():
-            print("exists")
+            print("exists", flush=True)
             with open(rf_model_path, "rb") as f:
                 rf = pickle.load(f)
-                print("loaded existing rf model from disc")
+                print("loaded existing rf model from disc", flush=True)
             # with open(rf_results_path, "r", encoding="utf-8") as f: # get rf stats for the qg result files
             #     for line in f:
             #         obj = json.loads(line)
@@ -91,7 +91,7 @@ def evalaute_rf(run_name, query_id, X, positives, feature_names, sorted_ids, ord
             }
             with open(rf_results_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(rf_results) + "\n")
-            print("finished fitting")
+            print("finished fitting", flush=True)
         
     ### Generate Pubmed Query ###
     if qg_params["term_expansions"]:
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     for query_id in query_ids:
         rankings_file = Path(f"../systematic-review-datasets/data/rankings/{ret_config['model']}/{ret_config['query_type']}/docs={total_docs}/{query_id}.npz")
         if not rankings_file.exists():
-            print(f"Skipping {rankings_file}, does not exist")
+            print(f"Skipping {rankings_file}, does not exist", flush=True)
             continue
         arr = np.load(rankings_file)
         sorted_ids[query_id] = arr["ids"]

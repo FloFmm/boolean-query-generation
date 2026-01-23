@@ -239,7 +239,8 @@ def select_rules_greedy(
             best_score = state.score
             best_global = sorted(list(state.selected))
 
-    print(f"best score {best_score:.6f} | {best_global} | beta={beta}")
+    if verbose:
+        print(f"best score {best_score:.6f} | {best_global} | beta={beta}")
     return {
         "selected_rule_indices": best_global,
         "objective": best_score,

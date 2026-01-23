@@ -464,7 +464,8 @@ class RandomForest:
                 pruning_beta=pruning_beta,
             )
             rules = vec_result["rules"]
-            print("NUMBER OF RULES", len(rules))
+            if DEBUG:
+                print("NUMBER OF RULES", len(rules))
             cover_score = None
             if len(rules) > 1:
                 # kept_variables = vec_result["kept_variables"]

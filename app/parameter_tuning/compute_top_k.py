@@ -1,10 +1,12 @@
 import pandas as pd
 import numpy as np
+from app.config.config import BOW_PARAMS
 
 # BUCKETS = [(1,3),(4,10),(11,30),(31,100),(101,1500)]
 BUCKETS = [(1,1),(2,3),(4,6),(7,10),(11,15),(16,20),(21,30),(31,50),(51,75),(76,100),(101,150),(151,250),(251,500),(501,750),(751,1000),(1001,1500)]
 # BUCKETS = list(zip(range(1,500), range(1,500)))
-CSV_PATH = "data/reports/title_and_abstract/pubmedbert_abstract_docs=433660_by_pos_count.csv"
+CSV_PATH = f"data/reports/title_and_abstract/pubmedbert_title_abstract_docs={BOW_PARAMS['total_docs']}_by_pos_count.csv"
+
 def compute_weighted_metric_curve(
     csv_path: str,
     buckets: list[tuple],
