@@ -18,3 +18,5 @@ test.py
 test2.py
 test3.py
 test5.py
+
+slurm-*.out

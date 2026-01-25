@@ -29,3 +29,6 @@ nltk
 # evaluation
 pytrec_eval
 
+#optuna
+optuna
+plotly

@@ -143,7 +143,8 @@ def select_rules_greedy(
             )
         rules = frozenset(state.selected)
         if rules in memo and memo[rules][-1]:
-            print("pruned")
+            if verbose:
+                print("pruned")
             continue
         else:
             memo[rules] = ((state.TP, state.FP, state.FN, state.cost), state.score, True)

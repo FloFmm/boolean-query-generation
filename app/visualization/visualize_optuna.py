@@ -1,6 +1,6 @@
 import optuna
 study_name = "rf_optimization"
-db_path = "sqlite:////data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/statistics/optuna/run_20260119_131338/optuna_rf_parallel.db"  # make sure this matches your DB
+db_path = "sqlite:///data/statistics/optuna/run_2_nodes_10tasks_1cpu_per_task/optuna.db"  # make sure this matches your DB
 study = optuna.load_study(
     study_name=study_name,
     storage=db_path
@@ -107,4 +107,70 @@ plt.ylabel("Average objective")
 plt.title(f"Average objective vs {param}")
 plt.grid(True)
 # plt.show()
-plt.savefig(f"/data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/statistics/optuna/images/average_objective_vs_{param}.png", dpi=300, bbox_inches="tight")
+plt.savefig(f"data/statistics/optuna/images/average_objective_vs_{param}.png", dpi=300, bbox_inches="tight")
+
+
+# with constraint
+print()
+print()
+best_trial_recall_constraint = None
+best_value = None
+
+for t in study.trials:
+    # Only completed trials
+    if t.state != optuna.trial.TrialState.COMPLETE:
+        continue
+
+    results = t.user_attrs.get("results_list")
+    if not results:
+        continue
+
+    recalls = [d.get("pubmed_recall", 0.0) for d in results]
+    precisions = [d.get("pubmed_precision", 0.0) for d in results]
+
+    avg_recall = np.mean(recalls) if recalls else 0.0
+    avg_precision = np.mean(precisions) if precisions else 0.0
+
+    if avg_recall >= 0.7:
+        if best_value is None or t.value > best_value:
+            best_value = t.value
+            best_trial_recall_constraint = (t, avg_recall, avg_precision)
+            
+
+# Print result
+if best_trial_recall_constraint is None:
+    print("\n❌ No trial found with average recall ≥ 70%")
+else:
+    t, avg_recall, avg_precision = best_trial_recall_constraint
+
+    print("\n=== BEST TRIAL WITH AVG RECALL ≥ 70% ===")
+    print(f"Trial number:      {t.number}")
+    print(f"Objective value:  {t.value}")
+    print(f"Average Recall:   {avg_recall:.4f}")
+    print(f"Average Precision:{avg_precision:.4f}")
+
+    print("\n=== PARAMETERS ===")
+    for k, v in t.params.items():
+        print(f"{k}: {v}")
+print("\n=== USER ATTRIBUTES ===")
+for k, v in t.user_attrs.items():
+    print(f"{k}: {v}")    
+        
+        
+        
+        
+        
+        
+from collections import Counter
+print()
+print()
+states = [t.state for t in study.trials]
+state_counts = Counter(states)
+
+print("\n=== STUDY TRIAL STATE SUMMARY ===")
+
+for state, count in state_counts.items():
+    print(f"{state.name:<10}: {count}")
+
+print("\n=== TOTAL ===")
+print(f"Total trials: {len(study.trials)}")

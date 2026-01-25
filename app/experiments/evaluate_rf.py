@@ -61,7 +61,6 @@ def evalaute_rf(run_name, query_id, X, positives, feature_names, sorted_ids, ord
     with FileLock(rf_model_path.with_suffix(".privatelock")): # hold for the time of the generation of the rf the lock to the model
         # check whether rf already exists
         if rf_model_path.exists():
-            print("exists", flush=True)
             with open(rf_model_path, "rb") as f:
                 rf = pickle.load(f)
                 print("loaded existing rf model from disc", flush=True)
@@ -91,6 +90,7 @@ def evalaute_rf(run_name, query_id, X, positives, feature_names, sorted_ids, ord
             }
             with open(rf_results_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(rf_results) + "\n")
+            
             print("finished fitting", flush=True)
         
     ### Generate Pubmed Query ###
