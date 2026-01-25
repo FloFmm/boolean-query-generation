@@ -397,6 +397,7 @@ class RandomForest:
 
         # Collect newly grown trees
         fitted_trees = [t for t in fitted_trees if t is not None]
+        assert fitted_trees != []
         self.estimators_.extend(fitted_trees)
         
         return self
@@ -588,5 +589,4 @@ def fit_tree_bootstraped(
         sample_weight=curr_sample_weight,
         feature_names=feature_names,
     )
-
     return tree if successful else None

@@ -442,6 +442,9 @@ class GreedyORDecisionTree:
             sample_weight=sample_weight[relevant_sample_mask],
         )
         
+        if self._tree["type"] == "leaf":
+            return False
+        
         if self._verbose:
             self._pbar.close()
 
