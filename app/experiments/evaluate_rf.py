@@ -16,6 +16,7 @@ from app.dataset.utils import (
     rf_statistics_path,
     qg_statistics_path,
     load_synonym_map,
+    get_positives,
 )
 from app.pubmed.retrieval import search_pubmed_dynamic
 from app.tree_learning.query_generation import (
@@ -198,17 +199,8 @@ if __name__ == "__main__":
         sorted_ids[query_id] = arr["ids"]
 
         # ground truth
-        if query_id in dataset["EVAL"]:
-            reviews = dataset["EVAL"]
-        else:
-            reviews = dataset["TRAIN"]
-        positives[query_id] = set(
-            [
-                str(doc["pmid"])
-                for doc in reviews[query_id]["data"]["train"]
-                if int(doc["label"]) == 1
-            ]
-        )
+        positives[query_id] = get_positives(query_id=query_id, dataset=dataset)
+        
 
     DEBUG = True
     buggy_config = {

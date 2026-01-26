@@ -71,8 +71,8 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=95
             print("Total below target — fetching in one go")
         return list(record["IdList"])
     
-    if total_expected > 50_000:
-        print("Tried to retrieve more than 50k PubMed documents")
+    if total_expected > 100_000:
+        print("Tried to retrieve more than 100k PubMed documents")
         raise optuna.exceptions.TrialPruned()
     
     if DEBUG:

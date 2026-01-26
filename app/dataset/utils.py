@@ -293,7 +293,7 @@ def load_bow(**bow_args):
             if mesh:
                 bow_by_pmid[pmid] = entry["bow"]
             else:
-                bow_by_pmid[pmid] = [w for w in entry["bow"] if not "[mh]" in w]
+                bow_by_pmid[pmid] = [w for w in entry["bow"] if "[mh]" not in w]
     return bow_by_pmid
 
 def load_statistics_data_rf(filter_vars=None):

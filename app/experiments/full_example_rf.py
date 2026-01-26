@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 from app.dataset.utils import load_vectors
 from app.tree_learning.random_forest import RandomForest
-from app.dataset.utils import generate_labels, load_synonym_map
+from app.dataset.utils import generate_labels, load_synonym_map, get_positives
 from app.pubmed.retrieval import search_pubmed_dynamic
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
@@ -136,7 +136,7 @@ print("PubMed Query:", pubmed_query_str)
 if query_id is not None:
     retrieved = search_pubmed_dynamic(pubmed_query_str)
     retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
-    positives = set([str(doc["pmid"]) for doc in reviews[query_id]["data"]["train"] if int(doc["label"])==1])         # relevant PMIDs
+    positives = get_positives(query_id=query_id, dataset=dataset)         # relevant PMIDs
     print("Positives:", positives)
     TP = len(retrieved & positives)
     precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0
@@ -146,8 +146,7 @@ if query_id is not None:
 
     # evaluate on local subset
     # subset_preds = tree.predict(X)
-    # label_lookup = {doc["pmid"]: int(doc["label"]) for doc in reviews[query_id]["data"]["train"]}
-    # ground_truth = [label_lookup.get(pmid, 0) for pmid in ordered_pmids]
+    # ground_truth = [int(str(pmid) in positives) for pmid in ordered_pmids]
     # subset_precision = precision_score(ground_truth, subset_preds)
     # subset_recall = recall_score(ground_truth, subset_preds)
     # print(f"Subset Precision: {subset_precision:.10f}")

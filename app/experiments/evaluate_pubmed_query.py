@@ -11,7 +11,7 @@ from app.pubmed.retrieval import search_pubmed_dynamic
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset
-from app.dataset.utils import abbreviate_params, load_completed, load_qrels_from_rankings, generate_labels, load_synonym_map, statistics_base_path, load_vectors, EVAL_QUERY_IDS
+from app.dataset.utils import abbreviate_params, load_completed, load_qrels_from_rankings, generate_labels, load_synonym_map, statistics_base_path, load_vectors, EVAL_QUERY_IDS, get_positives
 
 
 def evaluate_pubmed_query(
@@ -132,7 +132,7 @@ def evaluate_pubmed_query(
                 print(pubmed_query_str)
                 retrieved = search_pubmed_dynamic(pubmed_query_str)
                 retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
-                positives = set([str(doc["pmid"]) for doc in eval_reviews[query_id]["data"]["train"] if int(doc["label"])==1])         # relevant PMIDs
+                positives = get_positives(query_id=query_id, dataset=dataset)         # relevant PMIDs
                 TP = len(retrieved & positives)
                 precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0
                 recall = TP / len(positives) if len(positives) > 0 else 0.0
@@ -147,8 +147,7 @@ def evaluate_pubmed_query(
                 # print("tp_pubmed:", retrieved & positives)
                 # print(subset_preds)
                 # print("tree._optimal_threshold", tree._optimal_threshold)
-                label_lookup = {doc["pmid"]: int(doc["label"]) for doc in eval_reviews[query_id]["data"]["train"]}
-                ground_truth = [label_lookup.get(pmid, 0) for pmid in ordered_pmids]
+                ground_truth = [int(str(pmid) in positives) for pmid in ordered_pmids]
                 # print("pubmed_retrieved", len(retrieved))
                 # print("pubmed_groundtruth", len(positives), positives)
                 # print("subset_retrieved", subset_preds.sum())

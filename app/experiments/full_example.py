@@ -8,7 +8,7 @@ import numpy as np
 from app.dataset.utils import load_vectors
 from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 from app.tree_learning.logical_query_generation import train_text_classifier
-from app.dataset.utils import generate_labels, load_synonym_map
+from app.dataset.utils import generate_labels, load_synonym_map, get_positives
 from app.pubmed.retrieval import search_pubmed_dynamic
 from sklearn.metrics import recall_score, precision_score
 
@@ -122,7 +122,7 @@ print("Query Size (No Expansion):", query_size_no_exp)
 if query_id is not None:
     retrieved = search_pubmed_dynamic(pubmed_query_str)
     retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
-    positives = set([str(doc["pmid"]) for doc in reviews[query_id]["data"]["train"] if int(doc["label"])==1])         # relevant PMIDs
+    positives = get_positives(query_id=query_id, dataset=dataset)        # relevant PMIDs
     print("Positives:", positives)
     TP = len(retrieved & positives)
     precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0
@@ -132,8 +132,7 @@ if query_id is not None:
 
     # evaluate on local subset
     subset_preds = tree.predict(X)
-    label_lookup = {doc["pmid"]: int(doc["label"]) for doc in reviews[query_id]["data"]["train"]}
-    ground_truth = [label_lookup.get(pmid, 0) for pmid in ordered_pmids]
+    ground_truth = [int(str(pmid) in positives) for pmid in ordered_pmids]
     subset_precision = precision_score(ground_truth, subset_preds)
     subset_recall = recall_score(ground_truth, subset_preds)
     print(f"Subset Precision: {subset_precision:.10f}")

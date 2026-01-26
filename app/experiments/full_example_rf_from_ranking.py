@@ -9,6 +9,7 @@ from app.tree_learning.random_forest import RandomForest
 from app.dataset.utils import (
     generate_pseudo_labels_and_sample_weights,
     review_id_to_dataset,
+    get_positives,
 )  # , generate_labels
 from app.pubmed.retrieval import search_pubmed_dynamic
 from app.tree_learning.query_generation import (
@@ -75,13 +76,7 @@ else:
         reviews = dataset["TRAIN"]
     with open(REVIEWS_PATH, "wb") as f:
         pickle.dump(reviews, f)
-positives = set(
-    [
-        str(doc["pmid"])
-        for doc in reviews[query_id]["data"]["train"]
-        if int(doc["label"]) == 1
-    ]
-)  # relevant PMIDs
+positives = get_positives(query_id=query_id, dataset=dataset)  # relevant PMIDs
 
 
 ### Train Decision Tree ###
@@ -137,7 +132,7 @@ subset_preds = np.any(coverage, axis=0).astype(np.uint8)
 label_lookup = {
     doc["pmid"]: int(doc["label"]) for doc in reviews[query_id]["data"]["train"]
 }
-ground_truth = [label_lookup.get(pmid, 0) for pmid in ordered_pmids]
+ground_truth = [int(str(pmid) in positives) for pmid in ordered_pmids]
 pseudo_relevant = set(sorted_ids[:top_k])
 pseudo_ground_truth = [pmid in pseudo_relevant for pmid in ordered_pmids]
 subset_precision = precision_score(ground_truth, subset_preds)
