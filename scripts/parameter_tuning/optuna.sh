@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --nodes=2
+#SBATCH --nodes=10
 #SBATCH --tasks-per-node=10
 #SBATCH --cpus-per-task=1
 #SBATCH --time=12:00:00 #TODO set back to 24
