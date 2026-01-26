@@ -3,7 +3,7 @@ import numpy as np
 from app.config.config import BOW_PARAMS
 
 # BUCKETS = [(1,3),(4,10),(11,30),(31,100),(101,1500)]
-BUCKETS = [(1,1),(2,3),(4,6),(7,10),(11,15),(16,20),(21,30),(31,50),(51,75),(76,100),(101,150),(151,250),(251,500),(501,750),(751,1000),(1001,1500)]
+BUCKETS = [(1,1),(2,3),(4,6),(7,10),(11,15),(16,20),(21,30),(31,50),(51,75),(76,100),(101,150),(151,250),(251,350),(351,500),(501,650)]
 # BUCKETS = list(zip(range(1,500), range(1,500)))
 CSV_PATH = f"data/reports/title_and_abstract/pubmedbert_title_abstract_docs={BOW_PARAMS['total_docs']}_by_pos_count.csv"
 
@@ -22,6 +22,11 @@ def compute_weighted_metric_curve(
     """
     df = pd.read_csv(csv_path)
 
+    print(
+        f"[compute_weighted_metric_curve] "
+        f"Using {df['n_queries'].sum():,} samples "
+        f"across {len(df)} rows"
+    )
     # --------------------------------------------------
     # extract {metric}@k columns
     # --------------------------------------------------
@@ -45,6 +50,7 @@ def compute_weighted_metric_curve(
 
     bucket_labels = []
     bucket_vals = {}
+    bucket_avg_positives = {}
 
     for bucket, g in grouped:
         weights = g["n_queries"].values
@@ -55,10 +61,14 @@ def compute_weighted_metric_curve(
             np.average(g[col].values, weights=weights)
             for col in metric_cols
         ])
+        # weighted average n_positives
+        avg_pos = np.average(g["n_positives"].values, weights=weights)
+        
         bucket_labels.append(bucket)
         bucket_vals[bucket] = vals
+        bucket_avg_positives[bucket] = avg_pos
 
-    return ks, bucket_labels, bucket_vals
+    return ks, bucket_labels, bucket_vals, bucket_avg_positives
 
 def compute_k_at_recall_threshold(
     ks: list[int],
@@ -100,11 +110,11 @@ def compute_k_at_recall_threshold(
 
 def compute_top_ks(csv_path, p, buckets):
     # 1. Compute curve
-    ks, bucket_labels, bucket_vals = compute_weighted_metric_curve(csv_path, buckets, metric="recall")
+    ks, bucket_labels, bucket_vals, bucket_avg_positives = compute_weighted_metric_curve(csv_path, buckets, metric="recall")
 
     # 3. Compute exact k for 70% and 95% recall
     ks = compute_k_at_recall_threshold(ks, bucket_vals, p)
-    return ks
+    return ks, bucket_avg_positives
 
 def approximate_y(x_vals, y_vals, x_query):
     """
@@ -152,14 +162,29 @@ def approximate_y(x_vals, y_vals, x_query):
     raise RuntimeError("Interpolation failed")
 
 def compute_top_k(n_positive, csv_path, p , buckets):
-    ks = compute_top_ks(csv_path, p, buckets)
+    ks, bucket_avg_positives = compute_top_ks(csv_path, p, buckets)
     return approximate_y(x_vals=[(k[1]+k[0])/2 for k in ks.keys()], y_vals=list(ks.values()), x_query=n_positive)
 
+def compute_top_k_curve(csv_path, buckets, recall=0.7):
+    ks, bucket_avg_positives = compute_top_ks(csv_path, recall, buckets)
+    xs = [bucket_avg_positives[b] for b in sorted(bucket_avg_positives.keys())]
+    ys = list(x for x in ks.values())
+    print("x")
+    print([round(x, 1) for x in xs])
+    print("y")
+    print([round(y) for y in ys])
+    import numpy as np
+    from sklearn.isotonic import IsotonicRegression
+
+    x = np.array(xs)
+
+    y = np.array(ys)
+
+    iso = IsotonicRegression(increasing=True)
+    y_smooth = iso.fit_transform(xs, ys)
+    print("smoothed y")
+    print([round(y) for y in y_smooth])
+    
 if __name__ == "__main__":
-    ks = compute_top_ks(CSV_PATH, 0.7, BUCKETS)
-    print([(k[1]+k[0])/2 for k in ks.keys()])
-    print(list(ks.values()))
-    print("k@70% recall:", ks)
-    print()
-    for num_pos in range(1, 200, 1):
-        print(num_pos, compute_top_k(num_pos, CSV_PATH, 0.7, BUCKETS))
+    compute_top_k_curve(CSV_PATH, BUCKETS, recall=0.7)
+    

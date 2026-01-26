@@ -390,8 +390,8 @@ def load_statistics_data(input_folder, filter_vars=None, qg=True, metrics=None):
         with results_file_rf.open("r", encoding="utf-8") as f:
             for line in f:
                 data = json.loads(line)
-                if data["query_id"] not in EVAL_QUERY_IDS:
-                    continue
+                # if data["query_id"] not in EVAL_QUERY_IDS:
+                #     continue
                 data = {f"{k}_rf" if not k.endswith("_rf") else k: v for k, v in data.items()}
                 file_records_rf.append(data)
                 
@@ -427,8 +427,8 @@ def load_statistics_data(input_folder, filter_vars=None, qg=True, metrics=None):
                         if not line: # skip empty or whitespace-only lines
                             continue
                         data = json.loads(line)
-                        if data["query_id"] not in EVAL_QUERY_IDS:
-                            continue
+                        # if data["query_id"] not in EVAL_QUERY_IDS:
+                        #     continue
                         
                         data = {f"{k}_qg" if not k.endswith("_qg") else k: v for k, v in data.items()}
                         if not "query_size_qg" in data:

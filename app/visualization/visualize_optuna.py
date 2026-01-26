@@ -111,50 +111,61 @@ plt.savefig(f"data/statistics/optuna/images/average_objective_vs_{param}.png", d
 
 
 # with constraint
+def print_stats(study, min_recall=0.7):
+    best_trial_recall_constraint = None
+    best_value = None
+
+    for t in study.trials:
+        # Only completed trials
+        if t.state != optuna.trial.TrialState.COMPLETE:
+            continue
+
+        results = t.user_attrs.get("results_list")
+        if not results:
+            continue
+
+        recalls = [d.get("pubmed_recall", 0.0) for d in results]
+        precisions = [d.get("pubmed_precision", 0.0) for d in results]
+
+        avg_recall = np.mean(recalls) if recalls else 0.0
+        avg_precision = np.mean(precisions) if precisions else 0.0
+
+        if avg_recall >= min_recall:
+            if best_value is None or t.value > best_value:
+                best_value = t.value
+                best_trial_recall_constraint = (t, avg_recall, avg_precision)
+                
+
+    # Print result
+    if best_trial_recall_constraint is None:
+        print(f"\n❌ No trial found with average recall ≥ {int(min_recall*100)}%")
+    else:
+        t, avg_recall, avg_precision = best_trial_recall_constraint
+
+        print(f"\n=== BEST TRIAL WITH AVG RECALL ≥ {int(min_recall*100)}% ===")
+        print(f"Trial number:      {t.number}")
+        print(f"Objective value:  {t.value}")
+        print(f"Average Recall:   {avg_recall:.4f}")
+        print(f"Average Precision:{avg_precision:.4f}")
+
+        print("\n=== PARAMETERS ===")
+        for k, v in t.params.items():
+            print(f"{k}: {v}")
+        print("\n=== USER ATTRIBUTES ===")
+        for k, v in t.user_attrs.items():
+            print(f"{k}: {v}")   
+
 print()
+print_stats(study, min_recall=0.7)
 print()
-best_trial_recall_constraint = None
-best_value = None
-
-for t in study.trials:
-    # Only completed trials
-    if t.state != optuna.trial.TrialState.COMPLETE:
-        continue
-
-    results = t.user_attrs.get("results_list")
-    if not results:
-        continue
-
-    recalls = [d.get("pubmed_recall", 0.0) for d in results]
-    precisions = [d.get("pubmed_precision", 0.0) for d in results]
-
-    avg_recall = np.mean(recalls) if recalls else 0.0
-    avg_precision = np.mean(precisions) if precisions else 0.0
-
-    if avg_recall >= 0.7:
-        if best_value is None or t.value > best_value:
-            best_value = t.value
-            best_trial_recall_constraint = (t, avg_recall, avg_precision)
-            
-
-# Print result
-if best_trial_recall_constraint is None:
-    print("\n❌ No trial found with average recall ≥ 70%")
-else:
-    t, avg_recall, avg_precision = best_trial_recall_constraint
-
-    print("\n=== BEST TRIAL WITH AVG RECALL ≥ 70% ===")
-    print(f"Trial number:      {t.number}")
-    print(f"Objective value:  {t.value}")
-    print(f"Average Recall:   {avg_recall:.4f}")
-    print(f"Average Precision:{avg_precision:.4f}")
-
-    print("\n=== PARAMETERS ===")
-    for k, v in t.params.items():
-        print(f"{k}: {v}")
-print("\n=== USER ATTRIBUTES ===")
-for k, v in t.user_attrs.items():
-    print(f"{k}: {v}")    
+print_stats(study, min_recall=0.75)
+print()
+print_stats(study, min_recall=0.8)
+print()
+print_stats(study, min_recall=0.9)
+print()
+print_stats(study, min_recall=0.95)
+print()
         
         
         

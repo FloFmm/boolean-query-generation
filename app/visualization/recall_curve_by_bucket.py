@@ -1,8 +1,8 @@
-import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 import os
-from app.parameter_tuning.compute_top_k import compute_weighted_metric_curve, compute_top_ks, BUCKETS, CSV_PATH
+from app.parameter_tuning.compute_top_k import compute_weighted_metric_curve, compute_top_ks, compute_top_k_curve, BUCKETS, CSV_PATH
+import matplotlib.colors as mcolors
+import matplotlib.cm as cm
 
 def plot_metric_curve_by_bucket(
     csv_path: str,
@@ -10,22 +10,34 @@ def plot_metric_curve_by_bucket(
     metric: str = "recall",
     title: str | None = None,
 ):
-    ks, bucket_labels, bucket_vals = compute_weighted_metric_curve(csv_path, buckets, metric)
+    ks, bucket_labels, bucket_vals, bucket_avg_positives = compute_weighted_metric_curve(
+        csv_path, buckets, metric
+    )
 
-    plt.figure(figsize=(8,6))
-    for bucket in bucket_labels:
+    num_buckets = len(buckets)
+    cmap = cm.viridis
+    norm = mcolors.Normalize(vmin=0, vmax=num_buckets - 1)
+
+    plt.figure(figsize=(8, 6))
+
+    for idx, ((start, end), raw_label) in enumerate(zip(buckets, bucket_labels)):
+        label = f"{start}-{end}"
+        color = cmap(norm(idx))  # 🎯 index-based coloring
+
         plt.plot(
             ks,
-            bucket_vals[bucket],
+            bucket_vals[raw_label],
             marker="o",
-            label=f"{bucket} positives"
+            label=label,
+            color=color,
         )
 
     plt.xlabel("k")
     plt.ylabel(f"{metric}@k")
     plt.xscale("log")
     plt.grid(True, which="both", linestyle="--", alpha=0.6)
-    plt.legend()
+    plt.legend(title="Positives bucket")
+
     if title:
         plt.title(title)
 
@@ -33,8 +45,9 @@ def plot_metric_curve_by_bucket(
     out_img = os.path.splitext(csv_path)[0] + f"_{metric}_at_k_curve.jpg"
     plt.savefig(out_img, dpi=300, bbox_inches="tight")
     plt.close()
-    print(f"✓ Saved {metric}@k curve plot to: {out_img}")
 
+    print(f"✓ Saved {metric}@k curve plot to: {out_img}")
+     
 def plot_k_at_recall_thresholds_buckets(
     csv_path: str,
     ps: list[float],
@@ -59,14 +72,13 @@ def plot_k_at_recall_thresholds_buckets(
     # Compute k@p for all p
     k_at_ps = {}
     for p in ps:
-        k_at_ps[p] = compute_top_ks(csv_path, p, buckets)
-
+        k_at_ps[p], bucket_avg_positives = compute_top_ks(csv_path, p, buckets)
     # Prepare plot
     plt.figure(figsize=(10, 6))
     bucket_labels = [f"{lo}-{hi}" for lo, hi in buckets]
 
     for p, ks_dict in k_at_ps.items():
-        ys = [ks_dict.get(f"{lo}-{hi}", float('nan')) for lo, hi in buckets]
+        ys = [ks_dict.get((lo, hi), float('nan')) for lo, hi in buckets]
         plt.plot(
             bucket_labels,
             ys,
@@ -105,7 +117,8 @@ if __name__ == "__main__":
     )
     plot_k_at_recall_thresholds_buckets(
         csv_path=CSV_PATH,
-        ps=[0.7, 0.3],
+        ps=[0.8, 0.7, 0.6, 0.3],
         buckets=BUCKETS,
         title="k@p-recall per bucket"
     )
+    compute_top_k_curve(CSV_PATH, BUCKETS, recall=0.7)
