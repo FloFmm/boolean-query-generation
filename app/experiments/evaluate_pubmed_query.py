@@ -172,7 +172,7 @@ def evaluate_pubmed_query(
                 retrieved = search_pubmed_dynamic(pubmed_query_str)
                 retrieved = set(str(x) for x in retrieved)  # retrieved PMIDs
                 positives = get_positives(
-                    query_id=query_id, dataset=dataset
+                    review_id=query_id, dataset=dataset
                 )  # relevant PMIDs
                 TP = len(retrieved & positives)
                 precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0

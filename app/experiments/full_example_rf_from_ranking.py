@@ -76,7 +76,7 @@ else:
         reviews = dataset["TRAIN"]
     with open(REVIEWS_PATH, "wb") as f:
         pickle.dump(reviews, f)
-positives = get_positives(query_id=query_id, dataset=dataset)  # relevant PMIDs
+positives = get_positives(review_id=query_id, dataset=dataset)  # relevant PMIDs
 
 
 ### Train Decision Tree ###

@@ -37,7 +37,7 @@ sys.path.append(
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset
 
 
-def evalaute_rf(
+def evaluate_rf(
     run_name,
     query_id,
     X,
@@ -199,7 +199,7 @@ if __name__ == "__main__":
         sorted_ids[query_id] = arr["ids"]
 
         # ground truth
-        positives[query_id] = get_positives(query_id=query_id, dataset=dataset)
+        positives[query_id] = get_positives(review_id=query_id, dataset=dataset)
 
     DEBUG = True
     buggy_config = {
@@ -228,7 +228,7 @@ if __name__ == "__main__":
     for query_id in (
         positives.keys()
     ):  # TODO change positives.keys( to all queries but some ranking are missing)
-        r = evalaute_rf(
+        r = evaluate_rf(
             query_id=query_id,
             X=X,
             positives=positives[query_id],

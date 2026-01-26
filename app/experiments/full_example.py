@@ -135,7 +135,7 @@ print("Query Size (No Expansion):", query_size_no_exp)
 if query_id is not None:
     retrieved = search_pubmed_dynamic(pubmed_query_str)
     retrieved = set(str(x) for x in retrieved)  # retrieved PMIDs
-    positives = get_positives(query_id=query_id, dataset=dataset)  # relevant PMIDs
+    positives = get_positives(review_id=query_id, dataset=dataset)  # relevant PMIDs
     print("Positives:", positives)
     TP = len(retrieved & positives)
     precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0

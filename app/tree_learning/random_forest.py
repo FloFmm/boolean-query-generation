@@ -202,6 +202,7 @@ class RandomForest:
         max_or_features=100,
         top_k=None,
         rank_weight=None,
+        dont_cares=2.0,
     ):
         """
         Initialize a RandomForest instance.
@@ -230,6 +231,9 @@ class RandomForest:
         self.top_k_or_candidates = top_k_or_candidates
         self.max_or_features = max_or_features
 
+        # not used
+        self.dont_cares = dont_cares
+
         # Will be populated after fit
         self.estimators_ = []
         self._n_samples_bootstrap = None
@@ -237,6 +241,7 @@ class RandomForest:
         self.prefer_pos_splits = prefer_pos_splits
         self.top_k = top_k
         self.rank_weight = rank_weight
+        
 
     def fit(self, X, y, sample_weight=None, feature_names=None):
         """

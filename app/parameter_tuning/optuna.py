@@ -11,7 +11,7 @@ from filelock import FileLock
 from datetime import datetime
 from pathlib import Path
 from app.config.config import BOW_PARAMS, QG_PARAMS, RF_PARAMS, TRAIN_REVIEWS
-from app.experiments.evaluate_rf import evalaute_rf
+from app.experiments.evaluate_rf import evaluate_rf
 from app.dataset.utils import (
     load_vectors,
     load_synonym_map,
@@ -76,7 +76,7 @@ def optimize_with_optuna_parallel(
         sorted_ids[query_id] = s_ids
 
         # Ground truth
-        positives[query_id] = get_positives(query_id=query_id, dataset=dataset)
+        positives[query_id] = get_positives(review_id=query_id, dataset=dataset)
 
     # --- Define Optuna objective ---
     def objective(trial):
@@ -217,7 +217,7 @@ def optimize_with_optuna_parallel(
         opt_scores = []
         for i, query_id in enumerate(positives.keys()):
             try:
-                qg_results = evalaute_rf(
+                qg_results = evaluate_rf(
                     run_name=run_name,
                     query_id=query_id,
                     X=X,

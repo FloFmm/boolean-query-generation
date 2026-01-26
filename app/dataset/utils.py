@@ -380,6 +380,8 @@ def get_positives(review_id, dataset):
                 positives.add(str(doc["pmid"]))
     return positives
 
+def get_all_review_ids(dataset):
+    return set(dataset["EVAL"].keys()) | set(dataset["TRAIN"].keys())
 
 def load_bow(**bow_args):
     bow_by_pmid = {}
@@ -666,3 +668,4 @@ def review_id_to_dataset(review_id):
         return "sr_updates", None, 2019
 
     return "unknown", None, -1
+
