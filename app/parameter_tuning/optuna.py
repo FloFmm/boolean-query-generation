@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from app.config.config import BOW_PARAMS, QG_PARAMS, RF_PARAMS, TRAIN_REVIEWS
 from app.experiments.evaluate_rf import evalaute_rf
-from app.dataset.utils import load_vectors, load_synonym_map, qg_statistics_path, get_sorted_ids
+from app.dataset.utils import load_vectors, load_synonym_map, qg_statistics_path, get_sorted_ids, get_positives
 from app.helper.helper import f_beta
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
@@ -62,13 +62,7 @@ def optimize_with_optuna_parallel(
         sorted_ids[query_id] = s_ids
 
         # Ground truth
-        if query_id in dataset["EVAL"]:
-            reviews = dataset["EVAL"]
-        else:
-            reviews = dataset["TRAIN"]
-        positives[query_id] = set(
-            [str(doc["pmid"]) for doc in reviews[query_id]["data"]["train"] if int(doc["label"]) == 1]
-        )
+        positives[query_id] = get_positives(query_id=query_id, dataset=dataset)
 
     # --- Define Optuna objective ---
     def objective(trial):
@@ -80,6 +74,7 @@ def optimize_with_optuna_parallel(
                 "max_depth": trial.suggest_int("max_depth", 3, 10),
                 "min_weight_fraction_leaf": trial.suggest_float("min_weight_fraction_leaf", 0.0, 0.002, step=0.0002), # 0.002 = 1000 docs for {1:1, 0:1} (1000/500k)
                 "top_k": trial.suggest_float("top_k", 0.5, 2.0, step=0.1),
+                "dont_cares": trial.suggest_float("dont_cares", 0.0, 5.0, step=0.5),
                 "rank_weight": trial.suggest_float("rank_weight", 1.0, 5.0, step=0.4), # how much more weighted shall rank 1 be than rank k
                 "max_features": trial.suggest_float("max_features", 0.01, 1.00, step=0.01),
                 "min_impurity_decrease_range_start": trial.suggest_float("min_impurity_decrease_range_start", 0.001, 0.05, step=0.0035), # gini can at msot reduce by 0.5
@@ -100,6 +95,7 @@ def optimize_with_optuna_parallel(
                                                                 LAST_RF_P["min_weight_fraction_leaf"],
                                                                 LAST_RF_P["min_weight_fraction_leaf"]),
                 "top_k": trial.suggest_float("top_k", LAST_RF_P["top_k"], LAST_RF_P["top_k"]),
+                "dont_cares": trial.suggest_float("dont_cares", LAST_RF_P["dont_cares"], LAST_RF_P["dont_cares"]),
                 "rank_weight": trial.suggest_float("rank_weight", LAST_RF_P["rank_weight"], LAST_RF_P["rank_weight"]),
                 "max_features": trial.suggest_float("max_features", LAST_RF_P["max_features"], LAST_RF_P["max_features"]),
                 "min_impurity_decrease_range_start": trial.suggest_float("min_impurity_decrease_range_start", LAST_RF_P["min_impurity_decrease_range_start"], LAST_RF_P["min_impurity_decrease_range_start"]),

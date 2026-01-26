@@ -173,12 +173,7 @@ def compute_top_k_curve(csv_path, buckets, recall=0.7):
     print([round(x, 1) for x in xs])
     print("y")
     print([round(y) for y in ys])
-    import numpy as np
     from sklearn.isotonic import IsotonicRegression
-
-    x = np.array(xs)
-
-    y = np.array(ys)
 
     iso = IsotonicRegression(increasing=True)
     y_smooth = iso.fit_transform(xs, ys)

@@ -6,13 +6,25 @@ import os
 from pathlib import Path
 from app.dataset.utils import load_vectors, load_synonym_map, get_sorted_ids
 from app.tree_learning.random_forest import RandomForest
-from app.dataset.utils import generate_labels_and_sample_weights, review_id_to_dataset#, generate_labels
+from app.dataset.utils import (
+    generate_pseudo_labels_and_sample_weights,
+    review_id_to_dataset,
+)  # , generate_labels
 from app.pubmed.retrieval import search_pubmed_dynamic
-from app.tree_learning.query_generation import compute_rule_coverage, rules_to_pubmed_query
+from app.tree_learning.query_generation import (
+    compute_rule_coverage,
+    rules_to_pubmed_query,
+)
 from sklearn.metrics import recall_score, precision_score
 from app.config.config import QG_PARAMS, RF_PARAMS, BOW_PARAMS, DEBUG
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
+sys.path.append(
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), "../..", "../systematic-review-datasets"
+        )
+    )
+)
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset
 
 # test changes
@@ -30,10 +42,10 @@ RF_PARAMS["n_estimators"] = 5
 
 
 print("finished imports")
-# Give either a custom query or a query_id 
-query_id = "CD009784"#"CD002115"#"CD008760"
+# Give either a custom query or a query_id
+query_id = "CD009784"  # "CD002115"#"CD008760"
 dataset_name, _, end_year = review_id_to_dataset(query_id)
-total_docs = 503679 #433660
+total_docs = 503679  # 433660
 BOW_PARAMS["total_docs"] = total_docs
 
 term_expansions = load_synonym_map(**BOW_PARAMS)
@@ -44,10 +56,10 @@ term_expansions = load_synonym_map(**BOW_PARAMS)
 #         sorted_ids = pickle.load(f)
 # else:
 sorted_ids = get_sorted_ids(
-    retriever_name="pubmedbert", 
-    query_type="title_abstract", 
-    total_docs=total_docs, 
-    query_id=query_id
+    retriever_name="pubmedbert",
+    query_type="title_abstract",
+    total_docs=total_docs,
+    query_id=query_id,
 )
 print("loaded rankings from file")
 
@@ -63,9 +75,15 @@ else:
         reviews = dataset["TRAIN"]
     with open(REVIEWS_PATH, "wb") as f:
         pickle.dump(reviews, f)
-positives = set([str(doc["pmid"]) for doc in reviews[query_id]["data"]["train"] if int(doc["label"])==1])         # relevant PMIDs
-                
-                
+positives = set(
+    [
+        str(doc["pmid"])
+        for doc in reviews[query_id]["data"]["train"]
+        if int(doc["label"]) == 1
+    ]
+)  # relevant PMIDs
+
+
 ### Train Decision Tree ###
 X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
 print("Num Features:", len(feature_names))
@@ -74,17 +92,18 @@ for i in range(10):
     print('"' + feature_names[i] + '"')
 
 lg_time = time.time()
-labels, sample_weight, top_k = generate_labels_and_sample_weights(k=RF_PARAMS["top_k"],
-                                                           ordered_pmids=ordered_pmids, 
-                                                           sorted_ids=sorted_ids, 
-                                                           max_weight=RF_PARAMS["rank_weight"],
-                                                           num_positives=len(positives))
+labels, sample_weight, top_k = generate_pseudo_labels_and_sample_weights(
+    k=RF_PARAMS["top_k"],
+    dont_cares=RF_PARAMS["dont_cares"],
+    ordered_pmids=ordered_pmids,
+    sorted_ids=sorted_ids,
+    max_weight=RF_PARAMS["rank_weight"],
+    num_positives=len(positives),
+)
 lg_time = time.time() - lg_time
 rf_time = time.time()
 rf = RandomForest(**RF_PARAMS)
-rf.fit(
-    X, np.array(labels), feature_names=feature_names, sample_weight=sample_weight
-)
+rf.fit(X, np.array(labels), feature_names=feature_names, sample_weight=sample_weight)
 rf_time = time.time() - rf_time
 print("finished fitting")
 ### Generate Pubmed Query ###
@@ -115,10 +134,12 @@ print("SUBSET STATS")
 # evaluate on local subset
 coverage = compute_rule_coverage(X=X, rules=rules)
 subset_preds = np.any(coverage, axis=0).astype(np.uint8)
-label_lookup = {doc["pmid"]: int(doc["label"]) for doc in reviews[query_id]["data"]["train"]}
+label_lookup = {
+    doc["pmid"]: int(doc["label"]) for doc in reviews[query_id]["data"]["train"]
+}
 ground_truth = [label_lookup.get(pmid, 0) for pmid in ordered_pmids]
 pseudo_relevant = set(sorted_ids[:top_k])
-pseudo_ground_truth = [pmid in pseudo_relevant  for pmid in ordered_pmids]
+pseudo_ground_truth = [pmid in pseudo_relevant for pmid in ordered_pmids]
 subset_precision = precision_score(ground_truth, subset_preds)
 subset_recall = recall_score(ground_truth, subset_preds)
 pseudo_precision = precision_score(pseudo_ground_truth, subset_preds)
@@ -150,7 +171,7 @@ for tiab in [True, False]:
             print()
             if query_id is not None:
                 retrieved = search_pubmed_dynamic(pubmed_query_str, end_year=end_year)
-                retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
+                retrieved = set(str(x) for x in retrieved)  # retrieved PMIDs
                 print("Positives:", positives)
                 true_positives = retrieved & positives
                 TP = len(true_positives)
@@ -163,14 +184,10 @@ for tiab in [True, False]:
                 rank_lookup = {str(pmid): rank for rank, pmid in enumerate(sorted_ids)}
                 # collect positions of positives that appear in the ranking
                 positive_positions = [
-                    rank_lookup[pmid]
-                    for pmid in positives
-                    if pmid in rank_lookup
+                    rank_lookup[pmid] for pmid in positives if pmid in rank_lookup
                 ]
                 tp_positions = [
-                    rank_lookup[pmid]
-                    for pmid in true_positives
-                    if pmid in rank_lookup
+                    rank_lookup[pmid] for pmid in true_positives if pmid in rank_lookup
                 ]
                 # sort for readability
                 positive_positions.sort()

@@ -212,10 +212,11 @@ def get_sorted_ids(retriever_name, query_type, total_docs, query_id):
     sorted_ids = arr["ids"]
     return sorted_ids
 
-def generate_labels_and_sample_weights(
+def generate_pseudo_labels_and_sample_weights(
     ordered_pmids,
     sorted_ids,
     k,
+    dont_cares,
     max_weight:float=1.5,
     num_positives=None,
 ):
@@ -234,35 +235,53 @@ def generate_labels_and_sample_weights(
     
     max_weight = int(max_weight*100)
     min_weight = 100
-    avg_weight = int((max_weight + min_weight) / 2)
-    sample_weight = np.full(N, avg_weight, dtype=np.int32) # negatives get average weight
+    # avg_weight = int((max_weight + min_weight) / 2) # negatives get average weight (not any more)
+    sample_weight = np.full(N, max_weight, dtype=np.int32) 
 
+    len_ramp1 = top_k
+    len_ramp2 = top_k
+    len_dont_cares = int(dont_cares*top_k)
+    end_ramp1 = len_ramp1
+    start_ramp2 = top_k + len_dont_cares
+    end_ramp2 = start_ramp2 + len_ramp2
     # iterate only over ranked PMIDs
     for r, pmid in enumerate(sorted_ids):
-        if r >= 3 * top_k:
+        if r >= end_ramp2:
             break
         
         pmid = str(pmid)
         idx = pmid_to_index[pmid]
 
-        # top ramp (100 -> 0)
-        if r < top_k:
+        # top ramp 1-k
+        if r <= end_ramp1:
             y[idx] = 1
             sample_weight[idx] = max(1, round(
-                (max_weight-min_weight) * (1 - r / top_k) + min_weight
+                (max_weight-min_weight) * (1 - r / len_ramp1) + min_weight
             ))
-        # flat zero region
-        elif r < 3 * top_k:
+        # flat zero region k <= r < k+n*k
+        elif r < start_ramp2:
             y[idx] = 0
             sample_weight[idx] = 0
         # bottom ramp (0 -> 100)
-        else: # 3k <= r < 4k
+        else: # k + n*k <= r < k + n*k + k
             y[idx] = 0
             sample_weight[idx] = max(1, round(
-                avg_weight * ((r - 2 * top_k) / top_k)
+                (max_weight-min_weight) *((r - start_ramp2) / len_ramp2) + min_weight
             ))
 
     return y, sample_weight, top_k
+
+def get_positives(review_id, dataset):
+    positives = set()
+    if review_id in dataset["EVAL"]:
+        reviews = dataset["EVAL"]
+    else:
+        reviews = dataset["TRAIN"]
+    for split_name, data in reviews[review_id]["data"].items():  # 'train', 'val', 'test' etc.
+        for doc in data:
+            if int(doc["label"]) == 1:
+                positives.add(str(doc["pmid"]))
+    return positives 
 
 def load_bow(**bow_args):
     bow_by_pmid = {}
@@ -503,4 +522,6 @@ def review_id_to_dataset(review_id):
         return "sr_updates", None, 2019
     
     return "unknown", None, -1
+
+
 
