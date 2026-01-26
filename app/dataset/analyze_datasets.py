@@ -4,7 +4,7 @@ import random
 CUSTOM_HF_PATH = "../systematic-review-datasets/data/huggingface"
 os.environ["HF_HOME"] = CUSTOM_HF_PATH  # has to be up here
 from collections import defaultdict
-from app.dataset.utils import review_id_to_dataset
+from app.dataset.utils import review_id_to_dataset, get_positives
 import sys
 
 sys.path.append(
@@ -208,11 +208,7 @@ def compute_train_review_ids(
         for review_name, review_data in reviews.items():
             dataset_name, _, _ = review_id_to_dataset(review_name)
 
-            pos = 0
-            for docs in review_data["data"].values():
-                for doc in docs:
-                    if doc["label"] == 1:
-                        pos += 1
+            pos = len(get_positives(review_id=review_name, dataset=dataset))
 
             if pos >= min_positives:
                 eligible[dataset_name].append(review_name)
@@ -264,14 +260,7 @@ def compute_train_review_ids(
         print(f"{dataset_name}: {len(selected)} / {counts[dataset_name]} eligible")
         for r in selected:
             # count positives
-            review_data = (
-                dataset["TRAIN"][r] if r in dataset["TRAIN"] else dataset["EVAL"][r]
-            )
-            pos_count = sum(
-                doc["label"] == 1
-                for docs in review_data["data"].values()
-                for doc in docs
-            )
+            pos_count = len(get_positives(review_id=r, dataset=dataset))
             print(f"  - {r} (positives: {pos_count})")
         print()
     print(f"Samples:", sampled)
@@ -279,5 +268,5 @@ def compute_train_review_ids(
 
 
 if __name__ == "__main__":
-    # compute_dataset_statistics()
+    compute_dataset_statistics()
     compute_train_review_ids(total_samples=25, min_positives=25)
