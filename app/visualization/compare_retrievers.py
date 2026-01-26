@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 
+
 def pretty_file_name(file_name):
     """
     Convert raw retriever JSON filenames into readable names for plots.
@@ -28,7 +29,7 @@ def pretty_file_name(file_name):
         "pubmedbert": "PubMedBERT",
         "roberta": "RoBERTa",
         "MedCPT": "MedCPT",
-        "bm25": "BM25"
+        "bm25": "BM25",
     }
 
     for key, val in model_map.items():
@@ -59,7 +60,9 @@ def compare_dense_retrievers(folder_path, metrics, save_path):
             filtered_data = {}
             for metric in metrics:
                 value = data.get(metric, None)
-                filtered_data[metric] = value if isinstance(value, (int, float)) else float("nan")
+                filtered_data[metric] = (
+                    value if isinstance(value, (int, float)) else float("nan")
+                )
             all_data.append(filtered_data)
             file_names.append(pretty_file_name(file_path.stem))
         except Exception as e:
@@ -88,25 +91,25 @@ def compare_dense_retrievers(folder_path, metrics, save_path):
     df = df.reindex(sorted(df.index, key=sort_key))
 
     # Ensure numeric
-    df = df.apply(pd.to_numeric, errors='coerce')
+    df = df.apply(pd.to_numeric, errors="coerce")
 
     # Define colors per metric
     colors = {
-        "precision@10": "#d73027",      # Red
-        "precision@100": "#fd8383",     # Lighter red
-        "recall@10": "#4575b4",         # Blue
-        "recall@100": "#91bfdb",        # Lighter blue
-        "map": "#e41aef",             
-        "mrr@100": "#5bb229"            
+        "precision@10": "#d73027",  # Red
+        "precision@100": "#fd8383",  # Lighter red
+        "recall@10": "#4575b4",  # Blue
+        "recall@100": "#91bfdb",  # Lighter blue
+        "map": "#e41aef",
+        "mrr@100": "#5bb229",
     }
 
     # Match colors to metrics in df
     metric_colors = [colors.get(m, "#999999") for m in df.columns]
 
     sns.set(style="whitegrid")
-    plt.figure(figsize=(max(10, len(df)*0.6), 6))
+    plt.figure(figsize=(max(10, len(df) * 0.6), 6))
 
-    df.plot(kind='bar', figsize=(max(10, len(df)*0.6), 6), color=metric_colors)
+    df.plot(kind="bar", figsize=(max(10, len(df) * 0.6), 6), color=metric_colors)
     plt.title("Dense Retriever Comparison")
     plt.ylabel("Metric Value")
     plt.xticks(rotation=45, ha="right")
@@ -120,8 +123,17 @@ def compare_dense_retrievers(folder_path, metrics, save_path):
 
 
 if __name__ == "__main__":
-    data_folder = Path("/data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/reports/title_and_abstract")
-    metrics_to_compare = ["map", "mrr@100", "recall@10", "recall@100", "precision@10", "precision@100"]
+    data_folder = Path(
+        "/data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/reports/title_and_abstract"
+    )
+    metrics_to_compare = [
+        "map",
+        "mrr@100",
+        "recall@10",
+        "recall@100",
+        "precision@10",
+        "precision@100",
+    ]
     save_folder = Path("data/statistics/images/retriever_comparison")
     save_folder.mkdir(parents=True, exist_ok=True)
     save_file = save_folder / "retriever_comparison.png"

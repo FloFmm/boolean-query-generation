@@ -7,6 +7,7 @@ BASE_URL = "https://publication-bdds.apps.epo.org/bdds/bdds-bff-service/prod/api
 # full_text
 # "https://publication-bdds.apps.epo.org/bdds/bdds-bff-service/prod/api/public/products/32/delivery/2792/item/7925/download" download="EPRTBJV2025000040001001.zip"
 
+
 def build_aria2_cfg(data, product_id, delivery_id, out_path):
     deliveries = data.get("deliveries", [])
 
@@ -24,7 +25,6 @@ def build_aria2_cfg(data, product_id, delivery_id, out_path):
     if not targets:
         raise ValueError(f"Delivery ID {delivery_id} not found in JSON.")
 
-
     with open(out_path, "w", encoding="utf-8") as f:
         for target in targets:
             for item in target.get("items", []):
@@ -35,7 +35,9 @@ def build_aria2_cfg(data, product_id, delivery_id, out_path):
                     continue
 
                 url = BASE_URL.format(
-                    product_id=product_id, delivery_id=str(target.get("deliveryId")), item_id=item_id
+                    product_id=product_id,
+                    delivery_id=str(target.get("deliveryId")),
+                    item_id=item_id,
                 )
                 f.write(f"{url}\n")
                 f.write(f"  out={item_name}\n")

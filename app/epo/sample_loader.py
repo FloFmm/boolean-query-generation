@@ -7,6 +7,7 @@ import os
 import re
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
+
 try:
     from lxml import etree as ET  # type: ignore[assignment]
 except ImportError:  # pragma: no cover - lxml optional
@@ -369,6 +370,7 @@ def parse_exchange_document(doc: ET.Element) -> Dict[str, Any]:
 
     return document
 
+
 def parse_ep_document(doc: ET.Element) -> Dict[str, Any]:
     """Parse an EPO ep-patent-document (NWA1) into a dictionary."""
 
@@ -377,21 +379,22 @@ def parse_ep_document(doc: ET.Element) -> Dict[str, Any]:
         return el.text.strip() if el is not None and el.text else None
 
     def gettextall(path: str) -> List[str]:
-        return [el.text.strip() for el in doc.findall(path) if el is not None and el.text]
+        return [
+            el.text.strip() for el in doc.findall(path) if el is not None and el.text
+        ]
 
     return {
-        "exchange_document_id": doc.attrib.get("id"),   # <-- use root @id
+        "exchange_document_id": doc.attrib.get("id"),  # <-- use root @id
         "publication_number": gettext("SDOBI/B100/B110"),
         "kind": gettext("SDOBI/B100/B130"),
         "pub_date": gettext("SDOBI/B100/B140/date"),
         "country": gettext("SDOBI/B100/B190"),
-
         "application_number": gettext("SDOBI/B200/B210"),
         "application_date": gettext("SDOBI/B200/B220/date"),
-
         "ipc_classes": gettextall("SDOBI/B500/B510EP/classification-ipcr/text"),
-        "cpc_classes": gettextall("SDOBI/B500/B520EP/classifications-cpc/classification-cpc/text"),
-
+        "cpc_classes": gettextall(
+            "SDOBI/B500/B520EP/classifications-cpc/classification-cpc/text"
+        ),
         "titles": [
             {"lang": lang.text, "text": title.text}
             for lang, title in zip(
@@ -399,7 +402,6 @@ def parse_ep_document(doc: ET.Element) -> Dict[str, Any]:
                 doc.findall("SDOBI/B500/B540/B542"),
             )
         ],
-
         "abstracts": [
             {
                 "lang": abs.attrib.get("lang"),
@@ -407,7 +409,6 @@ def parse_ep_document(doc: ET.Element) -> Dict[str, Any]:
             }
             for abs in doc.findall(".//abstract")
         ],
-
         # "claims": [
         #     {
         #         "num": cl.attrib.get("num"),
@@ -426,8 +427,6 @@ def parse_ep_document(doc: ET.Element) -> Dict[str, Any]:
             for claims in doc.findall(".//claims")
             for cl in claims.findall("claim")
         ],
-
-
         "applicants": [
             {
                 "name": appl.findtext("snm"),
@@ -436,7 +435,6 @@ def parse_ep_document(doc: ET.Element) -> Dict[str, Any]:
             }
             for appl in doc.findall("SDOBI/B700/B710/B711")
         ],
-
         "inventors": [
             {
                 "name": inv.findtext("snm"),
@@ -445,11 +443,9 @@ def parse_ep_document(doc: ET.Element) -> Dict[str, Any]:
             }
             for inv in doc.findall("SDOBI/B700/B720/B721")
         ],
-
         "designated_states": gettextall("SDOBI/B800/B840/ctry"),
         "extension_states": gettextall("SDOBI/B800/B844EP/B845EP/ctry"),
         "validation_states": gettextall("SDOBI/B800/B848EP/B849EP/ctry"),
-
         "priority_claims": [
             {
                 "app_number": prio.findtext("dnum/anum"),
@@ -458,7 +454,6 @@ def parse_ep_document(doc: ET.Element) -> Dict[str, Any]:
             }
             for prio in doc.findall("SDOBI/B800/B860/B861")
         ],
-
         "pct_refs": [
             {
                 "pub_number": pct.findtext("dnum/pnum"),
@@ -482,11 +477,10 @@ def parse_exchange_documents(
     # DOCDB-style
     for doc in root.findall("exch:exchange-document", NS):
         documents.append(parse_exchange_document(doc))
-    
+
     # EP NWA-style
     if root.tag.endswith("ep-patent-document"):
         documents.append(parse_ep_document(root))
-
 
     return documents
 

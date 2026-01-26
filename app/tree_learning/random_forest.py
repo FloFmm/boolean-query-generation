@@ -229,7 +229,7 @@ class RandomForest:
         self.max_samples = max_samples
         self.top_k_or_candidates = top_k_or_candidates
         self.max_or_features = max_or_features
-        
+
         # Will be populated after fit
         self.estimators_ = []
         self._n_samples_bootstrap = None
@@ -237,7 +237,6 @@ class RandomForest:
         self.prefer_pos_splits = prefer_pos_splits
         self.top_k = top_k
         self.rank_weight = rank_weight
-        
 
     def fit(self, X, y, sample_weight=None, feature_names=None):
         """
@@ -321,7 +320,9 @@ class RandomForest:
         for i in range(self.n_estimators):
             tree_max_features = self.max_features
             tree_randomize_max_feature = self.randomize_max_feature
-            tree_min_impurity_decrease_range_start = self.min_impurity_decrease_range_start
+            tree_min_impurity_decrease_range_start = (
+                self.min_impurity_decrease_range_start
+            )
             tree_min_impurity_decrease_range_end = self.min_impurity_decrease_range_end
             if i == 0:
                 if (
@@ -332,11 +333,11 @@ class RandomForest:
             else:
                 if self.randomize_min_impurity_decrease_range:
                     tree_min_impurity_decrease_range_start = biased_random(
-                            low=self.min_impurity_decrease_range_start,
-                            high=1.0,
-                            exponent=self.randomize_min_impurity_decrease_range,
-                        )
-                    tree_min_impurity_decrease_range_end =  biased_random(
+                        low=self.min_impurity_decrease_range_start,
+                        high=1.0,
+                        exponent=self.randomize_min_impurity_decrease_range,
+                    )
+                    tree_min_impurity_decrease_range_end = biased_random(
                         low=self.min_impurity_decrease_range_end,
                         high=1.0,
                         exponent=self.randomize_min_impurity_decrease_range,
@@ -355,10 +356,9 @@ class RandomForest:
                 "randomize_max_feature": tree_randomize_max_feature,
                 "random_state": self.random_state,
                 "prefer_pos_splits": self.prefer_pos_splits,
-                "max_or_features": self.max_or_features
+                "max_or_features": self.max_or_features,
             }
             trees.append(GreedyORDecisionTree(**tree_config))
-
 
         if self.n_jobs is not None and self.n_jobs > 1:
             fitted_trees = Parallel(
@@ -399,7 +399,7 @@ class RandomForest:
         fitted_trees = [t for t in fitted_trees if t is not None]
         assert fitted_trees != []
         self.estimators_.extend(fitted_trees)
-        
+
         return self
 
     def get_tree_paths(self):
@@ -440,9 +440,9 @@ class RandomForest:
         cost_factor=0.002,
         min_rule_precision=0.01,
         cover_beta=2.0,
-        pruning_beta:float = 0.1,
-        mh_noexp = False, 
-        tiab = False,
+        pruning_beta: float = 0.1,
+        mh_noexp=False,
+        tiab=False,
     ):
         if X is None or labels is None:
             all_rules, rule_tree_map = self.get_tree_paths()

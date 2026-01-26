@@ -1,6 +1,7 @@
 import os
+
 CUSTOM_HF_PATH = "../systematic-review-datasets/data/huggingface"
-os.environ["HF_HOME"] = CUSTOM_HF_PATH # has to be up here
+os.environ["HF_HOME"] = CUSTOM_HF_PATH  # has to be up here
 
 import sys
 import pickle
@@ -12,17 +13,29 @@ from app.dataset.utils import generate_labels, load_synonym_map, get_positives
 from app.pubmed.retrieval import search_pubmed_dynamic
 from sklearn.metrics import recall_score, precision_score
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
-from csmed.experiments.csmed_cochrane_retrieval import create_retriever, build_global_corpus, load_dataset
+sys.path.append(
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), "../..", "../systematic-review-datasets"
+        )
+    )
+)
+from csmed.experiments.csmed_cochrane_retrieval import (
+    create_retriever,
+    build_global_corpus,
+    load_dataset,
+)
+
 print("finished imports")
-# Give either a custom query or a query_id 
-query_id = "CD009784"#"CD002115"#"CD008760"
-query = "Management of faecal incontinence and constipation in adults with central neurological diseases"#cancer with legs heart attack"
+# Give either a custom query or a query_id
+query_id = "CD009784"  # "CD002115"#"CD008760"
+query = "Management of faecal incontinence and constipation in adults with central neurological diseases"  # cancer with legs heart attack"
 ret_name = "pubmedbert"
-ret_conf = {"type": "dense",
-            "model": "pritamdeka/S-PubMedBert-MS-MARCO",
-            "max_length": 512
-            }
+ret_conf = {
+    "type": "dense",
+    "model": "pritamdeka/S-PubMedBert-MS-MARCO",
+    "max_length": 512,
+}
 total_docs = 433660
 
 ### Corpus ###
@@ -35,7 +48,7 @@ else:
     dataset = load_dataset()
     with open(DATASET_PATH, "wb") as f:
         pickle.dump(dataset, f)
-        
+
 GLOBAL_CORPUS_PATH = f"data/tmp/global_corpus_{total_docs}.pkl"
 if os.path.exists(GLOBAL_CORPUS_PATH):
     with open(GLOBAL_CORPUS_PATH, "rb") as f:
@@ -59,32 +72,29 @@ print("Query:", query)
 
 retriever = create_retriever(ret_name, ret_conf, collection=global_corpus)
 
-ranking = retriever.search(
-    query=query, cutoff=10_000, return_docs=False
-)
+ranking = retriever.search(query=query, cutoff=10_000, return_docs=False)
 sorted_ids = sorted(ranking, key=ranking.get, reverse=True)
 
 ### Train Decision Tree ###
-qrels = {
-    "pos": sorted_ids[:100],
-    "neutral": sorted_ids[500:]
-}
+qrels = {"pos": sorted_ids[:100], "neutral": sorted_ids[500:]}
 
-X, ordered_pmids, feature_names = load_vectors(total_docs, min_df=10, max_df=0.1, mesh=True)
+X, ordered_pmids, feature_names = load_vectors(
+    total_docs, min_df=10, max_df=0.1, mesh=True
+)
 print("Num Features:", len(feature_names))
 print("Examples:")
 for i in range(10):
     print('"' + feature_names[i] + '"')
 
 model_args = {
-            "max_depth": 5,
-            "min_samples_split": 2,
-            "min_impurity_decrease_range_start": 0.01,
-            "min_impurity_decrease_range_end": 0.01,
-            "top_k_or_candidates": 1000,
-            "class_weight": {1:2, 0:1},
-            "verbose": True,
-        }
+    "max_depth": 5,
+    "min_samples_split": 2,
+    "min_impurity_decrease_range_start": 0.01,
+    "min_impurity_decrease_range_end": 0.01,
+    "top_k_or_candidates": 1000,
+    "class_weight": {1: 2, 0: 1},
+    "verbose": True,
+}
 
 tree = GreedyORDecisionTree(**model_args)
 
@@ -106,9 +116,12 @@ synonym_map = load_synonym_map(total_docs)
 best_threshold, best_score, final_constraint_score = tree._find_optimal_threshold(
     X[keep_indices],
     np.array(labels),
-    metric="f3",#"pubmed_f2",
-    constraint={"metric": "pubmed_count", "value": -1 * 50_000},#"pubmed_count",-1 * 50_000,#num_pos*50,
-    term_expansions=synonym_map
+    metric="f3",  # "pubmed_f2",
+    constraint={
+        "metric": "pubmed_count",
+        "value": -1 * 50_000,
+    },  # "pubmed_count",-1 * 50_000,#num_pos*50,
+    term_expansions=synonym_map,
 )
 pubmed_query_str, query_size = tree.pubmed_query(term_expansions=synonym_map)
 pubmed_query_str_no_exp, query_size_no_exp = tree.pubmed_query()
@@ -121,8 +134,8 @@ print("Query Size (No Expansion):", query_size_no_exp)
 ### Evaluate on PubMed ###
 if query_id is not None:
     retrieved = search_pubmed_dynamic(pubmed_query_str)
-    retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
-    positives = get_positives(query_id=query_id, dataset=dataset)        # relevant PMIDs
+    retrieved = set(str(x) for x in retrieved)  # retrieved PMIDs
+    positives = get_positives(query_id=query_id, dataset=dataset)  # relevant PMIDs
     print("Positives:", positives)
     TP = len(retrieved & positives)
     precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0

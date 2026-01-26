@@ -4,6 +4,7 @@ from scipy.sparse import csr_matrix
 from typing import Iterable, List, Optional, Tuple, Union
 from app.helper.helper import f_beta, precision_score, recall_score
 
+
 @dataclass
 class IncState:
     selected: set
@@ -76,9 +77,7 @@ def delta_from_masks(
     return dTP, dFP, dFN
 
 
-def score_after_move(
-    state, r_in, r_out, coverage, y_pos, y_neg, rule_costs
-):
+def score_after_move(state, r_in, r_out, coverage, y_pos, y_neg, rule_costs):
     idx_in = None
     idx_out = None
     new_cost = state.cost
@@ -147,7 +146,11 @@ def select_rules_greedy(
                 print("pruned")
             continue
         else:
-            memo[rules] = ((state.TP, state.FP, state.FN, state.cost), state.score, True)
+            memo[rules] = (
+                (state.TP, state.FP, state.FN, state.cost),
+                state.score,
+                True,
+            )
 
         for i in range(max_iter):
             best_move = None
@@ -156,11 +159,13 @@ def select_rules_greedy(
             cand_moves = []
             if len(state.selected) < max_rules:  # ADD
                 cand_moves += [
-                    (r_in, None) for r_in in range(n_rules) if r_in not in state.selected
+                    (r_in, None)
+                    for r_in in range(n_rules)
+                    if r_in not in state.selected
                 ]
             if len(state.selected) > 1:  # REMOVE
                 cand_moves += [(None, r_out) for r_out in list(state.selected)]
-            cand_moves += [ # SWAP
+            cand_moves += [  # SWAP
                 (r_in, r_out)
                 for r_out in list(state.selected)
                 for r_in in range(n_rules)
@@ -204,7 +209,7 @@ def select_rules_greedy(
                             move_type = "SWAP"
                         else:
                             move_type = "ADD"
-                    
+
                     best_move = (move_type, r_in, r_out, (TP, FP, FN, cost), score)
                     best_move_score = score
 
@@ -216,7 +221,7 @@ def select_rules_greedy(
             state.FN = FN
             state.cost = cost
             state.score = score
-            
+
             if r_in is not None:
                 idx = coverage[r_in].indices
                 state.cover_count[idx] += 1
@@ -226,7 +231,9 @@ def select_rules_greedy(
                 state.cover_count[idx] -= 1
                 state.selected.remove(r_out)
             if verbose:
-                print(f"new score {state.score:.6f} | iter {i}: {move_type} | r_in={r_in}, r_out={r_out} | {state.selected}")
+                print(
+                    f"new score {state.score:.6f} | iter {i}: {move_type} | r_in={r_in}, r_out={r_out} | {state.selected}"
+                )
 
             d, score, explored = memo[frozenset(state.selected)]
             if explored:

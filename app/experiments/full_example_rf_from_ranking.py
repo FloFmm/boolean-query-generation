@@ -129,9 +129,6 @@ print("SUBSET STATS")
 # evaluate on local subset
 coverage = compute_rule_coverage(X=X, rules=rules)
 subset_preds = np.any(coverage, axis=0).astype(np.uint8)
-label_lookup = {
-    doc["pmid"]: int(doc["label"]) for doc in reviews[query_id]["data"]["train"]
-}
 ground_truth = [int(str(pmid) in positives) for pmid in ordered_pmids]
 pseudo_relevant = set(sorted_ids[:top_k])
 pseudo_ground_truth = [pmid in pseudo_relevant for pmid in ordered_pmids]

@@ -1,6 +1,8 @@
 from pathlib import Path
+
 NLTK_DATA_PATH = Path("../systematic-review-datasets/data/nltk_data")
 import nltk
+
 # nltk.download("wordnet", download_dir="/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/data/nltk_data")
 # nltk.download("omw-1.4", download_dir="/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/data/nltk_data")
 # nltk.download("punkt", download_dir="/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/data/nltk_data")
@@ -13,9 +15,10 @@ from nltk.stem import WordNetLemmatizer
 from app.preprocessing.text_preprocessing import lemmatize_with_synonyms
 from collections import defaultdict
 import heapq
+
 lemmatizer = WordNetLemmatizer()
 
-    
+
 def word_net_get_synonyms(word):
     """Return all semantic synonyms of the word."""
     synonyms = set()
@@ -23,6 +26,7 @@ def word_net_get_synonyms(word):
         for lemma in syn.lemmas():
             synonyms.add(lemma.name())
     return synonyms
+
 
 def word_net_get_related(word):
     """Return morphological forms of the base word using WordNet."""
@@ -33,20 +37,22 @@ def word_net_get_related(word):
             forms.add(related.name())
     return forms
 
+
 def transitive_closure(word):
     """Compute transitive closure of related words starting from `word`."""
     closure = set()
     stack = [word]
-    
+
     while stack:
         w = stack.pop()
         if w not in closure:
             closure.add(w)
             related = word_net_get_related(w)
-            
+
             stack.extend(related - closure)  # only add unseen words
-    
+
     return closure
+
 
 def build_dominating_map(words, related_fn):
     """
@@ -84,6 +90,7 @@ def build_dominating_map(words, related_fn):
 
     return dominating_map, {k: list(v) for k, v in dominating_map_reversed.items()}
 
+
 # def nltk_pos_to_wordnet(pos_tag):
 #     if pos_tag.startswith('N'):
 #         return wn.NOUN
@@ -106,6 +113,8 @@ def build_dominating_map(words, related_fn):
 #         lemmatized[base] = forms
 #     return lemmatized
 import json
+
+
 def process_synonym_file(file_path, out_file, related_fn):
     """
     Reads a JSON synonym dictionary, computes dominating map on keys,
@@ -130,11 +139,12 @@ def process_synonym_file(file_path, out_file, related_fn):
 
     print(f"Dominating map saved to {out_file}")
 
+
 # Example usage
 # print(word_net_get_related("maintainable"))
 # print()
 # print(transitive_closure("maintainable"))
-# text = "correct correctability correctable corrected correctible correcting correction corrections corrective correctives correctness corrects" 
+# text = "correct correctability correctable corrected correctible correcting correction corrections corrective correctives correctness corrects"
 # text = """
 # Abstract
 
@@ -167,7 +177,7 @@ def process_synonym_file(file_path, out_file, related_fn):
 # for word, alts in word_map.items():
 #     for alt in alts:
 #         cover_map[alt].add(word)
-        
+
 # # Step 2: Greedy selection using a heap (max-heap by coverage)
 # covered = set()
 # result = {}
@@ -193,4 +203,3 @@ def process_synonym_file(file_path, out_file, related_fn):
 # word = "correcting"
 # print("Lemmas:", sorted(word_net_get_related(word)))
 # print("Synonyms:", sorted(word_net_get_synonyms(word)))
-

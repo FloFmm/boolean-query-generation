@@ -4,13 +4,19 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import precision_score, recall_score
 from app.tree_learning.random_forest import RandomForest
 from app.tree_learning.disjunctive_dt import generate_texts_from_boolean
-from app.tree_learning.query_generation import extract_and_vectorize_rules, select_rules_via_ga, rules_to_pubmed_query
+from app.tree_learning.query_generation import (
+    extract_and_vectorize_rules,
+    select_rules_via_ga,
+    rules_to_pubmed_query,
+)
+
 if __name__ == "__main__":
+
     def f(d):
         return (
-            not (d["cats"] or d["dogs"] or d["mice[mh]"]) and
-            (d["house"] or d["wohnung"])
-            and (d["bowl"] or d["box"])  
+            not (d["cats"] or d["dogs"] or d["mice[mh]"])
+            and (d["house"] or d["wohnung"])
+            and (d["bowl"] or d["box"])
         )
 
     variables = ["cats", "dogs", "mice[mh]", "house", "wohnung", "bowl", "box"]
@@ -40,7 +46,7 @@ if __name__ == "__main__":
     # vectorizer = CountVectorizer(binary=True)
     # X = vectorizer.fit_transform(texts)
     vectorizer = CountVectorizer(
-        tokenizer=lambda x: x, 
+        tokenizer=lambda x: x,
         preprocessor=lambda x: x,
         token_pattern=None,
         binary=True,
@@ -56,7 +62,7 @@ if __name__ == "__main__":
         min_samples_split=2,
         min_samples_leaf=1,
         min_weight_fraction_leaf=0.0005,
-        max_features="sqrt", 
+        max_features="sqrt",
         min_impurity_decrease_range_start=0.01,
         min_impurity_decrease_range_end=0.01,
         bootstrap=False,
@@ -76,7 +82,7 @@ if __name__ == "__main__":
     for tree in forest.estimators_:
         print()
         print(tree.pretty_print(verbose=True, prune=True))
-       
+
     print()
     print(end_time - start_time)
     print()
@@ -89,7 +95,7 @@ if __name__ == "__main__":
     # kept_variables = vec_result["kept_variables"]
     # coverage = vec_result["coverage"]
     # print(coverage)
-    
+
     # result = select_rules_via_ga(
     #     coverage = coverage,
     #     y=np.array(labels)

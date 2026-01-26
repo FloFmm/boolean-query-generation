@@ -4,6 +4,7 @@ import scipy.sparse as sp
 from deap import base, creator, tools, algorithms
 from app.config.config import DEBUG
 
+
 def select_rules_via_ga(
     coverage: Union[np.ndarray, sp.csr_matrix],
     y: np.ndarray,
@@ -15,7 +16,7 @@ def select_rules_via_ga(
     mutpb=0.2,
     seed=42,
     cost_factor=0.002,
-    beta=3, # -> f3 score is maximized
+    beta=3,  # -> f3 score is maximized
     max_rules=10,
 ):
     """
@@ -32,7 +33,7 @@ def select_rules_via_ga(
     initial_solutions : list[np.ndarray] or None
         Optional warm-start solutions (binary vectors).
     """
-    beta2 = beta*beta
+    beta2 = beta * beta
     rng = np.random.default_rng(seed)
     n_rules, n_samples = coverage.shape
 
@@ -40,7 +41,9 @@ def select_rules_via_ga(
         rule_costs = np.ones(n_rules)
 
     # ensure sparse
-    if not sp.issparse(coverage): #TODO (currently ga algo transforms matrix himself into sparse). can we do it before that?
+    if not sp.issparse(
+        coverage
+    ):  # TODO (currently ga algo transforms matrix himself into sparse). can we do it before that?
         coverage = sp.csr_matrix(coverage)
 
     # ----------------------------
@@ -53,6 +56,7 @@ def select_rules_via_ga(
 
     toolbox = base.Toolbox()
     toolbox.register("attr_bool", rng.integers, 0, 2)
+
     # toolbox.register(
     #     "individual",
     #     tools.initRepeat,
@@ -66,6 +70,7 @@ def select_rules_via_ga(
         idx = rng.choice(n_rules, size=k, replace=False)
         ind[idx] = 1
         return creator.Individual(ind.tolist())
+
     toolbox.register("individual", sparse_individual)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 

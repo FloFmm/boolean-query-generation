@@ -9,12 +9,16 @@ import spacy
 from nltk.corpus import wordnet as wn
 from sklearn.cluster import AgglomerativeClustering
 from tqdm import tqdm
+
 # from imodels import SkopeRulesClassifier, DecisionTreeClassifier, Rule
 SkopeRulesClassifier, DecisionTreeClassifier = (int, str), (int, str)
 import re
 from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 
-nlp = spacy.load("../systematic-review-datasets/data/spacy/en_core_web_lg-3.7.1/en_core_web_lg/en_core_web_lg-3.7.1")
+nlp = spacy.load(
+    "../systematic-review-datasets/data/spacy/en_core_web_lg-3.7.1/en_core_web_lg/en_core_web_lg-3.7.1"
+)
+
 
 def build_semantic_map(words, similarity_threshold=0.7):
     """
@@ -52,11 +56,13 @@ def build_semantic_map(words, similarity_threshold=0.7):
 
     return semantic_map
 
+
 def map_synonyms(text, synonym_map):
     """
     Replace words in the text with their canonical synonym.
     """
     return " ".join([synonym_map.get(word, word) for word in text.split()])
+
 
 def build_synonym_map(words):
     """
@@ -70,6 +76,7 @@ def build_synonym_map(words):
             canonical = synsets[0].lemmas()[0].name()
             synonym_map[word] = canonical
     return synonym_map
+
 
 def vectorize_texts(set1, set2, min_f_occ=None):
     """
@@ -88,14 +95,16 @@ def vectorize_texts(set1, set2, min_f_occ=None):
     # Combine texts and create labels
     texts = set1 + set2
     # Vectorizer: binary presence, remove stopwords
-    vectorizer = CountVectorizer(binary=True, stop_words="english", min_df=10, max_df=0.6)
+    vectorizer = CountVectorizer(
+        binary=True, stop_words="english", min_df=10, max_df=0.6
+    )
     X = vectorizer.fit_transform(texts)
     feature_names = vectorizer.get_feature_names_out()
     print(f"Number of features (words): {len(feature_names)}")
     if min_f_occ:
         # Compute per-class feature counts
-        X_set1 = X[:len(set1)]
-        X_set2 = X[len(set1):]
+        X_set1 = X[: len(set1)]
+        X_set2 = X[len(set1) :]
 
         counts_1 = np.asarray(X_set1.sum(axis=0)).ravel()
         counts_0 = np.asarray(X_set2.sum(axis=0)).ravel()
@@ -106,9 +115,7 @@ def vectorize_texts(set1, set2, min_f_occ=None):
 
         # Re-vectorize using only kept features
         vectorizer = CountVectorizer(
-            binary=True, 
-            stop_words="english",
-            vocabulary=kept_features
+            binary=True, stop_words="english", vocabulary=kept_features
         )
         X = vectorizer.fit_transform(texts)
         feature_names = kept_features
@@ -121,6 +128,7 @@ def vectorize_texts(set1, set2, min_f_occ=None):
 
     labels = np.array([1] * len(set1) + [0] * len(set2))
     return X, feature_names, labels
+
 
 def train_text_classifier(
     clf,
@@ -196,7 +204,9 @@ def train_text_classifier(
         )
         obj = ""
     elif isinstance(clf, GreedyORDecisionTree):
-        pretty_print = ""#clf.pretty_print(feature_names=list(feature_names), prune = True)
+        pretty_print = (
+            ""  # clf.pretty_print(feature_names=list(feature_names), prune = True)
+        )
         boolean_function_set1 = ""
         boolean_function_set2 = ""
         obj = clf.to_json()
@@ -213,7 +223,7 @@ def train_text_classifier(
         "boolean_function_set1": boolean_function_set1,
         "boolean_function_set2": boolean_function_set2,
         "model": clf,
-        "obj": obj
+        "obj": obj,
     }
     # from nltk.corpus import wordnet as wn
 
@@ -227,6 +237,7 @@ def train_text_classifier(
     # # Then replace in your text
     # def map_synonyms(text, synonym_map):
     #     return " ".join([synonym_map.get(word, word) for word in text.split()])
+
 
 def tree_to_boolean(clf, feature_names, target_class):
     tree = clf.tree_
@@ -264,6 +275,7 @@ def tree_to_boolean(clf, feature_names, target_class):
                 return None
 
     return recurse(0)
+
 
 def tree_to_dnf_pubmed(
     tree: DecisionTreeClassifier, feature_names=None, target_class=None
@@ -308,6 +320,7 @@ def tree_to_dnf_pubmed(
     )
     # return dnf_clauses
 
+
 def plot_tree(model, feature_names, class_names):
     plt.figure(figsize=(30, 10), facecolor="k")  # create the tree plot
     a = tree.plot_tree(
@@ -321,6 +334,7 @@ def plot_tree(model, feature_names, class_names):
         fontsize=14,
     )  # show the plot
     plt.show()
+
 
 # Example usage
 if __name__ == "__main__":

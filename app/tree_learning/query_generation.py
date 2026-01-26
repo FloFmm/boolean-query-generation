@@ -3,7 +3,7 @@ from tqdm import tqdm
 from typing import List, Tuple, Literal, Dict, Optional, FrozenSet, Set, Union
 import numpy as np
 from app.helper.helper import f_beta
-from app.config.config import DEBUG # TODO remove
+from app.config.config import DEBUG  # TODO remove
 
 # Rule = List[Tuple[List[int], List[str], bool]]
 Rule = FrozenSet[Tuple[FrozenSet[int], bool]]
@@ -80,6 +80,7 @@ def prune_rare_features(
 
     return pruned_rule_tree_map, kept_vars
 
+
 def compute_rule_coverage(X, rules: Set[Rule], verbose: bool = False):
     """
     Parameters
@@ -93,7 +94,7 @@ def compute_rule_coverage(X, rules: Set[Rule], verbose: bool = False):
     """
     n_samples = X.shape[0]
     coverage = np.zeros((len(rules), n_samples), dtype=np.uint8)
-    
+
     rule_iter = rules
     if verbose:
         rule_iter = tqdm(
@@ -155,31 +156,33 @@ def extract_and_vectorize_rules(
     # pruned_rules = deduplicate_rules(pruned_rules) # deduplicate twice for speed?
     new_rule_tree_map: dict[Rule, set[int]] = defaultdict(set)
     histories: set[tuple[Rule]] = set()
-    rule_stats: dict[Rule, dict] = {} # changed in place by prune_rule_greedy
+    rule_stats: dict[Rule, dict] = {}  # changed in place by prune_rule_greedy
     initial_solutions: dict[int, set[Rule]] = defaultdict(set)
-    
+
     assert rule_tree_map
     rule_tree_map_iter = rule_tree_map.items()
     if verbose:
         rule_tree_map_iter = tqdm(
-            rule_tree_map_iter,          # reuse the same iterator
+            rule_tree_map_iter,  # reuse the same iterator
             desc="Pruning rule greedily",
             total=len(rule_tree_map),
         )
-        
-    X = X.tocsc() # makes compute_rule_coverage much faster (needed for greeddy pruning)
+
+    X = (
+        X.tocsc()
+    )  # makes compute_rule_coverage much faster (needed for greeddy pruning)
     for rule, tree_indices in rule_tree_map_iter:
         if not rule:
             continue
-        # history = [rule] 
-        # rule_stats[rule] = {"precision" : 0.1} 
+        # history = [rule]
+        # rule_stats[rule] = {"precision" : 0.1}
         history = prune_rule_greedy(
-            X, 
-            y, 
-            rule, 
-            histories=histories, 
-            rule_stats=rule_stats, 
-            feature_names=feature_names, 
+            X,
+            y,
+            rule,
+            histories=histories,
+            rule_stats=rule_stats,
+            feature_names=feature_names,
             pruning_thresholds=pruning_thresholds,
             beta=pruning_beta,
         )
@@ -187,7 +190,7 @@ def extract_and_vectorize_rules(
         if not history:
             continue
         # assert history, f"rule: {rules_to_pubmed_query([rule], feature_names=feature_names)}\n {forest.estimators_[next(iter(tree_indices))].pretty_print(feature_names=feature_names, verbose=True)}"
-        
+
         try:
             x = set(history)
         except:
@@ -201,10 +204,12 @@ def extract_and_vectorize_rules(
             print(histories)
             # somtimes happens (TODO fix this bug) (probably fixed)
             assert False
-        history = tuple(r for r in history if rule_stats[r]["precision"] >= min_rule_precision)
+        history = tuple(
+            r for r in history if rule_stats[r]["precision"] >= min_rule_precision
+        )
         if not history:
             continue
-        
+
         biggest_rule = history[0]
         for tree_inx in tree_indices:
             initial_solutions[tree_inx].add(biggest_rule)
@@ -212,9 +217,9 @@ def extract_and_vectorize_rules(
         histories.add(tuple(history))
         for r in history:
             new_rule_tree_map[r].update(tree_indices)
-    
+
     assert new_rule_tree_map
-    
+
     if verbose:
         rule_tree_map_iter.close()
     rule_tree_map = new_rule_tree_map
@@ -235,7 +240,7 @@ def extract_and_vectorize_rules(
 
     # pruned_rules = deduplicate_rules(pruned_rules) # deduplicate twice for speed?
     coverage = compute_rule_coverage(X, pruned_rules, verbose=forest.verbose)
-    
+
     return {
         "rules": pruned_rules,
         "kept_variables": kept_vars,
@@ -246,13 +251,10 @@ def extract_and_vectorize_rules(
     }
 
 
-def expand_term(term_expansions, 
-                feature, 
-                is_positive: bool,
-                mh_noexp: bool, 
-                tiab: bool):
-    
-    if feature.endswith("[mh]"): # mesh terms
+def expand_term(
+    term_expansions, feature, is_positive: bool, mh_noexp: bool, tiab: bool
+):
+    if feature.endswith("[mh]"):  # mesh terms
         if mh_noexp:
             return feature
         else:
@@ -261,26 +263,21 @@ def expand_term(term_expansions,
         terms = [feature]
     else:
         terms = term_expansions.get(feature, [feature])
-    terms = [ 
-        f'"{w}"' if " " in w else w
-        for w in terms
-    ]
-    if tiab or not is_positive: # negative terms always get [tiab]
+    terms = [f'"{w}"' if " " in w else w for w in terms]
+    if tiab or not is_positive:  # negative terms always get [tiab]
         terms = [f + "[tiab]" for f in terms]
     return " SYNONYM_OR ".join(terms)
 
 
-def literal_to_pubmed(features, 
-                      is_positive, 
-                      term_expansions,
-                      tiab: bool = False,
-                      mh_noexp: bool = False
-                      ):
-    clause = " ADDED_OR ".join(expand_term(term_expansions, 
-                                           f, 
-                                           is_positive=is_positive,
-                                           tiab=tiab, 
-                                           mh_noexp=mh_noexp) for f in features)
+def literal_to_pubmed(
+    features, is_positive, term_expansions, tiab: bool = False, mh_noexp: bool = False
+):
+    clause = " ADDED_OR ".join(
+        expand_term(
+            term_expansions, f, is_positive=is_positive, tiab=tiab, mh_noexp=mh_noexp
+        )
+        for f in features
+    )
 
     if "OR" in clause:
         clause = f"({clause})"
@@ -296,7 +293,7 @@ def rules_to_pubmed_query(
     feature_names,
     term_expansions: dict = None,
     tiab: bool = False,
-    mh_noexp: bool = False
+    mh_noexp: bool = False,
 ):
     """
     Converts extracted AND-of-OR rules into a PubMed DNF boolean query.
@@ -309,14 +306,22 @@ def rules_to_pubmed_query(
             continue
         pos_literals = [
             literal_to_pubmed(
-                [feature_names[i] for i in features_indices], is_pos, term_expansions, mh_noexp=mh_noexp, tiab=tiab
+                [feature_names[i] for i in features_indices],
+                is_pos,
+                term_expansions,
+                mh_noexp=mh_noexp,
+                tiab=tiab,
             )
             for features_indices, is_pos in rule
             if is_pos
         ]
         neg_literals = [
             literal_to_pubmed(
-                [feature_names[i] for i in features_indices], is_pos, term_expansions, mh_noexp=mh_noexp, tiab=tiab
+                [feature_names[i] for i in features_indices],
+                is_pos,
+                term_expansions,
+                mh_noexp=mh_noexp,
+                tiab=tiab,
             )
             for features_indices, is_pos in rule
             if not is_pos
@@ -391,8 +396,6 @@ def query_cost(query_size, weights=None):
         cost += weight * query_size.get(key, 0)
 
     return cost
-
-
 
 
 def coverage_of_rule(X, rule):
@@ -547,10 +550,10 @@ def prune_rule_greedy(
     y,
     rule: Rule,
     histories: set[list[Rule]],
-    rule_stats: dict[Rule, dict], # changed in place
+    rule_stats: dict[Rule, dict],  # changed in place
     pruning_thresholds: dict,
     beta: float = 0.1,
-    feature_names = None,
+    feature_names=None,
 ):
     """
     Greedy prune a single rule in two stages:
@@ -573,7 +576,7 @@ def prune_rule_greedy(
     p_old, r_old, tp_old, ret_old, pos_count = metrics_from_mask(mask, y)
     if tp_old == 0:
         return []
-    
+
     f_old = f_beta(p_old, r_old, beta)
     best_metric = {
         "f": f_old,
@@ -588,7 +591,14 @@ def prune_rule_greedy(
     while True:
         if DEBUG:
             print()
-            print(rules_to_pubmed_query([current_rule], feature_names=feature_names, tiab=True, mh_noexp=True)[0])
+            print(
+                rules_to_pubmed_query(
+                    [current_rule],
+                    feature_names=feature_names,
+                    tiab=True,
+                    mh_noexp=True,
+                )[0]
+            )
         if current_rule not in rule_stats:
             rule_stats[current_rule] = best_metric
         else:
@@ -623,17 +633,19 @@ def prune_rule_greedy(
             )
         )
         candidate_rules = or_cand_rules + and_cand_rules
-        removal_in_negated_term = or_removal_in_negated_term + and_removal_in_negated_term
+        removal_in_negated_term = (
+            or_removal_in_negated_term + and_removal_in_negated_term
+        )
         removed_features = or_removed_features + and_removed_features
-        
+
         if not candidate_rules:
             break
-        
-        for i, (cand_rule, removal_in_neg, rem_f) in enumerate(zip(
-            candidate_rules, removal_in_negated_term, removed_features
-        )):
+
+        for i, (cand_rule, removal_in_neg, rem_f) in enumerate(
+            zip(candidate_rules, removal_in_negated_term, removed_features)
+        ):
             mode = "or" if i < len(or_cand_rules) else "and"
-            
+
             # compute metrics
             mask_c = coverage_of_rule(X, cand_rule)
             p_new, r_new, tp_new, ret_new, _ = metrics_from_mask(mask_c, y)
@@ -663,7 +675,7 @@ def prune_rule_greedy(
         if best_candidate_index is None:
             break
         best_rule = candidate_rules[best_candidate_index]
-        
+
         best_metric = metrics[best_candidate_index]
 
         # accept the new rule
@@ -674,7 +686,10 @@ def prune_rule_greedy(
 
         if DEBUG:
             print("====MODE====", best_metric["mode"])
-            print("====REMOVED FEATURES====", [feature_names[f] for f in best_metric["removed_features"]])
+            print(
+                "====REMOVED FEATURES====",
+                [feature_names[f] for f in best_metric["removed_features"]],
+            )
             print(best_metric)
         if remove_old:
             if DEBUG:

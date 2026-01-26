@@ -1,6 +1,7 @@
 import os
+
 CUSTOM_HF_PATH = "../systematic-review-datasets/data/huggingface"
-os.environ["HF_HOME"] = CUSTOM_HF_PATH # has to be up here
+os.environ["HF_HOME"] = CUSTOM_HF_PATH  # has to be up here
 import re
 import sys
 import os
@@ -9,14 +10,25 @@ from tqdm.contrib.concurrent import process_map
 import json
 from joblib import Parallel, delayed
 from collections import defaultdict
-from app.preprocessing.text_preprocessing import bag_of_words, nlp, remove_keys_which_appear_in_value
+from app.preprocessing.text_preprocessing import (
+    bag_of_words,
+    nlp,
+    remove_keys_which_appear_in_value,
+)
 from app.pubmed.mesh_term import strip_mesh_term
 from app.preprocessing.synonyms import build_dominating_map, transitive_closure
 from app.dataset.utils import bag_of_words_path, synonym_map_path
 from app.pubmed.mesh_term import download_mesh_xml
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
+sys.path.append(
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), "../..", "../systematic-review-datasets"
+        )
+    )
+)
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset, build_global_corpus
+
 
 def process_doc(doc, conf, mesh_ancestor_data):
     mesh_terms = [strip_mesh_term(m) for m in doc["mesh_terms"]]
@@ -27,27 +39,32 @@ def process_doc(doc, conf, mesh_ancestor_data):
         "title": doc["title"],
         "abstract": doc["abstract"],
         "bow": bow,
-        "synonym_map": synonym_map
+        "synonym_map": synonym_map,
     }
-    
+
+
 def process_doc_batch(doc_batch, conf, mesh_ancestor_data):
     batch_results = []
     for doc in doc_batch:
         batch_results.append(process_doc(doc, conf, mesh_ancestor_data))
     return batch_results
 
+
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
-        yield lst[i:i + n]
-    
-def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_words/", conf=None):
+        yield lst[i : i + n]
+
+
+def create_bow_file(
+    output_dir="../systematic-review-datasets/data/bag_of_words/", conf=None
+):
     """Loads dataset, computes bag-of-words for each unique document, and writes them to a JSONL file."""
     if conf["mesh_ancestors"]:
         mesh_ancestor_data = download_mesh_xml(2025)
     else:
         mesh_ancestor_data = None
-    
+
     dataset = load_dataset()
     global_corpus = build_global_corpus(dataset)
     # texts = [d["text"] for d in global_corpus]
@@ -67,8 +84,10 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
     batches = list(chunks(global_corpus, bucket_size))
     # Run in parallel
     results = Parallel(n_jobs=n_cpus)(
-        delayed(process_doc_batch)(batch, conf, mesh_ancestor_data) 
-        for batch in tqdm(batches, total=len(batches), desc="Processing docs in batches")
+        delayed(process_doc_batch)(batch, conf, mesh_ancestor_data)
+        for batch in tqdm(
+            batches, total=len(batches), desc="Processing docs in batches"
+        )
     )
     # Flatten results
     results = [doc for batch_result in results for doc in batch_result]
@@ -77,15 +96,19 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
     for r in results:
         for lemma, synonyms in r["synonym_map"].items():
             global_synonym_map[lemma].update(synonyms)
-        records.append({
-            "id": r["id"],
-            "title": r["title"],
-            "abstract": r["abstract"],
-            "bow": r["bow"]
-        })
+        records.append(
+            {
+                "id": r["id"],
+                "title": r["title"],
+                "abstract": r["abstract"],
+                "bow": r["bow"],
+            }
+        )
 
     # remove lemmas which appear in some others lemma as synonym
-    global_synonym_map, change_map = remove_keys_which_appear_in_value(global_synonym_map)
+    global_synonym_map, change_map = remove_keys_which_appear_in_value(
+        global_synonym_map
+    )
     for record in records:
         record["bow"] = sorted(set([change_map.get(w, w) for w in record["bow"]]))
 
@@ -93,8 +116,10 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
         all_lemmas = global_synonym_map.keys()
         dom_map, reverse_map = build_dominating_map(all_lemmas, transitive_closure)
         for record in records:
-            record["bow"] = sorted(set([w if w.endswith("[mh]") else dom_map[w] for w in record["bow"]]))
-        
+            record["bow"] = sorted(
+                set([w if w.endswith("[mh]") else dom_map[w] for w in record["bow"]])
+            )
+
         result_map = defaultdict(set)
         for lemma, forms in global_synonym_map.items():
             if lemma in dom_map:
@@ -102,13 +127,12 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
             else:
                 result_map[lemma].update(forms)
         global_synonym_map = result_map
-     
+
     # Convert sets to sorted lists
     global_synonym_map = {
-        lemma: sorted(list(forms))
-        for lemma, forms in global_synonym_map.items()
+        lemma: sorted(list(forms)) for lemma, forms in global_synonym_map.items()
     }
-    
+
     # Write all records at once to JSONL
     with open(bow_output_path, "w", encoding="utf-8") as f:
         for record in records:
@@ -117,10 +141,16 @@ def create_bow_file(output_dir = "../systematic-review-datasets/data/bag_of_word
     with open(synonym_map_output_path, "w", encoding="utf-8") as f:
         json.dump(global_synonym_map, f, indent=2)
 
+
 def test():
     from app.preprocessing.text_preprocessing import expand_mesh_terms
+
     mesh_ancestor_data = download_mesh_xml(2025)
-    print(expand_mesh_terms([strip_mesh_term("Classical swine Fever Virus")], mesh_ancestor_data))
+    print(
+        expand_mesh_terms(
+            [strip_mesh_term("Classical swine Fever Virus")], mesh_ancestor_data
+        )
+    )
 
 
 if __name__ == "__main__":
@@ -131,6 +161,6 @@ if __name__ == "__main__":
         "rm_punct": True,
         "related_words": True,
     }
-    
+
     output_dir = "../systematic-review-datasets/data/bag_of_words/"
     create_bow_file(output_dir, config)

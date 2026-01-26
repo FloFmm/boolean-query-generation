@@ -2,6 +2,7 @@ import time
 import pytest
 import inspect
 from sklearn.feature_extraction.text import CountVectorizer
+
 # from sklearn.metrics import precision_score, recall_score
 from app.config.config import RF_PARAMS, QG_PARAMS
 import numpy as np
@@ -12,6 +13,7 @@ from app.tree_learning.disjunctive_dt import (
 from app.tree_learning.random_forest import RandomForest
 from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 from app.pubmed.utils import pubmed_query_to_lambda, remove_tags
+
 
 def run_tree_test(
     classifier,
@@ -42,9 +44,7 @@ def run_tree_test(
 
     # tree = GreedyORDecisionTree(**tree_params)
     feature_names = vectorizer.get_feature_names_out()
-    classifier.fit(
-        X, np.array(labels), feature_names=feature_names
-    )
+    classifier.fit(X, np.array(labels), feature_names=feature_names)
 
     # tree_json = tree.to_json()
     # loaded_tree = GreedyORDecisionTree.from_json(tree_json)
@@ -83,22 +83,24 @@ def run_tree_test(
     if len(sig.parameters) == 1:
         generated_pubmed_query, query_size = classifier.pubmed_query()
     else:
-        (generated_pubmed_query, query_size), rules, cover_score = classifier.pubmed_query(
-            X=X,
-            labels=labels,
-            feature_names=feature_names,
-            min_tree_occ=qg_params["min_tree_occ"],
-            min_rule_occ=qg_params["min_rule_occ"],
-            cost_factor=qg_params["cost_factor"],
-            min_rule_precision=qg_params["min_rule_precision"],
-            cover_beta=qg_params["cover_beta"],
-            pruning_beta=qg_params["pruning_beta"],
-            pruning_thresholds=qg_params["pruning_thresholds"],
-            term_expansions=None,
-            mh_noexp=qg_params["mh_noexp"],
-            tiab=qg_params["tiab"],
+        (generated_pubmed_query, query_size), rules, cover_score = (
+            classifier.pubmed_query(
+                X=X,
+                labels=labels,
+                feature_names=feature_names,
+                min_tree_occ=qg_params["min_tree_occ"],
+                min_rule_occ=qg_params["min_rule_occ"],
+                cost_factor=qg_params["cost_factor"],
+                min_rule_precision=qg_params["min_rule_precision"],
+                cover_beta=qg_params["cover_beta"],
+                pruning_beta=qg_params["pruning_beta"],
+                pruning_thresholds=qg_params["pruning_thresholds"],
+                term_expansions=None,
+                mh_noexp=qg_params["mh_noexp"],
+                tiab=qg_params["tiab"],
+            )
         )
-        
+
     generated_pubmed_query = remove_tags(generated_pubmed_query)
     print(classifier.estimators_[0].pretty_print(verbose=True))
     print()
@@ -125,6 +127,7 @@ def run_tree_test(
     if generated_pubmed_query[0] == "(" and generated_pubmed_query[-1] == ")":
         generated_pubmed_query = generated_pubmed_query[1:-1]
     assert len(pubmed_query) >= len(generated_pubmed_query)
+
 
 TEXT_PARAMS = {
     "error": 0.0,
@@ -157,12 +160,13 @@ FORMULAS = [
     # """A NOT B""",
     # # middle sometimes solved by single tree
     # """((X OR Y OR Z) AND B) OR ((U OR V OR W) NOT B)""", # reuires pruning of rules
-    # # hard 
+    # # hard
     # """(A AND B) OR (C AND D) OR (E AND F)""",
     # """(A AND B AND C) OR (D AND E AND F)""",
     # """((A OR X) AND B NOT C) OR (D AND (E OR Y) NOT F)""",
     """((A OR B) AND (C OR D)) OR (B AND D NOT E) OR (E AND F AND A) OR (C AND X AND Y)""",
 ]
+
 
 @pytest.mark.parametrize("formula", FORMULAS, ids=lambda f: f[:40])
 def test_basic_formulas_dt(formula):
@@ -173,14 +177,13 @@ def test_basic_formulas_dt(formula):
 @pytest.mark.parametrize("formula", FORMULAS, ids=lambda f: f[:40])
 def test_basic_formulas_rf(formula):
     tree = RandomForest(**RF_PARAMS)
-    run_tree_test(
-        tree, formula, text_gen_params=TEXT_PARAMS, qg_params=QG_PARAMS
-    )
+    run_tree_test(tree, formula, text_gen_params=TEXT_PARAMS, qg_params=QG_PARAMS)
 
 
 def main():
     for f in FORMULAS:
         test_basic_formulas_rf(formula=f)
+
 
 if __name__ == "__main__":
     RF_PARAMS["n_estimators"] = 10
@@ -192,4 +195,3 @@ if __name__ == "__main__":
 
     lp.run("main()")
     lp.print_stats()
-

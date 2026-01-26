@@ -4,6 +4,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 import json
 
+
 def strip_mesh_term(term: str) -> str:
     term = term.strip()
 
@@ -12,15 +13,14 @@ def strip_mesh_term(term: str) -> str:
 
     return term.lower()
 
+
 def get_ancestors_by_name(mesh_data, descriptor_name):
     """
     Given a descriptor name, return ALL ancestor names in the MeSH hierarchy.
     """
 
     # name -> list of UIs
-    name_to_ui = {
-        data["name"].lower(): ui for ui, data in mesh_data.items()
-    }
+    name_to_ui = {data["name"].lower(): ui for ui, data in mesh_data.items()}
 
     if descriptor_name not in name_to_ui:
         print(f"warning {descriptor_name} not in mesh term data")
@@ -48,6 +48,7 @@ def get_ancestors_by_name(mesh_data, descriptor_name):
 
     return list(ancestors)
 
+
 def _parse_mesh_xml(xml_path: Path):
     print(f"[OK] Parsing XML → {xml_path}")
 
@@ -61,16 +62,12 @@ def _parse_mesh_xml(xml_path: Path):
         name = desc.findtext("DescriptorName/String")
         scope_note = desc.findtext("ScopeNote")
 
-        tree_numbers = [
-            tn.text for tn in desc.findall("./TreeNumberList/TreeNumber")
-        ]
+        tree_numbers = [tn.text for tn in desc.findall("./TreeNumberList/TreeNumber")]
 
         concepts = []
         for concept in desc.findall("./ConceptList/Concept"):
             c_name = concept.findtext("ConceptName/String")
-            terms = [
-                t.findtext("String") for t in concept.findall("./TermList/Term")
-            ]
+            terms = [t.findtext("String") for t in concept.findall("./TermList/Term")]
             concepts.append({"name": c_name, "terms": terms})
 
         mesh_data[ui] = {
@@ -84,20 +81,22 @@ def _parse_mesh_xml(xml_path: Path):
     print(f"[OK] Parsed {len(mesh_data)} descriptors")
     return mesh_data
 
+
 def _save_mesh_json(mesh_data, json_path: Path):
     print(f"[OK] Saving JSON → {json_path}")
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(mesh_data, f, ensure_ascii=False, indent=2)
 
+
 def download_mesh_xml(year=2025, target_dir="data/pubmed/mesh_data"):
     """
     Ensures MeSH data is available in JSON form.
-    
+
     Workflow:
       1. If JSON exists → load & return it.
       2. Else if XML exists → parse it and save JSON.
       3. Else → download ZIP → extract → parse XML → save JSON.
-    
+
     Returns:
         mesh_data (dict keyed by UI)
     """
@@ -149,6 +148,7 @@ def download_mesh_xml(year=2025, target_dir="data/pubmed/mesh_data"):
     _save_mesh_json(mesh_data, json_path)
     return mesh_data
 
+
 def expand_mesh_terms(mesh_list, mesh_ancestor_data=None):
     """
     Expands compact MeSH-style notations like
@@ -159,10 +159,10 @@ def expand_mesh_terms(mesh_list, mesh_ancestor_data=None):
     for mesh_str in mesh_list:
         if mesh_str == "purpura, schoenlein-henoch":
             mesh_str = "iga vasculitis"
-        
-        mesh_str = mesh_str.replace('&', 'and')
-        mesh_str = mesh_str.replace('*', '')
-        parts = mesh_str.split('/')
+
+        mesh_str = mesh_str.replace("&", "and")
+        mesh_str = mesh_str.replace("*", "")
+        parts = mesh_str.split("/")
         striped_mesh = parts[0]
         expanded.add(striped_mesh)
         if mesh_ancestor_data:

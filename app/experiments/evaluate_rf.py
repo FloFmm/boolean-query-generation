@@ -200,7 +200,6 @@ if __name__ == "__main__":
 
         # ground truth
         positives[query_id] = get_positives(query_id=query_id, dataset=dataset)
-        
 
     DEBUG = True
     buggy_config = {

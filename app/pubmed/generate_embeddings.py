@@ -18,17 +18,23 @@ input_dir = "data/pubmed/baseline"
 output_dir = "data/pubmed/embeddings"
 os.makedirs(output_dir, exist_ok=True)
 
+
 def encode_batch(texts, batch_size):
     """Return normalized embeddings for a list of texts in batches with progress."""
     all_embeddings = []
-    for i in tqdm(range(0, len(texts), batch_size), desc="Encoding batches", unit="batch", leave=False):
-        batch_texts = texts[i:i+batch_size]
+    for i in tqdm(
+        range(0, len(texts), batch_size),
+        desc="Encoding batches",
+        unit="batch",
+        leave=False,
+    ):
+        batch_texts = texts[i : i + batch_size]
         encoded = tokenizer(
             batch_texts,
             truncation=True,
             padding="max_length",
             max_length=512,
-            return_tensors="pt"
+            return_tensors="pt",
         ).to(device)
 
         with torch.no_grad():
@@ -37,6 +43,7 @@ def encode_batch(texts, batch_size):
             emb = torch.nn.functional.normalize(emb, p=2, dim=1)
         all_embeddings.append(emb.cpu())
     return torch.cat(all_embeddings, dim=0)
+
 
 # Process files
 files = [f for f in os.listdir(input_dir) if f.endswith(".jsonl")]

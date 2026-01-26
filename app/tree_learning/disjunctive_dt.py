@@ -44,6 +44,7 @@ def compute_sample_weight(class_weight: dict, y):
     sample_weight = np.vectorize(class_weight.get)(y)
     return sample_weight
 
+
 def compute_class_weight(class_weight, X, y):
     _n_samples = X.shape[0]
     n_class_1 = int(y.sum())
@@ -81,7 +82,7 @@ def compute_class_weight(class_weight, X, y):
         0: w0 // g,
         1: w1 // g,
     }
-    
+
 
 @numba.njit
 def union_sorted(a, b):
@@ -232,7 +233,7 @@ def best_split(
             impurity_gain *= prefer_pos_splits
         improvements.append((f, impurity_gain))
 
-        if impurity_gain > best_impurity_gain: #weighted < best_impurity:
+        if impurity_gain > best_impurity_gain:  # weighted < best_impurity:
             if not features_subset or f in features_subset:
                 best_impurity = weighted
                 best_feature = f
@@ -378,7 +379,7 @@ class GreedyORDecisionTree:
         randomize_max_feature=None,
         random_state=None,
         verbose=False,
-        prefer_pos_splits=1.1, # multiply impurity gain of positive splits by prefer_pos_splits
+        prefer_pos_splits=1.1,  # multiply impurity gain of positive splits by prefer_pos_splits
         max_or_features=100,
     ):
         self.max_depth = max_depth
@@ -441,15 +442,15 @@ class GreedyORDecisionTree:
             features=list(range(X.shape[1])),
             sample_weight=sample_weight[relevant_sample_mask],
         )
-        
+
         if self._tree["type"] == "leaf":
             return False
-        
+
         if self._verbose:
             self._pbar.close()
 
         return True
-        
+
     def _calc_node_stats(self, y, sample_weight=None):
         n_class_1 = int(np.sum(y))
         n_class_0 = int((len(y) - n_class_1))
@@ -498,7 +499,7 @@ class GreedyORDecisionTree:
             )
         else:
             features_subset = None
-            
+
         (
             best_feature,
             best_impurity,
@@ -514,9 +515,9 @@ class GreedyORDecisionTree:
             min_weight_fraction_leaf=self.min_weight_fraction_leaf,
             total_sample_weight=self.total_sample_weight,
             features_subset=features_subset,
-            prefer_pos_splits=self.prefer_pos_splits
+            prefer_pos_splits=self.prefer_pos_splits,
         )
-        
+
         if best_feature is None or initial_impurity - best_impurity <= 0:
             return self._create_leaf(y, sample_weight=sample_weight)
 
@@ -555,14 +556,12 @@ class GreedyORDecisionTree:
         node["prob_class_1"] = prob_class_1
         node["features"] = [self._feature_names[f] for f in or_features]
         node["feature_indices"] = or_features
-        node["left"] = (
-            self._grow(  
-                X[combined_mask],
-                y[combined_mask],
-                depth + 1,
-                new_features,
-                sample_weight=sample_weight[combined_mask],
-            )
+        node["left"] = self._grow(
+            X[combined_mask],
+            y[combined_mask],
+            depth + 1,
+            new_features,
+            sample_weight=sample_weight[combined_mask],
         )
         node["right"] = self._grow(
             X[~combined_mask],
@@ -592,7 +591,7 @@ class GreedyORDecisionTree:
         float
             Scaled min_impurity_decrease for this node.
         """
-        min_val = self.min_impurity_decrease_range_start 
+        min_val = self.min_impurity_decrease_range_start
         max_val = self.min_impurity_decrease_range_end
         # Linear interpolation: goes from min_val (root) → max_val (deep)
         fraction = 1 - (n_samples / self._n_samples)
@@ -823,14 +822,10 @@ class GreedyORDecisionTree:
                 raise ValueError("X must be a scipy sparse matrix")
 
             Xcsc = X.tocsc()
-            doc_freq = {
-                i: Xcsc[:, i].getnnz()
-                for i in range(Xcsc.shape[1])
-            }
+            doc_freq = {i: Xcsc[:, i].getnnz() for i in range(Xcsc.shape[1])}
         else:
             doc_freq = None
-        
-        
+
         if self._tree is None:
             raise ValueError("Tree has not been trained yet. Call fit() first.")
 
@@ -920,7 +915,7 @@ class GreedyORDecisionTree:
             recurse(node["right"], literals | {(feature_indices, False)})
 
         recurse(self._tree, set())
-        
+
         # Filter out rules that have only negative terms
         rules = {r for r in rules if any(t[-1] for t in r)}
 
@@ -1123,10 +1118,10 @@ def main():
         top_k_or_candidates=500,
         verbose=True,
         min_samples_split=1,
-        class_weight=0.8,#
+        class_weight=0.8,  #
     )
     start_time = time.time()
-    feature_names=vectorizer.get_feature_names_out()
+    feature_names = vectorizer.get_feature_names_out()
     tree.fit(X, np.array(labels), feature_names=feature_names)
     end_time = time.time()
 
@@ -1163,7 +1158,12 @@ def main():
     print("tree_loaded", tree_loaded)
     print(tree_loaded.pretty_print(verbose=True, prune=True))
     print("result tree_loaded", tree_loaded.predict(X_test))
-    print("pubmed", tree_loaded.pubmed_query(feature_names=feature_names, term_expansions={"dogs": ["dogs", "dog"]}))
+    print(
+        "pubmed",
+        tree_loaded.pubmed_query(
+            feature_names=feature_names, term_expansions={"dogs": ["dogs", "dog"]}
+        ),
+    )
     print(f"Fit time: {end_time - start_time:.4f} seconds")
 
 

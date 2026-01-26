@@ -1,11 +1,13 @@
 import re
 
+
 def remove_tags(pubmed_query: str):
     pubmed_query = pubmed_query.replace("[mh]", "")
     pubmed_query = pubmed_query.replace("[mh:noexp]", "")
     pubmed_query = pubmed_query.replace("[tiab]", "")
-    pubmed_query = pubmed_query.replace('"', '')
+    pubmed_query = pubmed_query.replace('"', "")
     return pubmed_query
+
 
 def pubmed_query_to_lambda(expr: str):
     """

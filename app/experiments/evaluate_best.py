@@ -17,5 +17,5 @@ if __name__ == "__main__":
                 ordered_pmids=ordered_pmids,
                 rf_params=best_p["rf_params"],
                 qg_params=best_p["qg_params"],
-                term_expansions=term_expansions
+                term_expansions=term_expansions,
             )

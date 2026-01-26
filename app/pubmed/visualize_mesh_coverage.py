@@ -1,18 +1,19 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 def visualize_mesh_coverage(csv_path: str, n: int = None):
     """
     Visualize MeSH coverage statistics from a CSV file.
-    
+
     Parameters:
         csv_path (str): Path to the CSV file.
-        n (int, optional): Only visualize the first n steps. 
+        n (int, optional): Only visualize the first n steps.
                            If None, visualize all rows.
     """
     # Read CSV
     df = pd.read_csv(csv_path)
-    
+
     # Optionally limit to first n rows
     if n is not None:
         df = df.head(n)
@@ -25,13 +26,21 @@ def visualize_mesh_coverage(csv_path: str, n: int = None):
 
     # Create the plot
     plt.figure(figsize=(10, 6))
-    plt.plot(x, y_pos, label="Accumulated Positive PMIDs", color="tab:green", marker="o")
+    plt.plot(
+        x, y_pos, label="Accumulated Positive PMIDs", color="tab:green", marker="o"
+    )
     plt.plot(x, y_neg, label="Accumulated Negative PMIDs", color="tab:red", marker="o")
-    plt.plot(x, y_pubmed, label="Accumulated PubMed Coverage", color="tab:blue", marker="o")
+    plt.plot(
+        x, y_pubmed, label="Accumulated PubMed Coverage", color="tab:blue", marker="o"
+    )
 
     # Add horizontal reference lines
-    plt.axhline(y=350958, color="tab:red", linestyle="--", label="Negatives Reference (350,958)")
-    plt.axhline(y=5070, color="tab:green", linestyle="--", label="Positives Reference (5,070)")
+    plt.axhline(
+        y=350958, color="tab:red", linestyle="--", label="Negatives Reference (350,958)"
+    )
+    plt.axhline(
+        y=5070, color="tab:green", linestyle="--", label="Positives Reference (5,070)"
+    )
     plt.yscale("log")
     plt.ylabel("Cumulative Coverage (log scale)")
 

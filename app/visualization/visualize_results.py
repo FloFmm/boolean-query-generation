@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from app.dataset.utils import load_statistics_data, statistics_base_path
 
+
 def analyze_dataframe_results(df, variables, metrics):
     """
     Analyze performance metrics from a preloaded DataFrame.
@@ -16,12 +17,12 @@ def analyze_dataframe_results(df, variables, metrics):
             - precision, recall, f1, time_seconds, or_count, if_count
             - and hyperparameters: max_depth, min_samples_split, etc.
     """
-    qg = any([m[0].endswith('_qg') for m in metrics])
-    
+    qg = any([m[0].endswith("_qg") for m in metrics])
+
     if df.empty:
         print("DataFrame is empty.")
         return
-    
+
     # variables = [
     #     "max_depth",
     #     "min_samples_split",
@@ -42,7 +43,7 @@ def analyze_dataframe_results(df, variables, metrics):
             continue
         print(var)
         grouped = df.groupby(var)[[m[0] for m in metrics]].mean().reset_index()
-        
+
         x_vals = grouped[var].astype(str)
         x_pos = np.arange(len(x_vals))
         # --- Dual y-axis plot ---
@@ -53,7 +54,14 @@ def analyze_dataframe_results(df, variables, metrics):
         # Left y-axis (precision, recall, f1)
         for m in metrics:
             if m[4] == "axis1":
-                ax1.plot(x_pos, grouped[m[0]], marker=m[1], label=m[0], color=m[2], linestyle=m[3])
+                ax1.plot(
+                    x_pos,
+                    grouped[m[0]],
+                    marker=m[1],
+                    label=m[0],
+                    color=m[2],
+                    linestyle=m[3],
+                )
             else:
                 ax2.plot(x_pos, grouped[m[0]], marker=m[1], label=m[0], color=m[2])
 
@@ -71,7 +79,7 @@ def analyze_dataframe_results(df, variables, metrics):
         # Right axis: time and size
         ax2.set_ylabel(" / ".join([m[0] for m in metrics if m[4] == "axis2"]))
         ax2.tick_params(axis="y", labelcolor="tab:green")
-        
+
         ax1.set_xlabel(var)
 
         # Combined legend
@@ -83,7 +91,11 @@ def analyze_dataframe_results(df, variables, metrics):
         plt.grid(True, linestyle="--", alpha=0.6)
         plt.tight_layout()
         # plt.show()
-        out_path = statistics_base_path() / "../images" / f"effects_of_{var}_{'qg' if qg else'dt'}.png"
+        out_path = (
+            statistics_base_path()
+            / "../images"
+            / f"effects_of_{var}_{'qg' if qg else 'dt'}.png"
+        )
         os.makedirs(statistics_base_path() / "../images", exist_ok=True)
         plt.savefig(out_path, dpi=200)
         plt.close()
@@ -91,7 +103,10 @@ def analyze_dataframe_results(df, variables, metrics):
 
     return df
 
-def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt", metrics=[], worst=False):
+
+def analyze_and_plot_best_files_from_df(
+    df, top_n=10, opt_metric="pubmed_f1_dt", metrics=[], worst=False
+):
     """
     Plot the top-performing configurations from an already prepared DataFrame.
 
@@ -103,7 +118,7 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt",
         print("DataFrame is empty.")
         return
 
-    # keep only those with atleast 10 samples 
+    # keep only those with atleast 10 samples
     # df = df[df["samples_dt"] >= 10]
     # print("mor than 0", len(df))
     # print("mor than 10", len(df[df["samples_dt"] >= 10]))
@@ -120,7 +135,7 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt",
     #     df = df[df["samples_qg"] >= 20]
     # if "pubmed_recall_qg" in df.columns:
     #     df = df[df["pubmed_recall_qg"] >= 0.7]
-    
+
     # Sort by F1 and take top N
     df = df.sort_values(opt_metric, ascending=False)
     if worst:
@@ -155,15 +170,11 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt",
         label = legend_labels[m[0]]
         if m[4] == "axis1":
             ax1.plot(
-                x, top_df[m[0]],
-                marker=m[1], label=label, color=m[2], linestyle=m[3]
+                x, top_df[m[0]], marker=m[1], label=label, color=m[2], linestyle=m[3]
             )
         else:
-            ax2.plot(
-                x, top_df[m[0]],
-                marker=m[1], label=label, color=m[2]
-            )
-    
+            ax2.plot(x, top_df[m[0]], marker=m[1], label=label, color=m[2])
+
     ax1.set_ylabel(" / ".join([m[0] for m in metrics if m[4] == "axis1"]))
     ax1.tick_params(axis="y", labelcolor="black")
 
@@ -175,14 +186,16 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt",
     # --- Build X-tick labels including DT and QG sample counts ---
     xtick_labels = []
     for _, row in top_df.iterrows():
-        file_label = "\n".join(
-            row["file"].split(',')
-        ).replace("'", "").replace("GreedyORDecisionTree", "")
-        if 'optimization_metric' in row:
-          file_label += f"\nom={row['optimization_metric']}"
-        if 'constraint' in row: 
+        file_label = (
+            "\n".join(row["file"].split(","))
+            .replace("'", "")
+            .replace("GreedyORDecisionTree", "")
+        )
+        if "optimization_metric" in row:
+            file_label += f"\nom={row['optimization_metric']}"
+        if "constraint" in row:
             file_label += f"\nc={row['constraint']}"
-            
+
         # two sample counts (DT + QG)
         if "samples_qg" in row:
             samples_label = f"DT:{row['samples_dt']}  QG:{row['samples_qg']}"
@@ -190,8 +203,7 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt",
             samples_label = f"DT:{row['samples_dt']}"
 
         xtick_labels.append(file_label + "\n" + samples_label)
-    
-    
+
     ax1.set_xticks(x)
     ax1.set_xticklabels(
         xtick_labels,
@@ -208,7 +220,9 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt",
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax1.legend(lines + lines2, labels + labels2, loc="best")
 
-    plt.title(f"{'Bottom' if worst else 'Top'} {top_n} {text} Files (Average {opt_metric})")
+    plt.title(
+        f"{'Bottom' if worst else 'Top'} {top_n} {text} Files (Average {opt_metric})"
+    )
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.tight_layout()
     # plt.show()
@@ -217,38 +231,36 @@ def analyze_and_plot_best_files_from_df(df, top_n=10, opt_metric="pubmed_f1_dt",
     plt.savefig(out_path, dpi=200)
     plt.close()
     print(f"Saved plot: {out_path}")
-    
+
     return top_df
+
 
 def visualize_results(
     model="GreedyORDecisionTree",
     filter_vars={"total_docs": 433660},
-    qg = True,
+    qg=True,
 ):
     if not qg:
-        opt_metric="f3_dt"
-        metrics = [("precision_dt", "o", "tab:blue", None, "axis1"), 
-                    ("recall_dt", "s", "tab:orange", None, "axis1"), 
-                    ("f3_dt", "D", "tab:purple", None, "axis1"), 
-                    ("time_seconds_dt", "^", "tab:green", "--", "axis2") 
-                    ]
+        opt_metric = "f3_dt"
+        metrics = [
+            ("precision_dt", "o", "tab:blue", None, "axis1"),
+            ("recall_dt", "s", "tab:orange", None, "axis1"),
+            ("f3_dt", "D", "tab:purple", None, "axis1"),
+            ("time_seconds_dt", "^", "tab:green", "--", "axis2"),
+        ]
     else:
-        opt_metric="pubmed_f3_qg"
-        metrics = [("pubmed_precision_qg", "o", "tab:blue", None, "axis1"), 
-                  ("pubmed_recall_qg", "s", "tab:orange", None, "axis1"), 
-                  ("pubmed_f3_qg", "D", "tab:purple", None, "axis1"), 
-                  ("f3_dt", "D", "tab:purple", "--", "axis1"), 
-                  ("query_size_ANDs_qg", "x", "tab:red", "-.", "axis2"), 
-                  ("query_size_added_ORs_qg", "*", "tab:brown", ":", "axis2"), 
-                  ("query_size_NOTs_qg", "*", "tab:pink", ":", "axis2"), 
-                  ]
-    
-    
-    df, params = load_statistics_data(
-        filter_vars=filter_vars,
-        qg=qg,
-        metrics=metrics
-    )
+        opt_metric = "pubmed_f3_qg"
+        metrics = [
+            ("pubmed_precision_qg", "o", "tab:blue", None, "axis1"),
+            ("pubmed_recall_qg", "s", "tab:orange", None, "axis1"),
+            ("pubmed_f3_qg", "D", "tab:purple", None, "axis1"),
+            ("f3_dt", "D", "tab:purple", "--", "axis1"),
+            ("query_size_ANDs_qg", "x", "tab:red", "-.", "axis2"),
+            ("query_size_added_ORs_qg", "*", "tab:brown", ":", "axis2"),
+            ("query_size_NOTs_qg", "*", "tab:pink", ":", "axis2"),
+        ]
+
+    df, params = load_statistics_data(filter_vars=filter_vars, qg=qg, metrics=metrics)
 
     analyze_and_plot_best_files_from_df(
         df,
@@ -265,7 +277,8 @@ def visualize_results(
     )
 
     df = analyze_dataframe_results(df, variables=params, metrics=metrics)
-    
+
+
 if __name__ == "__main__":
     visualize_results(qg=True)
     visualize_results(qg=False)

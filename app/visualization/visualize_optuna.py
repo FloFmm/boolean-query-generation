@@ -1,10 +1,8 @@
 import optuna
+
 study_name = "rf_optimization"
 db_path = "sqlite:///data/statistics/optuna/run_2_nodes_10tasks_1cpu_per_task/optuna.db"  # make sure this matches your DB
-study = optuna.load_study(
-    study_name=study_name,
-    storage=db_path
-)
+study = optuna.load_study(study_name=study_name, storage=db_path)
 
 best = study.best_trial
 print("=== BEST TRIAL SUMMARY ===")
@@ -23,7 +21,8 @@ for k, dist in best.distributions.items():
 print("\n=== USER ATTRIBUTES ===")
 for k, v in best.user_attrs.items():
     print(f"{k}: {v}")
-import numpy as np 
+import numpy as np
+
 p_scores = []
 r_scores = []
 
@@ -38,9 +37,6 @@ print("=== BEST TRIAL AVERAGES ===")
 print(f"Average Precision: {avg_precision:.4f}")
 print(f"Average Recall:    {avg_recall:.4f}")
 print(f"Number of Queries:    {len(p_scores)}")
-
-
-
 
 
 # 1️⃣ plot_param_importances
@@ -58,6 +54,7 @@ fig.show()
 # 2️⃣ plot_parallel_coordinate
 # Shows interactions between hyperparameters and the objective:
 from optuna.visualization import plot_parallel_coordinate
+
 fig = plot_parallel_coordinate(study)
 fig.show()
 # Each axis → hyperparameter
@@ -81,6 +78,7 @@ fig.show()
 # 4️⃣ plot_contour
 # Shows 2D interactions between two parameters:
 from optuna.visualization import plot_contour
+
 fig = plot_contour(study, params=["max_depth", "max_features"])
 fig.show()
 # Contour heatmap of objective over two parameters
@@ -100,14 +98,18 @@ avg_df = df.groupby(f"params_{param}")["value"].mean().reset_index()
 avg_df = avg_df.sort_values(f"params_{param}")
 import matplotlib.pyplot as plt
 
-plt.figure(figsize=(6,4))
+plt.figure(figsize=(6, 4))
 plt.plot(avg_df[f"params_{param}"], avg_df["value"], marker="o")
 plt.xlabel(param)
 plt.ylabel("Average objective")
 plt.title(f"Average objective vs {param}")
 plt.grid(True)
 # plt.show()
-plt.savefig(f"data/statistics/optuna/images/average_objective_vs_{param}.png", dpi=300, bbox_inches="tight")
+plt.savefig(
+    f"data/statistics/optuna/images/average_objective_vs_{param}.png",
+    dpi=300,
+    bbox_inches="tight",
+)
 
 
 # with constraint
@@ -134,15 +136,14 @@ def print_stats(study, min_recall=0.7):
             if best_value is None or t.value > best_value:
                 best_value = t.value
                 best_trial_recall_constraint = (t, avg_recall, avg_precision)
-                
 
     # Print result
     if best_trial_recall_constraint is None:
-        print(f"\n❌ No trial found with average recall ≥ {int(min_recall*100)}%")
+        print(f"\n❌ No trial found with average recall ≥ {int(min_recall * 100)}%")
     else:
         t, avg_recall, avg_precision = best_trial_recall_constraint
 
-        print(f"\n=== BEST TRIAL WITH AVG RECALL ≥ {int(min_recall*100)}% ===")
+        print(f"\n=== BEST TRIAL WITH AVG RECALL ≥ {int(min_recall * 100)}% ===")
         print(f"Trial number:      {t.number}")
         print(f"Objective value:  {t.value}")
         print(f"Average Recall:   {avg_recall:.4f}")
@@ -153,7 +154,8 @@ def print_stats(study, min_recall=0.7):
             print(f"{k}: {v}")
         print("\n=== USER ATTRIBUTES ===")
         for k, v in t.user_attrs.items():
-            print(f"{k}: {v}")   
+            print(f"{k}: {v}")
+
 
 print()
 print_stats(study, min_recall=0.7)
@@ -166,13 +168,10 @@ print_stats(study, min_recall=0.9)
 print()
 print_stats(study, min_recall=0.95)
 print()
-        
-        
-        
-        
-        
-        
+
+
 from collections import Counter
+
 print()
 print()
 states = [t.state for t in study.trials]

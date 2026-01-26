@@ -45,7 +45,6 @@ def filter_qrels_to_embeddings(qrels, valid_pmids):
     return filtered_qrels
 
 
-
 def parse_qrels(path):
     qrels = {}
     with open(path) as f:
@@ -79,10 +78,12 @@ def precision_at_k(retrieved: List[str], relevant: Set[str], k: int) -> float:
     hits = sum(1 for doc in retrieved_k if doc in relevant)
     return hits / len(retrieved_k) if len(retrieved_k) > 0 else 0.0
 
+
 def recall_at_k(retrieved: List[str], relevant: Set[str], k: int) -> float:
     retrieved_k = retrieved[:k]
     hits = sum(1 for doc in retrieved_k if doc in relevant)
     return hits / len(relevant) if relevant else 0.0
+
 
 def evaluate_topics(
     topics: Dict[str, str],
@@ -91,7 +92,7 @@ def evaluate_topics(
     all_embs: np.ndarray,
     search_fn,
     top_k: int = 1000,
-    device: str = "cuda"
+    device: str = "cuda",
 ):
     """
     Evaluate retrieval results for a set of topics without using pytrec_eval.
@@ -111,11 +112,8 @@ def evaluate_topics(
     """
 
     metrics_all = {}
-    
+
     for i, (topic_id, title) in enumerate(topics.items(), start=1):
-
-        
-
         relevant_ids_set = set(id for id, rel in qrels.get(topic_id, {}).items() if rel)
         if not relevant_ids_set:
             continue
@@ -124,7 +122,9 @@ def evaluate_topics(
 
         retrieved_ids = search_fn(title, all_pmids, all_embs, top_k, device)
         print(f"  Retrieved {len(retrieved_ids)} results")
-        true_positives = sum(1 for doc in retrieved_ids[:top_k] if doc in relevant_ids_set)
+        true_positives = sum(
+            1 for doc in retrieved_ids[:top_k] if doc in relevant_ids_set
+        )
         retrieved_at_k = len(retrieved_ids[:top_k])
         relevant_total = len(relevant_ids_set)
 
@@ -133,15 +133,21 @@ def evaluate_topics(
 
         # Precision@K for docs that are also in qrels[topic_id]
         retrieved_qrels = [doc for doc in retrieved_ids if doc in qrels[topic_id]]
-        true_positives_qrels = sum(1 for doc in retrieved_qrels[:top_k] if doc in relevant_ids_set)
-        precision_qrels = true_positives_qrels / len(retrieved_qrels[:top_k]) if retrieved_qrels[:top_k] else 0
+        true_positives_qrels = sum(
+            1 for doc in retrieved_qrels[:top_k] if doc in relevant_ids_set
+        )
+        precision_qrels = (
+            true_positives_qrels / len(retrieved_qrels[:top_k])
+            if retrieved_qrels[:top_k]
+            else 0
+        )
 
         metrics = {
             f"P_{top_k}": precision,
             f"recall_{top_k}": recall,
             f"P_{top_k}_qrels": precision_qrels,
             "true_positives": true_positives,
-            "relevant_total": relevant_total
+            "relevant_total": relevant_total,
         }
         metrics_all[topic_id] = metrics
 
@@ -150,24 +156,29 @@ def evaluate_topics(
             print(f"    {k}: {v:.4f}")
 
     # Compute mean metrics across topics
-    mean_metrics = {metric: np.mean([m.get(metric, 0.0) for m in metrics_all.values()])
-                    for metric in metrics_all[next(iter(metrics_all))]}
-    
+    mean_metrics = {
+        metric: np.mean([m.get(metric, 0.0) for m in metrics_all.values()])
+        for metric in metrics_all[next(iter(metrics_all))]
+    }
+
     print("\n✅ Evaluation complete.")
     print("\n=== Final Mean Metrics ===")
     for k, v in mean_metrics.items():
         print(f"{k}: {v:.4f}")
-    print(f"global_P_{top_k}: {sum(metric['true_positives'] for metric in metrics_all.values())/(len(metrics_all)*top_k):.4f}")
-    print(f"global_recall_{top_k}: {sum(metric['true_positives'] for metric in metrics_all.values())/sum(metric['relevant_total'] for metric in metrics_all.values()):.4f}")
-   
+    print(
+        f"global_P_{top_k}: {sum(metric['true_positives'] for metric in metrics_all.values()) / (len(metrics_all) * top_k):.4f}"
+    )
+    print(
+        f"global_recall_{top_k}: {sum(metric['true_positives'] for metric in metrics_all.values()) / sum(metric['relevant_total'] for metric in metrics_all.values()):.4f}"
+    )
 
     return metrics_all, mean_metrics
 
 
 def main():
     # 1️⃣ Load topics and qrels
-    topics = parse_topics(TOPICS_DIR)      # topic_id -> title
-    qrels = parse_qrels(QRELS_PATH)        # topic_id -> {pmid: relevance}
+    topics = parse_topics(TOPICS_DIR)  # topic_id -> title
+    qrels = parse_qrels(QRELS_PATH)  # topic_id -> {pmid: relevance}
 
     # 2️⃣ Load all PMIDs and embeddings
     print("Loading valid PMIDs from embeddings...")
@@ -192,7 +203,7 @@ def main():
         all_embs=all_embs,
         search_fn=search_fn,
         top_k=top_k,
-        device=device
+        device=device,
     )
 
     # 7️⃣ Optionally, save results
@@ -202,6 +213,6 @@ def main():
     # with open("mean_metrics.json", "w") as f:
     #     json.dump(mean_metrics, f, indent=2)
 
+
 if __name__ == "__main__":
     main()
-

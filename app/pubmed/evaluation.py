@@ -35,6 +35,7 @@ def load_completed_mesh_terms(jsonl_path: Path):
                 continue
     return completed
 
+
 def train_all_mesh_terms_jsonl(
     models,
     baseline_folder: str = "./data/pubmed/baseline",
@@ -128,6 +129,7 @@ def train_all_mesh_terms_jsonl(
                 out_f.write(json.dumps(record, ensure_ascii=False) + "\n")
                 out_f.flush()  # ensures progress is safely written
         print(f"✅ Completed training for {output_path}")
+
 
 def plot_metrics_from_jsonl(path: str):
     """
@@ -330,9 +332,7 @@ def plot_metrics_vs_class_ratio(path: str):
     plt.show()
 
 
-
 if __name__ == "__main__":
-
     models = [
         # SkopeRulesClassifier(
         #     n_estimators=10,
@@ -362,7 +362,18 @@ if __name__ == "__main__":
         for min_impurity_d_start in [0.01, 0.1, 0.001]:
             for min_impurity_d_end in [0.03, 0.3, 0.003]:
                 for top_k_or_candidates in [100, 500, 1000]:
-                    for class_weight in [1.0, {1: 1, 0: 1}, {1: 2, 0: 1}, {1: 3, 0: 1}, {1: 4, 0: 1}, {1: 5, 0: 1}, {1: 6, 0: 1}, {1: 3, 0: 0.5}, {1: 500, 0: 0.5}, {1: 500, 0: 1}]:
+                    for class_weight in [
+                        1.0,
+                        {1: 1, 0: 1},
+                        {1: 2, 0: 1},
+                        {1: 3, 0: 1},
+                        {1: 4, 0: 1},
+                        {1: 5, 0: 1},
+                        {1: 6, 0: 1},
+                        {1: 3, 0: 0.5},
+                        {1: 500, 0: 0.5},
+                        {1: 500, 0: 1},
+                    ]:
                         models.append(
                             GreedyORDecisionTree(
                                 max_depth=4,

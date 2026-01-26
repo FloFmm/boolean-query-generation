@@ -1,14 +1,24 @@
 import os
 import random
+
 CUSTOM_HF_PATH = "../systematic-review-datasets/data/huggingface"
-os.environ["HF_HOME"] = CUSTOM_HF_PATH # has to be up here
+os.environ["HF_HOME"] = CUSTOM_HF_PATH  # has to be up here
 from collections import defaultdict
 from app.dataset.utils import review_id_to_dataset
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
+
+sys.path.append(
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), "../..", "../systematic-review-datasets"
+        )
+    )
+)
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset, build_global_corpus
+
 # from csmed.csmed.csmed_cochrane import CSMED_COCHRANE_REVIEWS
 from csmed.csmed_cochrane.prepare_dataset import prepare_dataset
+
 
 def read_qrels_first_column_set(file_path):
     """
@@ -18,14 +28,15 @@ def read_qrels_first_column_set(file_path):
     :return: Set of values from the first column
     """
     first_column_set = set()
-    
-    with open(file_path, 'r') as f:
+
+    with open(file_path, "r") as f:
         for line in f:
             if line.strip():  # ignore empty lines
                 first_col = line.split()[0]
                 first_column_set.add(first_col)
-    
+
     return first_column_set
+
 
 def get_filenames_set(path):
     """
@@ -35,28 +46,49 @@ def get_filenames_set(path):
     :return: Set of file names without extensions
     """
     filenames = []
-    
+
     for entry in os.listdir(path):
         full_path = os.path.join(path, entry)
         if os.path.isfile(full_path):
             name_without_ext = os.path.splitext(entry)[0]
             filenames.append(name_without_ext)
-    
+
     return filenames
+
 
 def get_tar_review_ids(year=2018):
     if year == 2017:
-        tar2017_train = read_qrels_first_column_set("/data/horse/ws/flml293c-master-thesis/tar/2017-TAR/training/qrels/train.combined.qrels")
-        tar2017_test = read_qrels_first_column_set("/data/horse/ws/flml293c-master-thesis/tar/2017-TAR/testing/qrels/test.combined.qrels")
+        tar2017_train = read_qrels_first_column_set(
+            "/data/horse/ws/flml293c-master-thesis/tar/2017-TAR/training/qrels/train.combined.qrels"
+        )
+        tar2017_test = read_qrels_first_column_set(
+            "/data/horse/ws/flml293c-master-thesis/tar/2017-TAR/testing/qrels/test.combined.qrels"
+        )
         print("Overlap:", len(tar2017_test & tar2017_train))
         print("Number:", len(tar2017_test | tar2017_train))
         print("tar2017_train", sorted(tar2017_train))
         print("tar2017_test", sorted(tar2017_test))
     if year == 2018:
-        tar2018_train = set(get_filenames_set("/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Training/protocols"))
-        tar2018_train |= set(get_filenames_set("/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Training/protocols_revised_03092018"))
-        tar2018_test = set(get_filenames_set("/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Testing/protocols"))
-        tar2018_test |= set(get_filenames_set("/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Testing/protocols_revised_20180708"))
+        tar2018_train = set(
+            get_filenames_set(
+                "/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Training/protocols"
+            )
+        )
+        tar2018_train |= set(
+            get_filenames_set(
+                "/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Training/protocols_revised_03092018"
+            )
+        )
+        tar2018_test = set(
+            get_filenames_set(
+                "/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Testing/protocols"
+            )
+        )
+        tar2018_test |= set(
+            get_filenames_set(
+                "/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Testing/protocols_revised_20180708"
+            )
+        )
         print("Overlap:", len(tar2018_test & tar2018_train))
         print("Number:", len(tar2018_test | tar2018_train))
         print("tar2018_train", sorted(tar2018_train))
@@ -68,20 +100,22 @@ def compute_dataset_statistics():
     gc = build_global_corpus(dataset)
     # print(len(gc))
     global_doc_ids = {d["id"] for d in gc}
-    
-    group_stats = defaultdict(lambda: {
-        "ratio_sum": 0.0,
-        "pos_sum": 0,
-        "neg_sum": 0,
-        "n_reviews": 0,
-        "empty_abstract_in_pos": 0,
-        "reviews_ge_25_positives": 0,
-    })
+
+    group_stats = defaultdict(
+        lambda: {
+            "ratio_sum": 0.0,
+            "pos_sum": 0,
+            "neg_sum": 0,
+            "n_reviews": 0,
+            "empty_abstract_in_pos": 0,
+            "reviews_ge_25_positives": 0,
+        }
+    )
     missing_relevant_docs = defaultdict(list)
     count_dict = defaultdict(int)
     doc_ids = set()
     review_names = set()
-    
+
     # r = defaultdict(set)
     for split, reviews in dataset.items():
         print("split", split)
@@ -107,14 +141,14 @@ def compute_dataset_statistics():
                         )
                         if len(doc["abstract"]) < 20:
                             group_stats[dataset_name]["empty_abstract_in_pos"] += 1
-                            if not(doc["abstract"] == "nan" or doc["abstract"] == "?"):
+                            if not (doc["abstract"] == "nan" or doc["abstract"] == "?"):
                                 print(doc["abstract"])
                                 assert False
                     else:
                         neg += 1
 
             total = pos + neg
-            
+
             review_ratio = pos / total
 
             stats = group_stats[dataset_name]
@@ -124,14 +158,19 @@ def compute_dataset_statistics():
             stats["n_reviews"] += 1
             if pos >= 25:
                 stats["reviews_ge_25_positives"] += 1
-            
-    count_dict["tar2019sum"] = count_dict["tar2019"] + count_dict["tar2018"] + count_dict["tar2017"]
+
+    count_dict["tar2019sum"] = (
+        count_dict["tar2019"] + count_dict["tar2018"] + count_dict["tar2017"]
+    )
     print(count_dict)
     from app.config.config import CSMED_COCHRANE_REVIEWS
-    expected = {name: len(set(reviews)) for name, reviews in CSMED_COCHRANE_REVIEWS.items()}
+
+    expected = {
+        name: len(set(reviews)) for name, reviews in CSMED_COCHRANE_REVIEWS.items()
+    }
     print("expected:", expected)
     print()
-    
+
     print("\n=== Dataset-level macro statistics ===")
 
     for dataset_name, stats in sorted(group_stats.items()):
@@ -152,14 +191,15 @@ def compute_dataset_statistics():
             f"n_reviews={n}",
             f"reviews_ge_25_positives={reviews_ge_25_positives}",
         )
-        
+
+
 def compute_train_review_ids(
     total_samples=25,
     min_positives=25,
     seed=42,
 ):
     random.seed(seed)
-    
+
     dataset = load_dataset()
     eligible = defaultdict(list)
 
@@ -185,8 +225,7 @@ def compute_train_review_ids(
 
     # 3️⃣ proportional allocation
     allocation = {
-        k: int(round(total_samples * c / total_eligible))
-        for k, c in counts.items()
+        k: int(round(total_samples * c / total_eligible)) for k, c in counts.items()
     }
 
     # 4️⃣ fix rounding
@@ -214,22 +253,20 @@ def compute_train_review_ids(
 
     print("\n=== Selected trains reviews (stratified) ===")
     print(f"Total samples: {total_samples}\n")
-    
 
     for dataset_name in sorted(allocation.keys()):
         k = allocation[dataset_name]
         selected = random.sample(
-            eligible[dataset_name],
-            min(k, len(eligible[dataset_name]))
+            eligible[dataset_name], min(k, len(eligible[dataset_name]))
         )
         sampled[dataset_name] = selected
 
-        print(
-            f"{dataset_name}: {len(selected)} / {counts[dataset_name]} eligible"
-        )
+        print(f"{dataset_name}: {len(selected)} / {counts[dataset_name]} eligible")
         for r in selected:
             # count positives
-            review_data = dataset["TRAIN"][r] if r in dataset["TRAIN"] else dataset["EVAL"][r]
+            review_data = (
+                dataset["TRAIN"][r] if r in dataset["TRAIN"] else dataset["EVAL"][r]
+            )
             pos_count = sum(
                 doc["label"] == 1
                 for docs in review_data["data"].values()
@@ -240,10 +277,7 @@ def compute_train_review_ids(
     print(f"Samples:", sampled)
     return sampled
 
+
 if __name__ == "__main__":
     # compute_dataset_statistics()
-    compute_train_review_ids(
-        total_samples=25,
-        min_positives=25
-    )
-    
+    compute_train_review_ids(total_samples=25, min_positives=25)

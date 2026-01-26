@@ -1,6 +1,7 @@
 import os
+
 CUSTOM_HF_PATH = "../systematic-review-datasets/data/huggingface"
-os.environ["HF_HOME"] = CUSTOM_HF_PATH # has to be up here
+os.environ["HF_HOME"] = CUSTOM_HF_PATH  # has to be up here
 
 import sys
 import pickle
@@ -10,25 +11,37 @@ from app.tree_learning.random_forest import RandomForest
 from app.dataset.utils import generate_labels, load_synonym_map, get_positives
 from app.pubmed.retrieval import search_pubmed_dynamic
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "../systematic-review-datasets")))
-from csmed.experiments.csmed_cochrane_retrieval import create_retriever, build_global_corpus, load_dataset
+sys.path.append(
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), "../..", "../systematic-review-datasets"
+        )
+    )
+)
+from csmed.experiments.csmed_cochrane_retrieval import (
+    create_retriever,
+    build_global_corpus,
+    load_dataset,
+)
+
 print("finished imports")
-# Give either a custom query or a query_id 
-query_id = "CD009784"#"CD002115"#"CD008760"
-query = "Management of faecal incontinence and constipation in adults with central neurological diseases"#cancer with legs heart attack"
+# Give either a custom query or a query_id
+query_id = "CD009784"  # "CD002115"#"CD008760"
+query = "Management of faecal incontinence and constipation in adults with central neurological diseases"  # cancer with legs heart attack"
 ret_name = "pubmedbert"
-ret_conf = {"type": "dense",
-            "model": "pritamdeka/S-PubMedBert-MS-MARCO",
-            "max_length": 512
-            }
+ret_conf = {
+    "type": "dense",
+    "model": "pritamdeka/S-PubMedBert-MS-MARCO",
+    "max_length": 512,
+}
 total_docs = 433660
 QG_PARAMS = {
     "min_tree_occ": 0.05,
     "min_rule_occ": 0.05,
-    "cost_factor": 0.002, # 50 ANDs are worth 0.1 F3 score
+    "cost_factor": 0.002,  # 50 ANDs are worth 0.1 F3 score
     "min_rule_precision": 0.01,
     "beta": 2,
-    }
+}
 RF_PARAMS = {
     "n_estimators": 3,
     "max_depth": 4,
@@ -46,7 +59,7 @@ RF_PARAMS = {
     "class_weight": 1.0,
     "max_samples": None,
     "top_k_or_candidates": 500,
-    "prefer_pos_splits": 1.1
+    "prefer_pos_splits": 1.1,
 }
 
 ### Corpus ###
@@ -59,7 +72,7 @@ else:
     dataset = load_dataset()
     with open(DATASET_PATH, "wb") as f:
         pickle.dump(dataset, f)
-    
+
 GLOBAL_CORPUS_PATH = f"data/tmp/global_corpus_{total_docs}.pkl"
 if os.path.exists(GLOBAL_CORPUS_PATH):
     with open(GLOBAL_CORPUS_PATH, "rb") as f:
@@ -87,36 +100,31 @@ print("Query:", query)
 
 retriever = create_retriever(ret_name, ret_conf, collection=global_corpus)
 
-ranking = retriever.search(
-    query=query, cutoff=10_000, return_docs=False
-)
+ranking = retriever.search(query=query, cutoff=10_000, return_docs=False)
 sorted_ids = sorted(ranking, key=ranking.get, reverse=True)
 SORTED_IDS_PATH = f"data/tmp/sorted_ids_qid={query_id}_d={total_docs}.pkl"
 with open(SORTED_IDS_PATH, "wb") as f:
     pickle.dump(sorted_ids, f)
-        
+
 ### Train Decision Tree ###
 
 
-X, ordered_pmids, feature_names = load_vectors(total_docs, min_df=10, max_df=0.1, mesh=True)
+X, ordered_pmids, feature_names = load_vectors(
+    total_docs, min_df=10, max_df=0.1, mesh=True
+)
 print("Num Features:", len(feature_names))
 print("Examples:")
 for i in range(10):
     print('"' + feature_names[i] + '"')
 
 
-qrels = {
-    "pos": sorted_ids[:100],
-    "neutral": sorted_ids[500:]
-}
+qrels = {"pos": sorted_ids[:100], "neutral": sorted_ids[500:]}
 keep_indices, labels = generate_labels(qrels, ordered_pmids)
 print("labels generated")
 
 rf = RandomForest(**RF_PARAMS)
 X = X[keep_indices]
-rf.fit(
-    X, np.array(labels), feature_names=feature_names
-)
+rf.fit(X, np.array(labels), feature_names=feature_names)
 print("finished fitting")
 ### Generate Pubmed Query ###
 # synonym_map = load_synonym_map(total_docs)
@@ -135,8 +143,8 @@ print("PubMed Query:", pubmed_query_str)
 ### Evaluate on PubMed ###
 if query_id is not None:
     retrieved = search_pubmed_dynamic(pubmed_query_str)
-    retrieved = set(str(x) for x in retrieved) # retrieved PMIDs
-    positives = get_positives(query_id=query_id, dataset=dataset)         # relevant PMIDs
+    retrieved = set(str(x) for x in retrieved)  # retrieved PMIDs
+    positives = get_positives(query_id=query_id, dataset=dataset)  # relevant PMIDs
     print("Positives:", positives)
     TP = len(retrieved & positives)
     precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0

@@ -1,8 +1,15 @@
 import matplotlib.pyplot as plt
 import os
-from app.parameter_tuning.compute_top_k import compute_weighted_metric_curve, compute_top_ks, compute_top_k_curve, BUCKETS, CSV_PATH
+from app.parameter_tuning.compute_top_k import (
+    compute_weighted_metric_curve,
+    compute_top_ks,
+    compute_top_k_curve,
+    BUCKETS,
+    CSV_PATH,
+)
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
+
 
 def plot_metric_curve_by_bucket(
     csv_path: str,
@@ -10,8 +17,8 @@ def plot_metric_curve_by_bucket(
     metric: str = "recall",
     title: str | None = None,
 ):
-    ks, bucket_labels, bucket_vals, bucket_avg_positives = compute_weighted_metric_curve(
-        csv_path, buckets, metric
+    ks, bucket_labels, bucket_vals, bucket_avg_positives = (
+        compute_weighted_metric_curve(csv_path, buckets, metric)
     )
 
     num_buckets = len(buckets)
@@ -47,7 +54,8 @@ def plot_metric_curve_by_bucket(
     plt.close()
 
     print(f"✓ Saved {metric}@k curve plot to: {out_img}")
-     
+
+
 def plot_k_at_recall_thresholds_buckets(
     csv_path: str,
     ps: list[float],
@@ -78,13 +86,8 @@ def plot_k_at_recall_thresholds_buckets(
     bucket_labels = [f"{lo}-{hi}" for lo, hi in buckets]
 
     for p, ks_dict in k_at_ps.items():
-        ys = [ks_dict.get((lo, hi), float('nan')) for lo, hi in buckets]
-        plt.plot(
-            bucket_labels,
-            ys,
-            marker="o",
-            label=f"k@{int(p*100)}% recall"
-        )
+        ys = [ks_dict.get((lo, hi), float("nan")) for lo, hi in buckets]
+        plt.plot(bucket_labels, ys, marker="o", label=f"k@{int(p * 100)}% recall")
 
     plt.xlabel("Number of positives (bucket)")
     plt.ylabel("k")
@@ -101,24 +104,24 @@ def plot_k_at_recall_thresholds_buckets(
     plt.close()
     print(f"✓ Saved k@recall per bucket plot to: {out_img}")
 
+
 if __name__ == "__main__":
-    
     plot_metric_curve_by_bucket(
         csv_path=CSV_PATH,
         title="Recall by Number of Positives",
         metric="recall",
-        buckets=BUCKETS
+        buckets=BUCKETS,
     )
     plot_metric_curve_by_bucket(
         csv_path=CSV_PATH,
         title="Precision by Number of Positives",
         metric="precision",
-        buckets=BUCKETS
+        buckets=BUCKETS,
     )
     plot_k_at_recall_thresholds_buckets(
         csv_path=CSV_PATH,
         ps=[0.8, 0.7, 0.6, 0.3],
         buckets=BUCKETS,
-        title="k@p-recall per bucket"
+        title="k@p-recall per bucket",
     )
     compute_top_k_curve(CSV_PATH, BUCKETS, recall=0.7)
