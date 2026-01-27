@@ -206,8 +206,9 @@ def optimize_with_optuna_parallel(
                 # raise optuna.exceptions.TrialPruned()
                 # do not use TrialPruned here as this can lead to still running trials being pruned
                 # only prune inside the currently running trial
-                print("[Failed because duplicate]")
-                return float("nan")  # This will mark the trial as failed
+                # print("[Failed because duplicate]")
+                # return float("nan")  # This will mark the trial as failed
+                raise optuna.exceptions.TrialPruned("Duplicate configuration")
 
             # Mark "in progress"
             qg_results_path.touch()
