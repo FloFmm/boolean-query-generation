@@ -51,6 +51,13 @@ ABBREVIATIONS = {
     "top_k": "k",
     "top_k_or_candidates": "tkoc",
     "term_expansions": "te",
+    "dont_cares": "dc",
+    "cost_factor": "cf",
+    "cover_beta": "cb",
+    "min_rule_occ": "mro",
+    "min_rule_precision": "mrp",
+    "min_tree_occ": "mto",
+    "pruning_beta": "pb",
     # "verbose": "v",
 }
 
