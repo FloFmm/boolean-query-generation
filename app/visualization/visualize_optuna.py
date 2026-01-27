@@ -1,7 +1,8 @@
 import optuna
 
 study_name = "rf_optimization"
-db_path = "sqlite:///data/statistics/optuna/run_2_nodes_10tasks_1cpu_per_task/optuna.db"  # make sure this matches your DB
+# db_path = "sqlite:///data/statistics/optuna/run_2_nodes_10tasks_1cpu_per_task/optuna.db" 
+db_path = "sqlite:///data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=6.0"
 study = optuna.load_study(study_name=study_name, storage=db_path)
 
 best = study.best_trial

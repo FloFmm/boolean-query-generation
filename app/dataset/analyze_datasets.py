@@ -131,7 +131,7 @@ def compute_dataset_statistics():
             for split_name, docs in review_data["data"].items():
                 for doc in docs:
                     # doc has keys [review_id pmid, title, abstract, label, mesh_terms]
-                    label = doc["label"]
+                    label = int(doc["label"])
                     doc_id = str(doc.get("pmid"))
                     
 
@@ -147,8 +147,10 @@ def compute_dataset_statistics():
                                 assert False
                     else:
                         neg.add(doc_id)
+            print(len(pos), len(neg))
             neg = len(neg-pos)
             pos = len(pos)
+            
             total = pos + neg
             # print(review_name, len(new_pos), pos)
             review_ratio = pos / total

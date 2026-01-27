@@ -75,8 +75,7 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=95
         return list(record["IdList"])
 
     if total_expected > 100_000:
-        print("Tried to retrieve more than 100k PubMed documents")
-        raise optuna.exceptions.TrialPruned()
+        raise optuna.exceptions.TrialPruned("Tried to retrieve more than 100k PubMed documents")
 
     if DEBUG:
         print(f"Total expected PMIDs: {total_expected}")

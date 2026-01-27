@@ -252,10 +252,7 @@ def optimize_with_optuna_parallel(
 
             # prune early if necessary
             if trial.should_prune():
-                print(
-                    f"[PRUNED because bad] Trial {trial.number} at step={i}, query_id={query_id}, current_value={sum(opt_scores) / len(opt_scores)}"
-                )
-                raise optuna.exceptions.TrialPruned()
+                raise optuna.exceptions.TrialPruned(f"[because bad] Trial {trial.number} at step={i}, query_id={query_id}, current_value={sum(opt_scores) / len(opt_scores)}")
 
         trial.set_user_attr("results_list", results_list)
 

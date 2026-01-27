@@ -17,6 +17,6 @@ CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_
 cd boolean-query-generation
 echo "Running job index: $SLURM_ARRAY_TASK_ID"
 # $CSMED_PY -m app.experiments.evaluate_dt_csmed $SLURM_ARRAY_TASK_ID
-$CSMED_PY -m app.experiments.evalaute_best $SLURM_ARRAY_TASK_ID
+$CSMED_PY -m app.experiments.evaluate_best $SLURM_ARRAY_TASK_ID
 
 # /data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python -m app.experiments.evaluate_pubmed_query 0
