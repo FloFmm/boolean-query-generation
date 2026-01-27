@@ -125,17 +125,18 @@ def compute_dataset_statistics():
             dataset_name, split, year = review_id_to_dataset(review_name)
             count_dict[dataset_name] += 1
 
-            pos = 0
-            neg = 0
-
+            pos = set()
+            neg = set()
+            # new_pos = get_positives(dataset=dataset, review_id=review_name)
             for split_name, docs in review_data["data"].items():
                 for doc in docs:
                     # doc has keys [review_id pmid, title, abstract, label, mesh_terms]
                     label = doc["label"]
-                    doc_id = doc.get("pmid")
+                    doc_id = str(doc.get("pmid"))
+                    
 
                     if label == 1:
-                        pos += 1
+                        pos.add(doc_id)
                         assert doc_id in global_doc_ids, (
                             f"Missing relevant doc {doc_id} in {dataset_name}"
                         )
@@ -145,10 +146,11 @@ def compute_dataset_statistics():
                                 print(doc["abstract"])
                                 assert False
                     else:
-                        neg += 1
-
+                        neg.add(doc_id)
+            neg = len(neg-pos)
+            pos = len(pos)
             total = pos + neg
-
+            # print(review_name, len(new_pos), pos)
             review_ratio = pos / total
 
             stats = group_stats[dataset_name]

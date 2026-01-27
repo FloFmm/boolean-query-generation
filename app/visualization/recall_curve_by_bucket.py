@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import os
+from pathlib import Path
 from app.parameter_tuning.compute_top_k import (
     compute_weighted_metric_curve,
     compute_top_ks,
@@ -13,6 +14,7 @@ import matplotlib.cm as cm
 
 def plot_metric_curve_by_bucket(
     csv_path: str,
+    out_folder: str,
     buckets: list[tuple],
     metric: str = "recall",
     title: str | None = None,
@@ -49,7 +51,7 @@ def plot_metric_curve_by_bucket(
         plt.title(title)
 
     plt.tight_layout()
-    out_img = os.path.splitext(csv_path)[0] + f"_{metric}_at_k_curve.jpg"
+    out_img = Path(out_folder) / f"_{metric}_at_k_curve.jpg"
     plt.savefig(out_img, dpi=300, bbox_inches="tight")
     plt.close()
 
@@ -58,6 +60,7 @@ def plot_metric_curve_by_bucket(
 
 def plot_k_at_recall_thresholds_buckets(
     csv_path: str,
+    out_folder: str,
     ps: list[float],
     buckets: list[tuple],
     title: str | None = None,
@@ -99,7 +102,7 @@ def plot_k_at_recall_thresholds_buckets(
         plt.title(title)
 
     plt.tight_layout()
-    out_img = os.path.splitext(csv_path)[0] + "_k_at_recall_per_bucket.jpg"
+    out_img = Path(out_folder) / f"{Path(csv_path).stem}_k_at_recall_per_bucket.jpg"
     plt.savefig(out_img, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"✓ Saved k@recall per bucket plot to: {out_img}")
@@ -111,17 +114,20 @@ if __name__ == "__main__":
         title="Recall by Number of Positives",
         metric="recall",
         buckets=BUCKETS,
+        out_folder="data/statistics/images/recall_curve_by_bucket",
     )
     plot_metric_curve_by_bucket(
         csv_path=CSV_PATH,
         title="Precision by Number of Positives",
         metric="precision",
         buckets=BUCKETS,
+        out_folder="data/statistics/images/recall_curve_by_bucket",
     )
     plot_k_at_recall_thresholds_buckets(
         csv_path=CSV_PATH,
         ps=[0.8, 0.7, 0.6, 0.3],
         buckets=BUCKETS,
         title="k@p-recall per bucket",
+        out_folder="data/statistics/images/recall_curve_by_bucket",
     )
     compute_top_k_curve(CSV_PATH, BUCKETS, recall=0.7)
