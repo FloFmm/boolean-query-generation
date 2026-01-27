@@ -78,7 +78,7 @@ BOW_PARAMS = {
 RF_PARAMS = {
     "top_k": 1.5,
     "dont_cares": 2.0,
-    "rank_weight": 1.4,  # how much more weighted shall rank 1 be than rank k
+    "rank_weight": 1.5,  # how much more weighted shall rank 1 be than rank k
     "n_estimators": 50,  # TODO change back
     "max_depth": 4,
     # "min_samples_split": 2,

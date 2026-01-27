@@ -256,9 +256,9 @@ def expand_term(
 ):
     if feature.endswith("[mh]"):  # mesh terms
         if mh_noexp:
-            return feature
-        else:
             return feature.replace("[mh]", "[mh:noexp]")
+        else:
+            return feature
     if term_expansions is None:
         terms = [feature]
     else:

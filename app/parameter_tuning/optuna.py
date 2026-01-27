@@ -90,9 +90,9 @@ def optimize_with_optuna_parallel(
                     "min_weight_fraction_leaf", 0.0, 0.002, step=0.0002
                 ),  # 0.002 = 1000 docs for {1:1, 0:1} (1000/500k)
                 "top_k": trial.suggest_float("top_k", 0.5, 2.0, step=0.1),
-                "dont_cares": trial.suggest_float("dont_cares", 0.0, 5.0, step=0.5),
+                "dont_cares": trial.suggest_float("dont_cares", 0.0, 5.0, step=0.25),
                 "rank_weight": trial.suggest_float(
-                    "rank_weight", 1.0, 5.0, step=0.4
+                    "rank_weight", 1.0, 10.0, step=0.5
                 ),  # how much more weighted shall rank 1 be than rank k
                 "max_features": trial.suggest_float(
                     "max_features", 0.01, 1.00, step=0.01
@@ -105,7 +105,7 @@ def optimize_with_optuna_parallel(
                 ),
                 "class_weight": trial.suggest_float("class_weight", 0.0, 1.0, step=0.1),
                 "top_k_or_candidates": trial.suggest_int(
-                    "top_k_or_candidates", 500, 1500, step=500
+                    "top_k_or_candidates", 500, 3000, step=500
                 ),
                 "randomize_max_feature": trial.suggest_float(
                     "randomize_max_feature", 0.0, 3.0, step=0.3
@@ -175,10 +175,10 @@ def optimize_with_optuna_parallel(
         qg_params = copy.deepcopy(QG_PARAMS)
 
         qg_opt_params = {
-            "min_tree_occ": trial.suggest_float("min_tree_occ", 0.0, 0.1, step=0.01),
+            "min_tree_occ": trial.suggest_float("min_tree_occ", 0.0, 0.15, step=0.01),
             "min_rule_occ": trial.suggest_float("min_rule_occ", 0.0, 0.1, step=0.01),
             "cover_beta": trial.suggest_float(
-                "cover_beta", 1.0, 5.0, step=0.1
+                "cover_beta", 0.5, 5.0, step=0.1
             ),  # high to prefer covering training data fully
             "pruning_beta": trial.suggest_float(
                 "pruning_beta", 0.05, 1.0, step=0.05
