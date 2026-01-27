@@ -299,7 +299,7 @@ def optimize_with_optuna_parallel(
 if __name__ == "__main__":
     opt_beta = 6.0
     print("finished imports", flush=True)
-    time_out = 300
+    time_out = 600
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_name = f"run_10_nodes_10tasks_1cpu_per_task_opt_beta={opt_beta}"
     run_path = f"/data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/statistics/optuna/{run_name}"
@@ -314,7 +314,7 @@ if __name__ == "__main__":
         ret_config={"model": "pubmedbert", "query_type": "title_abstract"},
         study_name="rf_optimization",
         run_path=run_path,
-        n_trials=64,
+        n_trials=10_000,
         n_jobs=1,  # this is threads (not using cpus-per-task)
         opt_beta=opt_beta,
     )
