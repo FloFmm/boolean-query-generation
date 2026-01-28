@@ -3,70 +3,92 @@ import csv
 import os
 from collections import defaultdict
 from app.helper.helper import f_beta
-from app.dataset.utils import review_id_to_dataset
+from app.dataset.utils import review_id_to_dataset, dataset_names
 
-
-def process_jsonl(file_path, output_csv, typst_txt_path=None):
+def process_jsonl_folder(folder_path, output_csv):
     # Dictionary to store sum of values and counts
+    # Key is now (dataset, bucket, file)
     stats = defaultdict(lambda: defaultdict(list))
 
-    # Read file
-    with open(file_path, "r") as f:
-        for line in f:
-            data = json.loads(line)
-            dataset, _, _ = review_id_to_dataset(data["query_id"])
-            if dataset == "tar2017":
-                dataset = "tar2018" #tar 2017 is aprt of 2018
-            num_positive_bucket = "<50" if data["num_positive"] < 50 else ">=50"
-            keys = [(dataset, num_positive_bucket), (dataset, "all")]  # add "all"
+    # Walk through folder and subfolders
+    for root, _, files in os.walk(folder_path):
+        for file in files:
+            if file.endswith("qg_results.jsonl"):
+                file_path = os.path.join(root, file)
+                relative_path = os.path.relpath(file_path, folder_path)
 
-            for key in keys:
-                # Top-level numerical values
-                for field in [
-                    "num_positive",
-                    "top_k",
-                    "pubmed_retrieved",
-                    "pubmed_precision",
-                    "pubmed_recall",
-                    "subset_retrieved",
-                    "subset_precision",
-                    "subset_recall",
-                    "pseudo_precision",
-                    "pseudo_recall",
-                    "optimization_score",
-                    "qg_time_seconds",
-                ]:
-                    stats[key][field].append(data.get(field, 0))
+                meta_path = os.path.join(root, "qg_meta_data.json")
+                betas_str = ""
 
-                # query_size values
-                for field, value in data.get("query_size", {}).items():
-                    stats[key][f"query_size_{field}"].append(value)
+                if os.path.exists(meta_path):
+                    with open(meta_path, "r") as mf:
+                        meta = json.load(mf)
+                        betas = sorted(meta.get("betas", {}).keys(), key=int)
+                        betas_str = ",".join(map(str, betas))
+                else: 
+                    print("warning meta file missing, value get lost if thats the case")
+                    continue
 
-                # Calculate F1 and F3 for pubmed
-                p = data.get("pubmed_precision", 0)
-                r = data.get("pubmed_recall", 0)
-                stats[key]["pubmed_f1"].append(f_beta(precision=p, recall=r, beta=1))
-                stats[key]["pubmed_f3"].append(f_beta(precision=p, recall=r, beta=3))
+                with open(file_path, "r") as f:
+                    for line in f:
+                        data = json.loads(line)
+                        dataset, _, _ = review_id_to_dataset(data["query_id"])
+                        if dataset == "tar2017":
+                            dataset = "tar2018"  # tar2017 is part of 2018
+
+                        num_positive_bucket = "<50" if data["num_positive"] < 50 else ">=50"
+                        key = (dataset, num_positive_bucket, relative_path, betas_str)  # include filename in key
+
+                        # Top-level numerical values
+                        for field in [
+                            "num_positive",
+                            "top_k",
+                            "pubmed_retrieved",
+                            "pubmed_precision",
+                            "pubmed_recall",
+                            "subset_retrieved",
+                            "subset_precision",
+                            "subset_recall",
+                            "pseudo_precision",
+                            "pseudo_recall",
+                            "optimization_score",
+                            "qg_time_seconds",
+                        ]:
+                            value = data.get(field, 0)
+                            if value is None:
+                                value = 0
+                            stats[key][field].append(value)
+
+                        # query_size values
+                        for field, value in data.get("query_size", {}).items():
+                            if value is not None:
+                                stats[key][f"query_size_{field}"].append(value)
+
+                        # Calculate F1 and F3 for pubmed
+                        p = data.get("pubmed_precision", 0) or 0
+                        r = data.get("pubmed_recall", 0) or 0
+                        stats[key]["pubmed_f1"].append(f_beta(precision=p, recall=r, beta=1))
+                        stats[key]["pubmed_f3"].append(f_beta(precision=p, recall=r, beta=3))
 
     # Write CSV
     os.makedirs(os.path.dirname(output_csv), exist_ok=True)
     with open(output_csv, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
+
         # Header
-        header = ["dataset", "num_positive_bucket"] + list(
-            next(iter(stats.values())).keys()
-        )
+        field_keys = list(next(iter(stats.values())).keys())
+        header = ["dataset", "num_positive_bucket", "source_file", "selection_betas"] + field_keys
         writer.writerow(header)
 
-        for (dataset, bucket), fields in stats.items():
-            row = [dataset, bucket]
-            for field in header[2:]:
-                values = fields.get(field, [])
+        for (dataset, bucket, file_path, beta_str), fields in stats.items():
+            row = [dataset, bucket, file_path, beta_str]
+            for field in field_keys:
+                values = [v for v in fields.get(field, []) if v is not None]
                 avg = sum(values) / len(values) if values else 0
                 row.append(avg)
             writer.writerow(row)
 
-def generate_typst_table(csv_file, typst_file, baseline_dict):
+def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
     """
     Generates a Typst table from a CSV containing metrics and a baseline dictionary.
 
@@ -83,8 +105,19 @@ def generate_typst_table(csv_file, typst_file, baseline_dict):
         for row in reader:
             dataset = row["dataset"]
             bucket = row["num_positive_bucket"]
-            stats.setdefault(dataset, {})[bucket] = row
-
+            
+            # If betas is set, skip rows that don't contain any of the selected betas
+            if betas is not None:
+                row_betas = set(row["selection_betas"].split(","))
+                if not row_betas & betas:
+                    continue  # skip this row entirely
+            
+            stats.setdefault(dataset, {}).setdefault(bucket, []).append(row)
+            
+    def config_name(row):
+        # keep only last 2 path components
+        parts = row["selection_betas"].split(",")
+        return f"{parts[0]}-{parts[-1]}" if len(parts) > 1 else parts[0]
     
     with open(typst_file, "w") as f:
         # Table preamble
@@ -97,48 +130,65 @@ def generate_typst_table(csv_file, typst_file, baseline_dict):
         f.write("  columns: 7,\n")
         f.write("  table.header([], [], [Prompt], table.vline(start:0, stroke:(thickness:0.5pt)), [Precision], [F1], [F3], [Recall]),\n")
         seperator = "  table.cell(colspan: 7, inset: (top: 1pt, bottom: 1pt))[],\n"
-        for i, (dataset, buckets) in enumerate(stats.items()):
+        for i, dataset in enumerate(["tar2018", "tar2019", "sigir2017", "sr_updates"]):#enumerate(stats.items())]
+            buckets = stats[dataset]
             if i != 0:
                 f.write(seperator)
             # Determine rowspans
+            # baseline_count = len(baseline_dict.get(dataset, []))
+            # config_rows_ge50 = 1 if ">=50" in buckets else 0
+            # config_rows_le50 = 1 if "<50" in buckets else 0
+            # config_rows_all = 1 if "all" in buckets else 0
             baseline_count = len(baseline_dict.get(dataset, []))
-            config_rows_ge50 = 1 if ">=50" in buckets else 0
-            config_rows_le50 = 1 if "<50" in buckets else 0
-            config_rows_all = 1 if "all" in buckets else 0
+            config_rows_ge50 = len(buckets.get(">=50", []))
+            config_rows_le50 = len(buckets.get("<50", []))
+            config_rows_all = len(buckets.get("all", []))
             total_rows = baseline_count + config_rows_ge50 + config_rows_le50 + config_rows_all
 
             # Rotated dataset label
-            f.write(f"  table.cell(rowspan: {total_rows}, rotate(-90deg, reflow:true)[{dataset.upper()}]),\n")
+            f.write(f"  table.cell(rowspan: {total_rows}, rotate(-90deg, reflow:true)[{dataset_names(dataset)}]),\n")
 
-            def fmt(x):
-                return f"{x:.4f}" if isinstance(x, float) else f"'{x}'"
+            # Compute best values for bolding
+            best_metrics = {"Precision": -1, "F1": -1, "F3": -1, "Recall": -1}
+            for bucket in buckets.values():
+                for row in bucket:
+                    for m, key in zip(["Precision","F1","F3","Recall"],
+                                      ["pubmed_precision","pubmed_f1","pubmed_f3","pubmed_recall"]):
+                        best_metrics[m] = max(best_metrics[m], float(row[key]))
+            for m, key in zip(["Precision","F1","F3","Recall"],
+                              ["pubmed_precision","pubmed_f1","pubmed_f3","pubmed_recall"]):
+                if baseline_count > 0:
+                    for _, p, f1, f3, r in baseline_dict[dataset]:
+                        val = {"Precision":p,"F1":f1,"F3":f3,"Recall":r}[m]
+                        best_metrics[m] = max(best_metrics[m], val)
+
+            def fmt(x, metric=None):
+                x = float(x)
+                if metric is not None and x == best_metrics[metric]:
+                    return f"**{x:.4f}**"
+                return f"{x:.4f}"
 
             # Baselines
             if baseline_count > 0:
                 f.write(f"  table.cell(rowspan: {baseline_count})[Baselines],\n")
                 for name, p, f1, f3, r in baseline_dict[dataset]:
-                    f.write(
-                        f"    [{name}], [{fmt(p)}], [{fmt(f1)}], [{fmt(f3)}], [{fmt(r)}],\n"
-                    )
+                    f.write(f"    [{name}], [{fmt(p,'Precision')}], [{fmt(f1,'F1')}], [{fmt(f3,'F3')}], [{fmt(r,'Recall')}],\n")
 
-            # >=50 bucket
-            if ">=50" in buckets:
-                f.write(f"  table.cell(rowspan:{config_rows_ge50})[>=50 pos],\n")
-                row = buckets[">=50"]
-                f.write(f"    [Config1], [{float(row['pubmed_precision']):.4f}], [{float(row['pubmed_f1']):.4f}], [{float(row['pubmed_f3']):.4f}], [{float(row['pubmed_recall']):.4f}],\n")
-
-            # <=50 bucket
-            if "<50" in buckets:
-                f.write(f"  table.cell(rowspan:{config_rows_le50})[<=50 pos],\n")
-                row = buckets["<50"]
-                f.write(f"    [Config1], [{float(row['pubmed_precision']):.4f}], [{float(row['pubmed_f1']):.4f}], [{float(row['pubmed_f3']):.4f}], [{float(row['pubmed_recall']):.4f}],\n")
-
-            # all bucket
-            if "all" in buckets:
-                f.write(f"  table.cell(rowspan:{config_rows_all})[all],\n")
-                row = buckets["all"]
-                f.write(f"    [Config1], [{float(row['pubmed_precision']):.4f}], [{float(row['pubmed_f1']):.4f}], [{float(row['pubmed_f3']):.4f}], [{float(row['pubmed_recall']):.4f}],\n")
-
+            # Buckets
+            for bucket_name in [">=50","<50","all"]:
+                if bucket_name in buckets:
+                    rows = sorted(buckets[bucket_name], key=lambda r: int(r["selection_betas"].split(",")[0]))
+                    f.write(f"  table.cell(rowspan:{len(rows)})[{bucket_name.replace('<', '\<')} pos],\n")
+                    for row in rows:
+                        c_name = config_name(row)
+                        f.write(
+                            f"    [{c_name}], "
+                            f"[{fmt(row['pubmed_precision'],'Precision')}], "
+                            f"[{fmt(row['pubmed_f1'],'F1')}], "
+                            f"[{fmt(row['pubmed_f3'],'F3')}], "
+                            f"[{fmt(row['pubmed_recall'],'Recall')}],\n"
+                        )
+                    
         f.write(")\n")
 
     print(f"Typst table written to {typst_file}")
@@ -163,14 +213,19 @@ if __name__ == "__main__":
     }
     
     csv_path = "data/statistics/final/best/best_average.csv"
-    typst_txt_path="data/statistics/final/best/best_average.typst.txt"
-    process_jsonl(
-        "data/statistics/optuna/run_2_nodes_10tasks_1cpu_per_task/lc=True,maxdf=0.5,mesh=True,ma=True,mindf=100,rw=True,rmn=True,rmp=True,d=503679/boot,=True,cw=0.5,maxd=5,maxf=0.11,mof=10,maxs=None,midre=0.0255,midrs=0.0255,mwfl=0.0012,ne=50,pfs=1.1,rmf=2.4,rmidr=2.4,rweight=2.6,k=0.7,tkoc=1500/cost_factor=0.002,cover_beta=1.1,mh_noexp=True,min_rule_occ=0.03,min_rule_precision=0.01,min_tree_occ=0.05,pruning_beta=0.15,te=True,tiab=True/qg_results.jsonl",
-        csv_path,
+    process_jsonl_folder(
+        folder_path="data/statistics/optuna/best_old", #TODO remove "_old" 
+        output_csv=csv_path,
     )
     generate_typst_table(
         csv_file=csv_path,
-        typst_file=typst_txt_path,
+        typst_file="data/statistics/final/best/best_average.typ",
+        baseline_dict=baseline_dict,
+        betas={"3","15","30","50"},
+    )
+    generate_typst_table(
+        csv_file=csv_path,
+        typst_file="data/statistics/final/best/best_average_all.typ",
         baseline_dict=baseline_dict,
     )
     print("done")

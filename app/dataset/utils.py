@@ -676,3 +676,23 @@ def review_id_to_dataset(review_id):
 
     return "unknown", None, -1
 
+
+def dataset_names(short_name):
+    """
+    Maps dataset short names to human-readable names.
+
+    Args:
+        short_name (str): Short identifier of the dataset.
+
+    Returns:
+        str: Human-readable dataset name.
+    """
+    mapping = {
+        "tar2017": "CLEF TAR 2017",
+        "tar2018": "CLEF TAR 2018",
+        "tar2019": "CLEF TAR 2019",
+        "sigir2017": "SIGIR 2017",
+        "sr_updates": "SR Updates",
+    }
+    return mapping.get(short_name, short_name)
+

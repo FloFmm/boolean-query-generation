@@ -30,6 +30,14 @@ sys.path.append(
 )
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset
 
+def params_from_opt_params(opt_params, default):
+    params = copy.deepcopy(default)
+    for k, v in opt_params.items():
+        if k in default:
+            params[k] = v
+    return params
+    
+
 def best_trials_by_fbeta(study, beta_min=1, beta_max=50):
     """
     Returns a dict:
@@ -91,9 +99,48 @@ def best_trials_by_fbeta(study, beta_min=1, beta_max=50):
 
     return results
 
+# def load_initial_solutions(beta_min=1, beta_max=50):
+#     """
+#     Returns a list of the globally best parameter sets across all previous studies.
+#     One per beta.
+#     """
+#     best_per_beta = {}  # beta -> {"avg_fbeta": ..., "params": ...}
+
+#     for path in PREVIOUS_RUNS:
+#         db_path = f"sqlite:///{path}"
+#         study = optuna.load_study(
+#             study_name="rf_optimization",
+#             storage=db_path,
+#         )
+#         results = best_trials_by_fbeta(study, beta_min, beta_max)
+
+#         for beta, info in results.items():
+#             avg_f = info["avg_fbeta"]
+#             params = info["params"]
+
+#             if beta not in best_per_beta or avg_f > best_per_beta[beta]["avg_fbeta"]:
+#                 best_per_beta[beta] = {"avg_fbeta": avg_f, "params": params}
+
+#     # Deduplicate by parameter sets (some betas might have identical best params)
+#     seen = set()
+#     global_best_solutions = []
+#     for beta, info in best_per_beta.items():
+#         key = frozenset(info["params"].items())
+#         if key not in seen:
+#             seen.add(key)
+#             global_best_solutions.append(info["params"])
+
+#     return global_best_solutions
+
 def load_initial_solutions(beta_min=1, beta_max=50):
-    initial_solutions = []
-    seen = set()
+    """
+    Returns:
+    - solutions: list of unique parameter sets with provenance
+    - best_params: list of params (exactly as before)
+    """
+
+    # beta -> best info across all studies
+    best_per_beta = {}  # beta -> info dict
 
     for path in PREVIOUS_RUNS:
         db_path = f"sqlite:///{path}"
@@ -105,17 +152,41 @@ def load_initial_solutions(beta_min=1, beta_max=50):
         results = best_trials_by_fbeta(study, beta_min, beta_max)
 
         for beta, info in results.items():
-            params = info["params"]
+            if (
+                beta not in best_per_beta
+                or info["avg_fbeta"] > best_per_beta[beta]["avg_fbeta"]
+            ):
+                best_per_beta[beta] = info
 
-            # make params hashable for deduplication
-            key = frozenset(params.items())
-            if key in seen:
-                continue
+    # ---- deduplicate by params, but keep beta provenance ----
 
-            seen.add(key)
-            initial_solutions.append(params)
+    solutions = {}  # frozenset(params) -> aggregated info
 
-    return initial_solutions
+    for beta, info in best_per_beta.items():
+        params = info["params"]
+        key = frozenset(params.items())
+
+        if key not in solutions:
+            solutions[key] = {
+                "params": params,
+                "avg_precision": info["avg_precision"],
+                "avg_recall": info["avg_recall"],
+                "num_queries": info["num_queries"],
+                "betas": {}
+            }
+
+        # only Fβ varies with beta
+        solutions[key]["betas"][beta] = {
+            "avg_fbeta": info["avg_fbeta"]
+        }
+
+    # ---- outputs ----
+
+    solutions_list = list(solutions.values())
+    # best_params = [s["params"] for s in solutions_list]
+
+    return solutions_list#, best_params
+
 
 def optimize_with_optuna_parallel(
     run_name,
@@ -166,7 +237,6 @@ def optimize_with_optuna_parallel(
 
     # --- Define Optuna objective ---
     def objective(trial):
-        rf_params = copy.deepcopy(RF_PARAMS)
         rf_opt_params = {
             "max_depth": trial.suggest_int("max_depth", 3, 10),
             "min_weight_fraction_leaf": trial.suggest_float(
@@ -201,10 +271,8 @@ def optimize_with_optuna_parallel(
             "n_estimators": 50,
         }
 
-        for k, v in rf_opt_params.items():
-            rf_params[k] = v
-        qg_params = copy.deepcopy(QG_PARAMS)
-
+        rf_params = params_from_opt_params(rf_opt_params, RF_PARAMS)
+        
         qg_opt_params = {
             "min_tree_occ": trial.suggest_float("min_tree_occ", 0.0, 0.2, step=0.02),
             "min_rule_occ": trial.suggest_float("min_rule_occ", 0.0, 0.1, step=0.01),
@@ -220,9 +288,7 @@ def optimize_with_optuna_parallel(
             "mh_noexp": trial.suggest_categorical("mh_noexp", [True, False]),
             "tiab": trial.suggest_categorical("tiab", [True, False]),
         }
-
-        for k, v in qg_opt_params.items():
-            qg_params[k] = v
+        qg_params = params_from_opt_params(qg_opt_params, QG_PARAMS)
 
         trial.set_user_attr("qg_params", copy.deepcopy(qg_params))
         trial.set_user_attr("rf_params", copy.deepcopy(rf_params))
@@ -244,53 +310,53 @@ def optimize_with_optuna_parallel(
             # Mark "in progress"
             qg_results_path.touch()
 
-        # Evaluate all queries
-        results_list = []
-        opt_scores = []
-        for i, query_id in enumerate(positives.keys()):
-            try:
-                qg_results = evaluate_rf(
-                    run_name=run_name,
-                    query_id=query_id,
-                    X=X,
-                    positives=positives[query_id],
-                    feature_names=feature_names,
-                    sorted_ids=sorted_ids[query_id],
-                    ordered_pmids=ordered_pmids,
-                    rf_params=copy.deepcopy(rf_params),
-                    qg_params=copy.deepcopy(qg_params),
-                    term_expansions=term_expansions,
+            # Evaluate all queries
+            results_list = []
+            opt_scores = []
+            for i, query_id in enumerate(positives.keys()):
+                try:
+                    qg_results = evaluate_rf(
+                        run_name=run_name,
+                        query_id=query_id,
+                        X=X,
+                        positives=positives[query_id],
+                        feature_names=feature_names,
+                        sorted_ids=sorted_ids[query_id],
+                        ordered_pmids=ordered_pmids,
+                        rf_params=copy.deepcopy(rf_params),
+                        qg_params=copy.deepcopy(qg_params),
+                        term_expansions=term_expansions,
+                    )
+                except Exception as e:
+                    # Prune the Optuna trial
+                    traceback.print_exc()
+                    # trial.report(float("nan"), step=0)
+                    LAST_RF_P = None  # dont repeat bad parameters actively
+                    raise optuna.exceptions.TrialPruned()
+
+                results_list.append(qg_results)
+
+                f_score = f_beta(
+                    precision=qg_results.get("pubmed_precision", 0.0),
+                    recall=qg_results.get("pubmed_recall", 0.0),
+                    beta=opt_beta,
                 )
-            except Exception as e:
-                # Prune the Optuna trial
-                traceback.print_exc()
-                # trial.report(float("nan"), step=0)
-                LAST_RF_P = None  # dont repeat bad parameters actively
-                raise optuna.exceptions.TrialPruned()
+                opt_scores.append(f_score)
 
-            results_list.append(qg_results)
+                # report intermediate average to Optuna
+                running_avg = sum(opt_scores) / len(opt_scores)
+                trial.report(running_avg, step=i)
 
-            f_score = f_beta(
-                precision=qg_results.get("pubmed_precision", 0.0),
-                recall=qg_results.get("pubmed_recall", 0.0),
-                beta=opt_beta,
-            )
-            opt_scores.append(f_score)
+                # prune early if necessary
+                if trial.should_prune():
+                    raise optuna.exceptions.TrialPruned(f"[because bad] Trial {trial.number} at step={i}, query_id={query_id}, current_value={sum(opt_scores) / len(opt_scores)}")
 
-            # report intermediate average to Optuna
-            running_avg = sum(opt_scores) / len(opt_scores)
-            trial.report(running_avg, step=i)
+            trial.set_user_attr("results_list", results_list)
 
-            # prune early if necessary
-            if trial.should_prune():
-                raise optuna.exceptions.TrialPruned(f"[because bad] Trial {trial.number} at step={i}, query_id={query_id}, current_value={sum(opt_scores) / len(opt_scores)}")
-
-        trial.set_user_attr("results_list", results_list)
-
-        if opt_scores:
-            return sum(opt_scores) / len(opt_scores)
-        else:
-            return 0.0
+            if opt_scores:
+                return sum(opt_scores) / len(opt_scores)
+            else:
+                return 0.0
 
     lock_path = Path(run_path) / "optuna.privatelock"
     # Create a lock (only the first node to reach this shall create the db)
@@ -328,14 +394,19 @@ def optimize_with_optuna_parallel(
 
 if __name__ == "__main__":
     opt_beta = 10.0
-    print("finished imports", flush=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_name = f"run_10_nodes_10tasks_1cpu_per_task_opt_beta={opt_beta}"
     run_path = f"/data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/statistics/optuna/{run_name}"
     os.makedirs(run_path, exist_ok=True)
 
-    initial_solutions = load_initial_solutions()
-    print(f"[LOADED] {len(initial_solutions)} initial parameter solutions")
+    initial_solutions = [s["params"] for s in load_initial_solutions()]
+    proc_id = int(os.environ["SLURM_PROCID"])
+    n_tasks = int(os.environ["SLURM_NTASKS"])
+    # Split initial solutions evenly across tasks
+    chunk_size = (len(initial_solutions) + n_tasks - 1) // n_tasks  # ceil division
+    my_initial_solutions = initial_solutions[proc_id * chunk_size : (proc_id + 1) * chunk_size]
+    print(f"Proc {proc_id}/{n_tasks} got {len(my_initial_solutions)}/{len(initial_solutions)} initial solutions", flush=True)
+    
     study = optimize_with_optuna_parallel(
         run_name=run_name,
         query_ids=TRAIN_REVIEWS,
@@ -345,6 +416,6 @@ if __name__ == "__main__":
         n_trials=10_000,
         n_jobs=1,  # this is threads (not using cpus-per-task)
         opt_beta=opt_beta,
-        initial_solutions=initial_solutions,
+        initial_solutions=my_initial_solutions,
         time_out = 600
     )

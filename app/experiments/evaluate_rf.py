@@ -48,6 +48,8 @@ def evaluate_rf(
     rf_params,
     qg_params,
     term_expansions=None,
+    meta_data=None,
+    max_retrieved=100_000,
 ):
     dataset, _, end_year = review_id_to_dataset(query_id)
 
@@ -61,7 +63,13 @@ def evaluate_rf(
     qg_results_path = Path(os.path.join(qg_base_path, f"qg_results.jsonl"))
     qg_config_path = Path(os.path.join(qg_base_path, f"qg_config.json"))
     os.makedirs(qg_base_path, exist_ok=True)
-
+    
+    if meta_data is not None:
+        qg_meta_path = Path(os.path.join(qg_base_path, f"qg_meta_data.json"))
+        print(qg_meta_path)
+        with open(qg_meta_path, "w", encoding="utf-8") as f:
+            json.dump(meta_data, f, indent=4)
+            
     # check whether query already computed
     # with FileLock(qg_results_path.with_suffix(".privatelock")): # hold for the entire duration the lock for qg_results file
     #     if qg_results_path.exists():
@@ -149,7 +157,7 @@ def evaluate_rf(
     pseudo_precision = precision_score(pseudo_labels, subset_preds)
     pseudo_recall = recall_score(pseudo_labels, subset_preds)
 
-    retrieved = search_pubmed_dynamic(pubmed_query_str, end_year=end_year)
+    retrieved = search_pubmed_dynamic(pubmed_query_str, end_year=end_year, max_retrieved=max_retrieved)
     retrieved = set(str(x) for x in retrieved)  # retrieved PMIDs
     true_positives = retrieved & positives
     TP = len(true_positives)

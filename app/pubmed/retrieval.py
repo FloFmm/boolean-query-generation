@@ -52,7 +52,7 @@ def search_pubmed_date_range(query, mindate=None, maxdate=None, retries=50):
     )
 
 
-def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=9500):
+def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=9500, max_retrieved=100_000):
     """Retrieve all PMIDs using dynamic window sizing to avoid 10k limit."""
     if not query or not str(query).strip():
         print("Empty query — nothing to search.")
@@ -74,8 +74,8 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=95
             print("Total below target — fetching in one go")
         return list(record["IdList"])
 
-    if total_expected > 100_000:
-        raise optuna.exceptions.TrialPruned("Tried to retrieve more than 100k PubMed documents")
+    if total_expected > max_retrieved:
+        raise optuna.exceptions.TrialPruned(f"Tried to retrieve more than {max_retrieved} PubMed documents")
 
     if DEBUG:
         print(f"Total expected PMIDs: {total_expected}")
