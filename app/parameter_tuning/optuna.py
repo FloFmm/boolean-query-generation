@@ -10,7 +10,7 @@ import os
 from filelock import FileLock
 from datetime import datetime
 from pathlib import Path
-from app.config.config import BOW_PARAMS, QG_PARAMS, RF_PARAMS, TRAIN_REVIEWS
+from app.config.config import BOW_PARAMS, QG_PARAMS, RF_PARAMS, TRAIN_REVIEWS, PREVIOUS_RUNS
 from app.experiments.evaluate_rf import evaluate_rf
 from app.dataset.utils import (
     load_vectors,
@@ -30,8 +30,92 @@ sys.path.append(
 )
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset
 
-LAST_RF_P = None
+def best_trials_by_fbeta(study, beta_min=1, beta_max=50):
+    """
+    Returns a dict:
+    beta -> {
+        'trial_number',
+        'avg_fbeta',
+        'avg_precision',
+        'avg_recall',
+        'num_queries',
+        'params'
+    }
+    """
+    results = {}
 
+    for beta in range(beta_min, beta_max + 1):
+        best_avg_f = -1.0
+        best_trial = None
+        best_p = 0.0
+        best_r = 0.0
+        best_n = 0
+
+        for trial in study.trials:
+            if "results_list" not in trial.user_attrs:
+                continue
+
+            f_scores = []
+            p_scores = []
+            r_scores = []
+
+            for d in trial.user_attrs["results_list"]:
+                p = d.get("pubmed_precision", 0.0)
+                r = d.get("pubmed_recall", 0.0)
+
+                f_scores.append(f_beta(p, r, beta))
+                p_scores.append(p)
+                r_scores.append(r)
+
+            if not f_scores:
+                continue
+
+            avg_f = float(np.mean(f_scores))
+
+            if avg_f > best_avg_f:
+                best_avg_f = avg_f
+                best_trial = trial
+                best_p = float(np.mean(p_scores))
+                best_r = float(np.mean(r_scores))
+                best_n = len(f_scores)
+
+        if best_trial is not None:
+            results[beta] = {
+                "trial_number": best_trial.number,
+                "avg_fbeta": best_avg_f,
+                "avg_precision": best_p,
+                "avg_recall": best_r,
+                "num_queries": best_n,
+                "params": best_trial.params,
+            }
+
+    return results
+
+def load_initial_solutions(beta_min=1, beta_max=50):
+    initial_solutions = []
+    seen = set()
+
+    for path in PREVIOUS_RUNS:
+        db_path = f"sqlite:///{path}"
+        study = optuna.load_study(
+            study_name="rf_optimization",
+            storage=db_path,
+        )
+
+        results = best_trials_by_fbeta(study, beta_min, beta_max)
+
+        for beta, info in results.items():
+            params = info["params"]
+
+            # make params hashable for deduplication
+            key = frozenset(params.items())
+            if key in seen:
+                continue
+
+            seen.add(key)
+            initial_solutions.append(params)
+
+    return initial_solutions
 
 def optimize_with_optuna_parallel(
     run_name,
@@ -42,6 +126,8 @@ def optimize_with_optuna_parallel(
     n_trials=1000,
     n_jobs=4,  # Number of parallel workers
     opt_beta=3,
+    initial_solutions=[],
+    time_out=600,
 ):
     """
     Run Optuna hyperparameter optimization in parallel for RF model.
@@ -80,105 +166,50 @@ def optimize_with_optuna_parallel(
 
     # --- Define Optuna objective ---
     def objective(trial):
-        global LAST_RF_P
         rf_params = copy.deepcopy(RF_PARAMS)
-        rf_change_prob = 0.1
-        if np.random.rand() < rf_change_prob or LAST_RF_P is None:
-            rf_opt_params = {
-                "max_depth": trial.suggest_int("max_depth", 3, 10),
-                "min_weight_fraction_leaf": trial.suggest_float(
-                    "min_weight_fraction_leaf", 0.0, 0.002, step=0.0002
-                ),  # 0.002 = 1000 docs for {1:1, 0:1} (1000/500k)
-                "top_k": trial.suggest_float("top_k", 0.5, 2.0, step=0.1),
-                "dont_cares": trial.suggest_float("dont_cares", 0.0, 5.0, step=0.25),
-                "rank_weight": trial.suggest_float(
-                    "rank_weight", 1.0, 10.0, step=0.5
-                ),  # how much more weighted shall rank 1 be than rank k
-                "max_features": trial.suggest_float(
-                    "max_features", 0.01, 1.00, step=0.01
-                ),
-                "min_impurity_decrease_range_start": trial.suggest_float(
-                    "min_impurity_decrease_range_start", 0.001, 0.05, step=0.0035
-                ),  # gini can at msot reduce by 0.5
-                "min_impurity_decrease_range_end": trial.suggest_float(
-                    "min_impurity_decrease_range_end", 0.001, 0.05, step=0.0035
-                ),
-                "class_weight": trial.suggest_float("class_weight", 0.0, 1.0, step=0.1),
-                "top_k_or_candidates": trial.suggest_int(
-                    "top_k_or_candidates", 500, 3000, step=500
-                ),
-                "randomize_max_feature": trial.suggest_float(
-                    "randomize_max_feature", 0.0, 3.0, step=0.3
-                ),
-                "randomize_min_impurity_decrease_range": trial.suggest_float(
-                    "randomize_min_impurity_decrease_range", 0.0, 3.0, step=0.3
-                ),
-                "n_jobs": None,
-                "verbose": False,
-                "n_estimators": 50,
-            }
-            LAST_RF_P = copy.deepcopy(rf_opt_params)
-        else:
-            rf_opt_params = {
-                "max_depth": trial.suggest_int(
-                    "max_depth", LAST_RF_P["max_depth"], LAST_RF_P["max_depth"]
-                ),
-                "min_weight_fraction_leaf": trial.suggest_float(
-                    "min_weight_fraction_leaf",
-                    LAST_RF_P["min_weight_fraction_leaf"],
-                    LAST_RF_P["min_weight_fraction_leaf"],
-                ),
-                "top_k": trial.suggest_float(
-                    "top_k", LAST_RF_P["top_k"], LAST_RF_P["top_k"]
-                ),
-                "dont_cares": trial.suggest_float(
-                    "dont_cares", LAST_RF_P["dont_cares"], LAST_RF_P["dont_cares"]
-                ),
-                "rank_weight": trial.suggest_float(
-                    "rank_weight", LAST_RF_P["rank_weight"], LAST_RF_P["rank_weight"]
-                ),
-                "max_features": trial.suggest_float(
-                    "max_features", LAST_RF_P["max_features"], LAST_RF_P["max_features"]
-                ),
-                "min_impurity_decrease_range_start": trial.suggest_float(
-                    "min_impurity_decrease_range_start",
-                    LAST_RF_P["min_impurity_decrease_range_start"],
-                    LAST_RF_P["min_impurity_decrease_range_start"],
-                ),
-                "min_impurity_decrease_range_end": trial.suggest_float(
-                    "min_impurity_decrease_range_end",
-                    LAST_RF_P["min_impurity_decrease_range_end"],
-                    LAST_RF_P["min_impurity_decrease_range_end"],
-                ),
-                "class_weight": trial.suggest_float(
-                    "class_weight", LAST_RF_P["class_weight"], LAST_RF_P["class_weight"]
-                ),
-                "top_k_or_candidates": trial.suggest_int(
-                    "top_k_or_candidates",
-                    LAST_RF_P["top_k_or_candidates"],
-                    LAST_RF_P["top_k_or_candidates"],
-                ),
-                "randomize_max_feature": trial.suggest_float(
-                    "randomize_max_feature",
-                    LAST_RF_P["randomize_max_feature"],
-                    LAST_RF_P["randomize_max_feature"],
-                ),
-                "randomize_min_impurity_decrease_range": trial.suggest_float(
-                    "randomize_min_impurity_decrease_range",
-                    LAST_RF_P["randomize_min_impurity_decrease_range"],
-                    LAST_RF_P["randomize_min_impurity_decrease_range"],
-                ),
-            }
+        rf_opt_params = {
+            "max_depth": trial.suggest_int("max_depth", 3, 10),
+            "min_weight_fraction_leaf": trial.suggest_float(
+                "min_weight_fraction_leaf", 0.0, 0.002, step=0.0001
+            ),  # 0.002 = 1000 docs for {1:1, 0:1} (1000/500k)
+            "top_k": trial.suggest_float("top_k", 0.5, 2.0, step=0.1),
+            "dont_cares": trial.suggest_float("dont_cares", 0.0, 5.0, step=0.25),
+            "rank_weight": trial.suggest_float(
+                "rank_weight", 1.0, 10.0, step=0.5
+            ),  # how much more weighted shall rank 1 be than rank k
+            "max_features": trial.suggest_float(
+                "max_features", 0.01, 1.00, step=0.01
+            ),
+            "min_impurity_decrease_range_start": trial.suggest_float(
+                "min_impurity_decrease_range_start", 0.001, 0.05, step=0.0035
+            ),  # gini can at msot reduce by 0.5
+            "min_impurity_decrease_range_end": trial.suggest_float(
+                "min_impurity_decrease_range_end", 0.001, 0.05, step=0.0035
+            ),
+            "class_weight": trial.suggest_float("class_weight", 0.0, 1.0, step=0.1),
+            "top_k_or_candidates": trial.suggest_int(
+                "top_k_or_candidates", 500, 3000, step=500
+            ),
+            "randomize_max_feature": trial.suggest_float(
+                "randomize_max_feature", 0.0, 3.0, step=0.3
+            ),
+            "randomize_min_impurity_decrease_range": trial.suggest_float(
+                "randomize_min_impurity_decrease_range", 0.0, 3.0, step=0.3
+            ),
+            "n_jobs": None,
+            "verbose": False,
+            "n_estimators": 50,
+        }
 
         for k, v in rf_opt_params.items():
             rf_params[k] = v
         qg_params = copy.deepcopy(QG_PARAMS)
 
         qg_opt_params = {
-            "min_tree_occ": trial.suggest_float("min_tree_occ", 0.0, 0.15, step=0.01),
+            "min_tree_occ": trial.suggest_float("min_tree_occ", 0.0, 0.2, step=0.02),
             "min_rule_occ": trial.suggest_float("min_rule_occ", 0.0, 0.1, step=0.01),
             "cover_beta": trial.suggest_float(
-                "cover_beta", 0.5, 5.0, step=0.1
+                "cover_beta", 0.1, 2.0, step=0.1
             ),  # high to prefer covering training data fully
             "pruning_beta": trial.suggest_float(
                 "pruning_beta", 0.05, 1.0, step=0.05
@@ -268,7 +299,7 @@ def optimize_with_optuna_parallel(
         storage = optuna.storages.RDBStorage(
             url=f"sqlite:///{run_path}/optuna.db",
             engine_kwargs={
-                "connect_args": {"timeout": 300},
+                "connect_args": {"timeout": time_out},
                 "pool_pre_ping": True,
             },
         )
@@ -281,8 +312,9 @@ def optimize_with_optuna_parallel(
             load_if_exists=True,
         )
 
-    initial_good_params = copy.deepcopy(QG_PARAMS) | copy.deepcopy(RF_PARAMS)
-    study.enqueue_trial(initial_good_params)
+    # initial_good_params = copy.deepcopy(QG_PARAMS) | copy.deepcopy(RF_PARAMS)
+    for initial_good_params in initial_solutions:
+        study.enqueue_trial(initial_good_params)
 
     # --- Run optimization in parallel ---
     study.optimize(objective, n_trials=n_trials, n_jobs=n_jobs)
@@ -295,17 +327,15 @@ def optimize_with_optuna_parallel(
 
 
 if __name__ == "__main__":
-    opt_beta = 6.0
+    opt_beta = 10.0
     print("finished imports", flush=True)
-    time_out = 600
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_name = f"run_10_nodes_10tasks_1cpu_per_task_opt_beta={opt_beta}"
     run_path = f"/data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/statistics/optuna/{run_name}"
     os.makedirs(run_path, exist_ok=True)
 
-    # db_path = Path(f"sqlite:///{run_path}/optuna_rf_parallel.db?timeout={time_out}")
-    # db_path = Path(run_path) / "optuna_journal.log"
-
+    initial_solutions = load_initial_solutions()
+    print(f"[LOADED] {len(initial_solutions)} initial parameter solutions")
     study = optimize_with_optuna_parallel(
         run_name=run_name,
         query_ids=TRAIN_REVIEWS,
@@ -315,4 +345,6 @@ if __name__ == "__main__":
         n_trials=10_000,
         n_jobs=1,  # this is threads (not using cpus-per-task)
         opt_beta=opt_beta,
+        initial_solutions=initial_solutions,
+        time_out = 600
     )

@@ -63,6 +63,10 @@ DEBUG = False  # TODO remove
 
 FORBIDDEN_FEATURES = {"nan"}  # used as empty abstract in csmed
 
+PREVIOUS_RUNS = [
+    "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=6.0/optuna.db"
+]
+
 BOW_PARAMS = {
     "lower_case": True,
     "mesh_ancestors": True,
@@ -81,7 +85,7 @@ RF_PARAMS = {
     "rank_weight": 1.5,  # how much more weighted shall rank 1 be than rank k
     "n_estimators": 50,  # TODO change back
     "max_depth": 4,
-    # "min_samples_split": 2,
+    "min_samples_split": 3,
     "min_weight_fraction_leaf": 0.0002,
     "max_features": 0.5,  # "sqrt",
     "randomize_max_feature": 0.9,
