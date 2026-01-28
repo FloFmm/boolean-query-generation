@@ -114,10 +114,14 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
             
             stats.setdefault(dataset, {}).setdefault(bucket, []).append(row)
             
-    def config_name(row):
-        # keep only last 2 path components
+    def config_name(row, betas):
         parts = row["selection_betas"].split(",")
-        return f"{parts[0]}-{parts[-1]}" if len(parts) > 1 else parts[0]
+        if betas is not None:
+            c_name = "F" + ", ".join(sorted(set(parts) & betas))
+        else:
+            c_name = f"{parts[0]}-{parts[-1]}" if len(parts) > 1 else parts[0]
+        
+        return c_name
     
     with open(typst_file, "w") as f:
         # Table preamble
@@ -165,7 +169,7 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
             def fmt(x, metric=None):
                 x = float(x)
                 if metric is not None and x == best_metrics[metric]:
-                    return f"**{x:.4f}**"
+                    return f"*{x:.4f}*"
                 return f"{x:.4f}"
 
             # Baselines
@@ -178,9 +182,9 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
             for bucket_name in [">=50","<50","all"]:
                 if bucket_name in buckets:
                     rows = sorted(buckets[bucket_name], key=lambda r: int(r["selection_betas"].split(",")[0]))
-                    f.write(f"  table.cell(rowspan:{len(rows)})[{bucket_name.replace('<', '\<')} pos],\n")
+                    f.write(f"  table.cell(rowspan:{len(rows)})[{bucket_name} pos],\n".replace('<', '\<'))
                     for row in rows:
-                        c_name = config_name(row)
+                        c_name = config_name(row, betas)
                         f.write(
                             f"    [{c_name}], "
                             f"[{fmt(row['pubmed_precision'],'Precision')}], "
