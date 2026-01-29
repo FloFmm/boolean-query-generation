@@ -242,7 +242,7 @@ def optimize_with_optuna_parallel(
             "min_weight_fraction_leaf": trial.suggest_float(
                 "min_weight_fraction_leaf", 0.0, 0.002, step=0.0001
             ),  # 0.002 = 1000 docs for {1:1, 0:1} (1000/500k)
-            "top_k": trial.suggest_float("top_k", 0.5, 2.0, step=0.1),
+            "top_k": trial.suggest_float("top_k", 0.1, 2.0, step=0.1),
             "dont_cares": trial.suggest_float("dont_cares", 0.0, 5.0, step=0.25),
             "rank_weight": trial.suggest_float(
                 "rank_weight", 1.0, 10.0, step=0.5

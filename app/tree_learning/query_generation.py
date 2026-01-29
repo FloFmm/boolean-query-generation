@@ -360,6 +360,8 @@ def query_size(rules):
     }
     return query_size
 
+def query_size_value(query_size):
+    return sum(query_size[k] for k in ["ORs", "ANDs", "NOTs", "added_ORs", "synonym_ORs"])
 
 def query_cost(query_size, weights=None):
     """

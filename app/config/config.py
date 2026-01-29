@@ -64,7 +64,8 @@ DEBUG = False  # TODO remove
 FORBIDDEN_FEATURES = {"nan"}  # used as empty abstract in csmed
 
 PREVIOUS_RUNS = [
-    "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=6.0/optuna.db"
+    "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=6.0/optuna.db",
+    "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=10.0/optuna.db"
 ]
 
 BOW_PARAMS = {

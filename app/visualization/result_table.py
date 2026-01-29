@@ -4,6 +4,7 @@ import os
 from collections import defaultdict
 from app.helper.helper import f_beta
 from app.dataset.utils import review_id_to_dataset, dataset_names
+from app.tree_learning.query_generation import query_size_value
 
 def process_jsonl_folder(folder_path, output_csv):
     # Dictionary to store sum of values and counts
@@ -63,12 +64,15 @@ def process_jsonl_folder(folder_path, output_csv):
                         for field, value in data.get("query_size", {}).items():
                             if value is not None:
                                 stats[key][f"query_size_{field}"].append(value)
+                        stats[key]["logical_operators"].append(query_size_value(data["query_size"]))
 
                         # Calculate F1 and F3 for pubmed
                         p = data.get("pubmed_precision", 0) or 0
                         r = data.get("pubmed_recall", 0) or 0
                         stats[key]["pubmed_f1"].append(f_beta(precision=p, recall=r, beta=1))
                         stats[key]["pubmed_f3"].append(f_beta(precision=p, recall=r, beta=3))
+                        
+                        
 
     # Write CSV
     os.makedirs(os.path.dirname(output_csv), exist_ok=True)
@@ -131,9 +135,9 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
         f.write(")\n\n")
 
         f.write("#table(\n")
-        f.write("  columns: 7,\n")
-        f.write("  table.header([], [], [Prompt], table.vline(start:0, stroke:(thickness:0.5pt)), [Precision], [F1], [F3], [Recall]),\n")
-        seperator = "  table.cell(colspan: 7, inset: (top: 1pt, bottom: 1pt))[],\n"
+        f.write("  columns: 8,\n")
+        f.write("  table.header([], [], [Prompt], table.vline(start:0, stroke:(thickness:0.5pt)), [Precision], [F1], [F3], [Recall], [\#Ops]),\n")
+        seperator = "  table.cell(colspan: 8, inset: (top: 1pt, bottom: 1pt))[],\n"
         for i, dataset in enumerate(["tar2018", "tar2019", "sigir2017", "sr_updates"]):#enumerate(stats.items())]
             buckets = stats[dataset]
             if i != 0:
@@ -153,30 +157,50 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
             f.write(f"  table.cell(rowspan: {total_rows}, rotate(-90deg, reflow:true)[{dataset_names(dataset)}]),\n")
 
             # Compute best values for bolding
-            best_metrics = {"Precision": -1, "F1": -1, "F3": -1, "Recall": -1}
+            best_metrics = {"Precision": -1, "F1": -1, "F3": -1, "Recall": -1, "#Ops": 1_000_000}
             for bucket in buckets.values():
                 for row in bucket:
-                    for m, key in zip(["Precision","F1","F3","Recall"],
-                                      ["pubmed_precision","pubmed_f1","pubmed_f3","pubmed_recall"]):
-                        best_metrics[m] = max(best_metrics[m], float(row[key]))
-            for m, key in zip(["Precision","F1","F3","Recall"],
-                              ["pubmed_precision","pubmed_f1","pubmed_f3","pubmed_recall"]):
+                    for m, key in zip(["Precision","F1","F3","Recall","#Ops"],
+                                      ["pubmed_precision","pubmed_f1","pubmed_f3","pubmed_recall","logical_operators"]):
+                        val = float(row[key])
+                        if m == "#Ops":
+                            best_metrics[m] = min(best_metrics[m], val)
+                        else:
+                            best_metrics[m] = max(best_metrics[m], val)
+            for m, key in zip(["Precision","F1","F3","Recall","#Ops"],
+                              ["pubmed_precision","pubmed_f1","pubmed_f3","pubmed_recall","logical_operators"]):
                 if baseline_count > 0:
-                    for _, p, f1, f3, r in baseline_dict[dataset]:
-                        val = {"Precision":p,"F1":f1,"F3":f3,"Recall":r}[m]
-                        best_metrics[m] = max(best_metrics[m], val)
+                    for _, p, f1, f3, r, operators in baseline_dict[dataset]:
+                        val = {"Precision":p,"F1":f1,"F3":f3,"Recall":r,"#Ops":operators}[m]
+                        if m == "#Ops":
+                            if val is not None:
+                                best_metrics[m] = min(best_metrics[m], val) if best_metrics[m] != -1 else val
+                        else:
+                            if val is not None:
+                                best_metrics[m] = max(best_metrics[m], val)
 
             def fmt(x, metric=None):
+                if x is None:
+                    return ""
                 x = float(x)
+                # Determine format string
+                if metric == "#Ops":  # or "#Opt" if you rename it
+                    fmt_str = "{:.1f}"
+                else:
+                    fmt_str = "{:.4f}"
+                
+                formatted = fmt_str.format(x)
+                
+                # Bold if best
                 if metric is not None and x == best_metrics[metric]:
-                    return f"*{x:.4f}*"
-                return f"{x:.4f}"
+                    return f"*{formatted}*"
+                return formatted
 
             # Baselines
             if baseline_count > 0:
                 f.write(f"  table.cell(rowspan: {baseline_count})[Baselines],\n")
-                for name, p, f1, f3, r in baseline_dict[dataset]:
-                    f.write(f"    [{name}], [{fmt(p,'Precision')}], [{fmt(f1,'F1')}], [{fmt(f3,'F3')}], [{fmt(r,'Recall')}],\n")
+                for name, p, f1, f3, r, operators in baseline_dict[dataset]:
+                    f.write(f"    [{name}], [{fmt(p,'Precision')}], [{fmt(f1,'F1')}], [{fmt(f3,'F3')}], [{fmt(r,'Recall')}], [{fmt(operators,'#Ops')}],\n")
 
             # Buckets
             for bucket_name in [">=50","<50","all"]:
@@ -190,7 +214,8 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
                             f"[{fmt(row['pubmed_precision'],'Precision')}], "
                             f"[{fmt(row['pubmed_f1'],'F1')}], "
                             f"[{fmt(row['pubmed_f3'],'F3')}], "
-                            f"[{fmt(row['pubmed_recall'],'Recall')}],\n"
+                            f"[{fmt(row['pubmed_recall'],'Recall')}], "
+                            f"[{fmt(row['logical_operators'], '#Ops')}],\n"
                         )
                     
         f.write(")\n")
@@ -200,10 +225,10 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
 if __name__ == "__main__":
     baseline_dict = {
         "tar2018": [
-            ("Original", 0.0217, 0.0407, 0.1439, 0.9338), # original, conceptional and obj all from https://bevankoopman.github.io/papers/irj2020-comparison.pdf (same as in other verions of that paper, was also chosen as source from ChatGPT paper)
-            ("Conceptual", 0.0021, 0.0037, 0.0114, 0.6286), # highest recall, highest f3
-            ("Objective", 0.0002, 0.0005, 0.0022, 0.8780), # highest recall (since highest f3 has very low recall)
-            ("ChatGPT", 0.0752, 0.0642, 0.0847, 0.5035), # https://arxiv.org/pdf/2302.03495, highest recall, highest F3, with example q4
+            ("Original", 0.0217, 0.0407, 0.1439, 0.9338, 77.6), # original, conceptional and obj all from https://bevankoopman.github.io/papers/irj2020-comparison.pdf (same as in other verions of that paper, was also chosen as source from ChatGPT paper)
+            ("Conceptual", 0.0021, 0.0037, 0.0114, 0.6286, None), # highest recall, highest f3
+            ("Objective", 0.0002, 0.0005, 0.0022, 0.8780, None), # highest recall (since highest f3 has very low recall)
+            ("ChatGPT", 0.0752, 0.0642, 0.0847, 0.5035, None), # https://arxiv.org/pdf/2302.03495, highest recall, highest F3, with example q4
         ],
         "tar2019": [ # no value found
             # ("Original", "≤0.012\*", "", "", ""),
