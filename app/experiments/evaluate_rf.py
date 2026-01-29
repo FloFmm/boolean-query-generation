@@ -66,7 +66,6 @@ def evaluate_rf(
     
     if meta_data is not None:
         qg_meta_path = Path(os.path.join(qg_base_path, f"qg_meta_data.json"))
-        print(qg_meta_path)
         with open(qg_meta_path, "w", encoding="utf-8") as f:
             json.dump(meta_data, f, indent=4)
             

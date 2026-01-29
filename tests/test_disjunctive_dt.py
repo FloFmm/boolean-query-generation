@@ -100,6 +100,8 @@ def run_tree_test(
                 tiab=qg_params["tiab"],
             )
         )
+    print("===================================")
+    print("query_size", query_size)
 
     generated_pubmed_query = remove_tags(generated_pubmed_query)
     print(classifier.estimators_[0].pretty_print(verbose=True))
@@ -166,7 +168,6 @@ FORMULAS = [
     """((A OR X) AND B NOT C) OR (D AND (E OR Y) NOT F)""",
     """((A OR B) AND (C OR D)) OR (B AND D NOT E) OR (E AND F AND A) OR (C AND X AND Y)""",
 ]
-
 
 @pytest.mark.parametrize("formula", FORMULAS, ids=lambda f: f[:40])
 def test_basic_formulas_dt(formula):

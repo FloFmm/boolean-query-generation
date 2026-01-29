@@ -23,7 +23,7 @@ sys.path.append(
 from csmed.experiments.csmed_cochrane_retrieval import load_dataset
 
 if __name__ == "__main__":
-    run_name = "best"
+    run_name = "best_new"
     sorted_ids = {}
     positives = {}
     ret_config = {"model": "pubmedbert", "query_type": "title_abstract"}

@@ -198,7 +198,7 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
     print(f"Typst table written to {typst_file}")
 
 if __name__ == "__main__":
-    baseline_dict = { # TODO find real data
+    baseline_dict = {
         "tar2018": [
             ("Original", 0.0217, 0.0407, 0.1439, 0.9338), # original, conceptional and obj all from https://bevankoopman.github.io/papers/irj2020-comparison.pdf (same as in other verions of that paper, was also chosen as source from ChatGPT paper)
             ("Conceptual", 0.0021, 0.0037, 0.0114, 0.6286), # highest recall, highest f3
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     
     csv_path = "data/statistics/final/best/best_average.csv"
     process_jsonl_folder(
-        folder_path="data/statistics/optuna/best_old", #TODO remove "_old" 
+        folder_path="data/statistics/optuna/best",
         output_csv=csv_path,
     )
     generate_typst_table(
