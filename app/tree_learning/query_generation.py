@@ -338,11 +338,12 @@ def rules_to_pubmed_query(
         path_lens.append(len(rule))
 
     query = " OR ".join(query_clauses)
-
+    q_size = query_size(rules)
+    q_size["synonym_ORs"] = query.count("SYNONYM_OR")
     query = query.replace("ADDED_OR", "OR").replace("SYNONYM_OR", "OR")
     assert query
 
-    return query, query_size(rules)
+    return query, q_size
 
 
 def query_size(rules):
@@ -351,11 +352,11 @@ def query_size(rules):
         "avg_path_len": sum([len(rule) for rule in rules]) / len(rules)
         if len(rules)
         else 0,
-        "ANDs": sum([len([term for term in rule if term[-1]]) for rule in rules]) - 1,
+        "ANDs": sum([len([term for term in rule if term[-1]]) - 1 for rule in rules]),
         "NOTs": sum([len([term for term in rule if not term[-1]]) for rule in rules]),
-        "added_ORs": sum([sum([len(term[0]) for term in rule]) for rule in rules]),
+        "added_ORs": sum([sum([len(term[0])-1 for term in rule]) for rule in rules]),
         "synonym_ORs": -1,
-        "ORs": len(rules),
+        "ORs": len(rules) - 1,
     }
     return query_size
 

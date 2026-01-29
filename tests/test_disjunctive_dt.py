@@ -100,16 +100,25 @@ def run_tree_test(
                 tiab=qg_params["tiab"],
             )
         )
-    print("===================================")
-    print("query_size", query_size)
 
     generated_pubmed_query = remove_tags(generated_pubmed_query)
     print(classifier.estimators_[0].pretty_print(verbose=True))
+    print()
+    print("query_size", query_size)
     print()
     print("CORRECT QUERY\n", pubmed_query)
     print()
     print("GENERATED QUERY\n", generated_pubmed_query)
     print()
+    num_operators = query_size["ANDs"] + query_size["NOTs"] + query_size["ORs"] + query_size["added_ORs"] + query_size["synonym_ORs"]
+    assert num_operators == generated_pubmed_query.count(" AND ") + generated_pubmed_query.count(" OR ") + generated_pubmed_query.count(" NOT ")
+    assert generated_pubmed_query.count(" AND ") == query_size["ANDs"]
+    assert generated_pubmed_query.count(" NOT ") == query_size["NOTs"]
+    outer_ors = generated_pubmed_query.count("OR (") + generated_pubmed_query.count(") OR") - generated_pubmed_query.count(") OR (")
+    assert outer_ors == query_size["ORs"] 
+    assert outer_ors == query_size["paths"] - 1
+    assert generated_pubmed_query.count("OR") == query_size["ORs"] + query_size["added_ORs"] + query_size["synonym_ORs"]
+    
     generated_f, generated_variables = pubmed_query_to_lambda(generated_pubmed_query)
     # print(variables)
     # print()
