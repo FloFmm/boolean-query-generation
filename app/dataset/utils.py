@@ -115,7 +115,7 @@ def abbreviate_value(value) -> str:
         items = []
         for k in sorted(value):
             abbr_k = ABBREVIATIONS.get(k, k)
-            items.append(f"{abbr_k}:{abbreviate_value(value[k])}")
+            items.append(f"{abbr_k}={abbreviate_value(value[k])}")
         return "{" + ",".join(items) + "}"
 
     if isinstance(value, (list, tuple)):
