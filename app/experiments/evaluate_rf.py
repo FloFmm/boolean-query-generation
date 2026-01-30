@@ -50,6 +50,8 @@ def evaluate_rf(
     term_expansions=None,
     meta_data=None,
     max_retrieved=100_000,
+    always_retrieve=False,
+    ignore_pubmed_errors=False,
 ):
     dataset, _, end_year = review_id_to_dataset(query_id)
 
@@ -155,8 +157,14 @@ def evaluate_rf(
     subset_recall = recall_score(ground_truth_labels, subset_preds)
     pseudo_precision = precision_score(pseudo_labels, subset_preds)
     pseudo_recall = recall_score(pseudo_labels, subset_preds)
-
-    retrieved = search_pubmed_dynamic(pubmed_query_str, end_year=end_year, max_retrieved=max_retrieved)
+    try:
+        retrieved = search_pubmed_dynamic(pubmed_query_str, end_year=end_year, max_retrieved=max_retrieved, always_retrieve=always_retrieve)
+    except Exception as e:
+        if ignore_pubmed_errors:
+            print(f"Warning: Exception occurred during PubMed retrieval: {e}")
+            return None
+        else:
+            raise
     retrieved = set(str(x) for x in retrieved)  # retrieved PMIDs
     true_positives = retrieved & positives
     TP = len(true_positives)

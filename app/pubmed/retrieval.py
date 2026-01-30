@@ -52,7 +52,7 @@ def search_pubmed_date_range(query, mindate=None, maxdate=None, retries=50):
     )
 
 
-def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=9500, max_retrieved=100_000):
+def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=9500, max_retrieved=100_000, always_retrieve=False):
     """Retrieve all PMIDs using dynamic window sizing to avoid 10k limit."""
     if not query or not str(query).strip():
         print("Empty query — nothing to search.")
@@ -75,7 +75,8 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=95
         return list(record["IdList"])
 
     if total_expected > max_retrieved:
-        raise optuna.exceptions.TrialPruned(f"Tried to retrieve more than {max_retrieved} PubMed documents")
+        if not always_retrieve:
+            raise optuna.exceptions.TrialPruned(f"Tried to retrieve {total_expected} which is more than {max_retrieved} PubMed documents")
 
     if DEBUG:
         print(f"Total expected PMIDs: {total_expected}")
@@ -101,7 +102,8 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=95
 
         if count_pmids >= 9999:
             if window_days <= 1:
-                return []
+                raise optuna.exceptions.TrialPruned(f"window_days <= 1 because total_expected={total_expected} is too large")
+
             # Too many results: reduce window proportionally
             window_days = max(1, window_days * target_count / count_pmids)
             if DEBUG:
@@ -119,6 +121,11 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=95
 
         # Accept this window
         all_pmids.update(pmids)
+        if len(all_pmids) >= max_retrieved:
+            if DEBUG:
+                print(f"Reached max_retrieved: {max_retrieved}")
+            return list(all_pmids)
+        
         current_end = current_start - datetime.timedelta(days=1)
 
         # If remaining PMIDs are below 9999, fetch all remaining time

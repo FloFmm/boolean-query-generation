@@ -29,7 +29,7 @@ def process_jsonl_folder(folder_path, output_csv):
                 else: 
                     print("warning meta file missing, value get lost if thats the case")
                     continue
-
+                print(sum(1 for _ in open(file_path, "r")))
                 with open(file_path, "r") as f:
                     for line in f:
                         data = json.loads(line)
@@ -64,8 +64,11 @@ def process_jsonl_folder(folder_path, output_csv):
                         for field, value in data.get("query_size", {}).items():
                             if value is not None:
                                 stats[key][f"query_size_{field}"].append(value)
-                        stats[key]["logical_operators"].append(query_size_value(data["query_size"]))
-
+                        # stats[key]["logical_operators"].append(query_size_value(data["query_size"])) wrong for old data
+                        check = sum(data["query_size"][k] for k in ["paths", "ANDs", "NOTs", "added_ORs", "synonym_ORs"]) - 1
+                        count_value = data["pubmed_query"].count("AND") + data["pubmed_query"].count("OR") + data["pubmed_query"].count("NOT") 
+                        assert check == count_value
+                        stats[key]["logical_operators"].append(count_value)
                         # Calculate F1 and F3 for pubmed
                         p = data.get("pubmed_precision", 0) or 0
                         r = data.get("pubmed_recall", 0) or 0
@@ -241,20 +244,21 @@ if __name__ == "__main__":
         ],
     }
     
-    csv_path = "data/statistics/final/best/best_average.csv"
+    best_chocie = "best1"
+    csv_path = f"data/statistics/final/{best_chocie}/best_average.csv"
     process_jsonl_folder(
-        folder_path="data/statistics/optuna/best",
+        folder_path=f"data/statistics/optuna/{best_chocie}",
         output_csv=csv_path,
     )
     generate_typst_table(
         csv_file=csv_path,
-        typst_file="data/statistics/final/best/best_average.typ",
+        typst_file=f"data/statistics/final/{best_chocie}/best_average.typ",
         baseline_dict=baseline_dict,
         betas={"3","15","30","50"},
     )
     generate_typst_table(
         csv_file=csv_path,
-        typst_file="data/statistics/final/best/best_average_all.typ",
+        typst_file=f"data/statistics/final/{best_chocie}/best_average_all.typ",
         baseline_dict=baseline_dict,
     )
     print("done")

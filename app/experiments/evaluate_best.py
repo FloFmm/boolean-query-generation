@@ -77,4 +77,6 @@ if __name__ == "__main__":
                 term_expansions=term_expansions,
                 meta_data=initial_solutions[i],
                 max_retrieved=1_000_000,
+                always_retrieve=True,
+                ignore_pubmed_errors=True,
             )
