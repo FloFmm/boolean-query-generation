@@ -384,7 +384,7 @@ def optimize_with_optuna_parallel(
         study.enqueue_trial(initial_good_params)
 
     # --- Run optimization in parallel ---
-    study.optimize(objective, n_trials=n_trials, n_jobs=n_jobs)
+    study.optimize(objective, n_trials=n_trials, n_jobs=n_jobs, timeout=24*60*60 - 5*60)
 
     print("Best trial:")
     print(study.best_trial.params)
