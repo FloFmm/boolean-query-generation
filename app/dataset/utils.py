@@ -294,6 +294,31 @@ def load_vectors(**bow_args):
     print("Done laoding vectors")
     return X, ordered_pmids, feature_names
 
+def document_count(word, X, feature_names):
+    """
+    Returns in how many documents `word` appears.
+
+    Parameters
+    ----------
+    word : str
+        The word to look up.
+    X : scipy.sparse matrix
+        Binary document-term matrix from CountVectorizer.
+    feature_names : array-like
+        Feature names from vectorizer.get_feature_names_out().
+
+    Returns
+    -------
+    int
+        Number of documents containing the word.
+    """
+    try:
+        idx = feature_names.tolist().index(word)
+    except ValueError:
+        return 0  # word not in vocabulary
+
+    # Sum over documents for this word
+    return int(X[:, idx].sum())
 
 def ranking_file_path(retriever_name, query_type, total_docs, query_id):
     return Path(
