@@ -188,6 +188,7 @@ def evaluate_rf(
         # "rf_time_seconds": rf_time_seconds,
         "query_size": query_size,
         "pubmed_query": pubmed_query_str,
+        "rules": rules,
     }
     with open(qg_results_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(qg_results) + "\n")

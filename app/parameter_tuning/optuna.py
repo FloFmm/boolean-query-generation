@@ -1,5 +1,6 @@
 import traceback
 import copy
+import argparse
 import numpy as np
 from pathlib import Path
 import optuna
@@ -393,7 +394,10 @@ def optimize_with_optuna_parallel(
 
 
 if __name__ == "__main__":
-    opt_beta = 10.0
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--opt_beta", type=float, default=50.0, help="Value for opt_beta")
+    args = parser.parse_args()
+    opt_beta = args.opt_beta
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_name = f"run_10_nodes_10tasks_1cpu_per_task_opt_beta={opt_beta}"
     run_path = f"/data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/statistics/optuna/{run_name}"
