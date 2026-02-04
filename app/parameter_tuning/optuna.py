@@ -421,5 +421,5 @@ if __name__ == "__main__":
         n_jobs=1,  # this is threads (not using cpus-per-task)
         opt_beta=opt_beta,
         initial_solutions=my_initial_solutions,
-        time_out = 2000
+        time_out = 3600
     )
