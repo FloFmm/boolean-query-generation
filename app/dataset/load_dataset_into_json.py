@@ -23,7 +23,9 @@ queryid_to_details = {
     for query_id, review_data in reviews.items()
 }
 for query_id, details in queryid_to_details.items():
-    details["real_num_positives"] = len(get_positives(review_id=query_id, dataset=dataset))
+    positives = get_positives(review_id=query_id, dataset=dataset)
+    details["num_positives"] = len(positives)
+    details["positives"] = list(positives)
 
 out_path = dataset_details_path()
 out_path.parent.mkdir(parents=True, exist_ok=True)
