@@ -5,7 +5,11 @@
 venv
 __pycache__
 data/statistics/optuna
-
+data/statistics/csmed
+data/tmp
+data/pubmed
+data/reports_old
+data/reports_old_old
 
 # epo
 aria2_downloads.txt
