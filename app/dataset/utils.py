@@ -320,11 +320,16 @@ def document_count(word, X, feature_names):
     # Sum over documents for this word
     return int(X[:, idx].sum())
 
-def ranking_file_path(retriever_name, query_type, total_docs, query_id):
-    return Path(
-        f"../systematic-review-datasets/data/rankings/{retriever_name}/{query_type}/docs={total_docs}/{query_id}.npz"
+def ranking_file_path(retriever_name, query_type, total_docs, query_id=None):
+    base_dir = Path(
+        f"../systematic-review-datasets/data/rankings/"
+        f"{retriever_name}/{query_type}/docs={total_docs}"
     )
 
+    if query_id is not None:
+        return base_dir / f"{query_id}.npz"
+    else:
+        return list(base_dir.glob("*.npz"))
 
 def get_sorted_ids(retriever_name, query_type, total_docs, query_id):
     rankings_file = ranking_file_path(retriever_name, query_type, total_docs, query_id)
@@ -721,3 +726,5 @@ def dataset_names(short_name):
     }
     return mapping.get(short_name, short_name)
 
+def dataset_details_path():
+    return Path("../systematic-review-datasets/data/dataset_deails/dataset_deails.json")
