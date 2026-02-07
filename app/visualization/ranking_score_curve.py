@@ -5,17 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 from collections import defaultdict
-from app.dataset.utils import ranking_file_path, get_positives
+from app.dataset.utils import ranking_file_path, get_dataset_details
 from app.parameter_tuning.compute_top_k import BUCKETS
-
-sys.path.append(
-    os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__), "../..", "../systematic-review-datasets"
-        )
-    )
-)
-from csmed.experiments.csmed_cochrane_retrieval import load_dataset
 
 def find_bucket(n_pos: int, buckets: list[tuple[int, int]]):
     for start, end in buckets:
@@ -60,20 +51,18 @@ def plot_metric_score_curve_by_bucket(
 
 MAX_K = 10000  # how far you want the curve
 if __name__ == "__main__":
-    dataset = load_dataset()
-    
     bucket_scores = defaultdict(list)
     npz_files = ranking_file_path(
         retriever_name="pubmedbert",
         query_type="title_abstract",
         total_docs=503679,
     )
+    dataset_details = get_dataset_details()
 
     for npz_path in sorted(npz_files):
         review_id = npz_path.stem  # removes .npz
 
-        positives = get_positives(review_id, dataset)
-        n_pos = len(positives)
+        n_pos = dataset_details[review_id]["real_num_positives"]
 
         bucket = find_bucket(n_pos, BUCKETS)
         if bucket is None:

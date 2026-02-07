@@ -18,3 +18,4 @@ SOURCE=dataport1.hpc.tu-dresden.de:/data/horse/ws/flml293c-master-thesis/systema
 rsync -av --progress "$SOURCE/bag_of_words" "$DEST"
 rsync -av --progress "$SOURCE/external" "$DEST"
 rsync -av --progress "$SOURCE/rankings/pubmedbert" "$DEST/rankings"
+rsync -av --progress "$SOURCE/dataset_details" "$DEST/dataset_details"

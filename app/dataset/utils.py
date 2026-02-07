@@ -727,4 +727,4 @@ def dataset_names(short_name):
     return mapping.get(short_name, short_name)
 
 def dataset_details_path():
-    return Path("../systematic-review-datasets/data/dataset_deails/dataset_deails.json")
+    return Path("../systematic-review-datasets/data/dataset_details/dataset_details.json")
