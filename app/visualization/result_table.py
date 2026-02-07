@@ -228,10 +228,12 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
 if __name__ == "__main__":
     baseline_dict = {
         "tar2018": [
-            ("Original", 0.0217, 0.0407, 0.1439, 0.9338, 77.6), # original, conceptional and obj all from https://bevankoopman.github.io/papers/irj2020-comparison.pdf (same as in other verions of that paper, was also chosen as source from ChatGPT paper)
+            ("Manual", 0.0217, 0.0407, 0.1439, 0.9338, 77.6), # original, conceptional and obj all from https://bevankoopman.github.io/papers/irj2020-comparison.pdf (same as in other verions of that paper, was also chosen as source from ChatGPT paper)
             ("Conceptual", 0.0021, 0.0037, 0.0114, 0.6286, None), # highest recall, highest f3
             ("Objective", 0.0002, 0.0005, 0.0022, 0.8780, None), # highest recall (since highest f3 has very low recall)
             ("ChatGPT", 0.0752, 0.0642, 0.0847, 0.5035, None), # https://arxiv.org/pdf/2302.03495, highest recall, highest F3, with example q4
+            # ("FI-BE-CONTXT", 0.0003, 0.0005, 0.0029, 0.9676 , None), # https://www.sciencedirect.com/science/article/pii/S1386505622002428 2 of the 3 above 80% recall frameworks (last of the 3 is simply bad (almost same recall as this and much lower precision)) -> simplys ay we only cosnidered above 80% recall in selection of those two values and then the best 2 of those 3
+            ("Semantic", 0.0236, 0.0458, 0.1872, 0.8159 , None), # https://www.sciencedirect.com/science/article/pii/S1386505622002428 FI-BioBE-CONTXT -> most competitive in preicsion and recall from the 3 configs that have above 80% recall (only considering above 80% recall)
         ],
         "tar2019": [ # no value found
             # ("Original", "≤0.012\*", "", "", ""),

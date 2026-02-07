@@ -1,0 +1,42 @@
+{
+    "pourrezaSemanticdrivenBooleanQuery2023a": {
+        "title": "Towards semantic-driven boolean query formalization for biomedical systematic literature reviews",
+        "examples": [
+            {
+                "query_id": "",
+                "query": "GALACTOMANNAN DETECTION FOR INVASIVE ASPERGILLOSIS IN IMMUNOCOMPROMISED PATIENTS",
+                "info": "Topic: GALACTOMANNAN DETECTION FOR INVASIVE ASPERGILLOSIS IN IMMUNOCOMPROMISED PATIENTS\nBERT: immunocompromised, aspergillosis, patients, invasive, galactomannan\nCLUSTERING BASED ON CONTEXTUAL EMBEDDINGS: (immunocompromised patients OR invasive OR galactomannan) AND (aspergillosis)\nEXPANSION:(invasive OR cryptococcosis OR Patient immunosuppressed OR zygomycosis OR minimally-invasive OR galactomannan OR immunocompromised OR 1²-d-glucan OR immuno-compromised OR beta-d-glucan OR detections OR minimally OR detecting OR detection OR immunocompromized OR Aspergillosis) AND (aspergillosis)",
+                "result": "(invasive OR cryptococcosis OR Patient immunosuppressed OR zygomycosis OR minimally-invasive OR galactomannan OR immunocompromised OR 1²-d-glucan OR immuno-compromised OR beta-d-glucan OR detections OR minimally OR detecting OR detection OR immunocompromized OR Aspergillosis) AND (aspergillosis)"
+            }
+        ]
+    },
+    "scellsComputationalApproachObjectively2020": {
+        "title": "A Computational Approach for Objectively Derived Systematic Review Search Strategies",
+        "examples": [
+            {
+                "query_id": "CD009579",
+                "query": "",
+                "info": "Highest FOR query for topic CD009579.",
+                "result": "((schistosomiasis[tiab] OR cca[tiab] OR used[tiab] OR found[tiab] OR hematuria[tiab] OR either[tiab]) AND (strips[tiab] OR urinalysis[tiab] OR dipstick[tiab] OR dipsticks[tiab] OR mg[tiab] OR \"Parasite Egg Count\"[mh:noexp) AND (village[tiab] OR villages[tiab] OR kg[tiab]))",
+                "precision": 0.0019,
+                "recall": 1.0
+            },
+            {
+                "query_id": "CD009647",
+                "query": "",
+                "info": "Lowest FOR query for topic CD009647.",
+                "result": "((found[tiab] OR urine[tiab] OR balance[tiab] OR \"Aged, OR and over\"[mh:noexp]) AND fluid[tiab])",
+                "precision": 0.000026,
+                "recall": 1.0
+            },
+            {
+                "query_id": "",
+                "query": "‘Brachytherapy in patients with prostate cancer",
+                "info": "",
+                "result": "(prostate[tiab] OR psa[tiab] OR used[tiab] OR either[tiab] OR seed[tiab] OR symptom[tiab] OR ml[tiab] OR toxicities[tiab] OR prostatic[tiab] OR \"Prostatic Neoplasms\"[mh:noexp]) AND (beam[tiab] OR brachytherapy[tiab] OR radical[tiab] OR prostatectomy[tiab] OR ebrt[tiab] OR cox[tiab] OR androgen[tiab] OR implantation[tiab] OR consensus[tiab] OR pretreatment[tiab] OR sexual[tiab] OR neoadjuvant[tiab] OR mailed[tiab] OR implant[tiab] OR curative[tiab])",
+                "precision": 0.0003,
+                "recall": 1.0
+            }
+        ]
+    }
+}
