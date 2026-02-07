@@ -4,7 +4,8 @@
 .venv_imodels
 venv
 __pycache__
-data
+data/statistics/optuna
+
 
 # epo
 aria2_downloads.txt
