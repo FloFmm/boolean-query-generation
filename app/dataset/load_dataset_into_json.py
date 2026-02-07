@@ -18,12 +18,11 @@ dataset = load_dataset()
 # dataset already loaded earlier
 reviews = dataset["EVAL"] | dataset["TRAIN"]
 
-dataset_path = dataset_details_path()
 queryid_to_details = {
     query_id: review_data["dataset_details"]
     for query_id, review_data in reviews.items()
 }
-for query_id, details in queryid_to_details:
+for query_id, details in queryid_to_details.items():
     details["real_num_positives"] = len(get_positives(query_id=query_id, dataset=dataset))
 
 out_path = dataset_details_path()
