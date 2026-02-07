@@ -728,3 +728,17 @@ def dataset_names(short_name):
 
 def dataset_details_path():
     return Path("../systematic-review-datasets/data/dataset_details/dataset_details.json")
+
+def get_dataset_details() -> dict:
+    """
+    Load the dataset details dictionary from disk.
+
+    Returns:
+        dict: Mapping from query_id -> dataset_details
+    """
+    path = dataset_details_path()
+
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    return data
