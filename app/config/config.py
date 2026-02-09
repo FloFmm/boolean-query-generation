@@ -608,7 +608,7 @@ TRAIN_REVIEWS_25 = [
     "CD008963",
     "CD003344",  # sigir2017
 ]
-TRAIN_REVIEWS = [
+TRAIN_REVIEWS_10_OLD = [
     "CD011431",
     "CD008892",  # tar2018 # starting with the biggest sample (297 positives)
     "CD008054",
@@ -617,6 +617,19 @@ TRAIN_REVIEWS = [
     "CD005139",  # tar2019
     "CD007020",  # sr_updates
     "CD002783",
+    "CD002117",
+    "CD003344",  # sigir2017
+]
+
+TRAIN_REVIEWS = [ #atleast 50 positiives
+    "CD011431",
+    "CD008892",  # tar2018 # starting with the biggest sample (297 positives)
+    "CD010339",
+    "CD008054",
+    "CD007427",  # tar2017
+    "CD012661",
+    "CD005139",  # tar2019
+    "CD006127",
     "CD002117",
     "CD003344",  # sigir2017
 ]

@@ -4,7 +4,7 @@ import random
 CUSTOM_HF_PATH = "../systematic-review-datasets/data/huggingface"
 os.environ["HF_HOME"] = CUSTOM_HF_PATH  # has to be up here
 from collections import defaultdict
-from app.dataset.utils import review_id_to_dataset, get_positives
+from app.dataset.utils import review_id_to_dataset, get_positives, get_dataset_details
 import sys
 
 sys.path.append(
@@ -204,18 +204,21 @@ def compute_train_review_ids(
 ):
     random.seed(seed)
 
-    dataset = load_dataset()
+    # dataset = load_dataset()
     eligible = defaultdict(list)
+    dataset_details = get_dataset_details()
 
     # 1️⃣ collect eligible reviews per dataset
-    for split, reviews in dataset.items():
-        for review_name, review_data in reviews.items():
-            dataset_name, _, _ = review_id_to_dataset(review_name)
+    # for split, reviews in dataset.items():
+    #     for review_name, review_data in reviews.items():
+    for review_name, review_data in dataset_details.items():
+        dataset_name, _, _ = review_id_to_dataset(review_name)
 
-            pos = len(get_positives(review_id=review_name, dataset=dataset))
+        # pos = len(get_positives(review_id=review_name, dataset=dataset))
+        pos = len(review_data["positives"])
 
-            if pos >= min_positives:
-                eligible[dataset_name].append(review_name)
+        if pos >= min_positives:
+            eligible[dataset_name].append(review_name)
 
     # 2️⃣ compute totals
     counts = {k: len(v) for k, v in eligible.items()}
@@ -264,7 +267,7 @@ def compute_train_review_ids(
         print(f"{dataset_name}: {len(selected)} / {counts[dataset_name]} eligible")
         for r in selected:
             # count positives
-            pos_count = len(get_positives(review_id=r, dataset=dataset))
+            pos_count = len(dataset_details[r]["positives"])
             print(f"  - {r} (positives: {pos_count})")
         print()
     print(f"Samples:", sampled)
@@ -272,5 +275,5 @@ def compute_train_review_ids(
 
 
 if __name__ == "__main__":
-    compute_dataset_statistics()
-    compute_train_review_ids(total_samples=25, min_positives=25)
+    # compute_dataset_statistics()
+    compute_train_review_ids(total_samples=25, min_positives=50)

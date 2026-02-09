@@ -203,7 +203,7 @@ def select_k_cosine_threshold(scores: np.ndarray, cosine_percentage_threshold) -
     top5 = valid_scores[:5]
     threshold = (1.0 - cosine_percentage_threshold) * np.mean(top5)
 
-    return min(max(int(np.sum(valid_scores >= threshold)), 20), 3000)
+    return min(max(int(np.sum(valid_scores >= threshold)), 50), 3000)
 
 
 def plot_precision_recall_by_bucket(
@@ -243,7 +243,7 @@ def plot_precision_recall_by_bucket(
 
     precision_means = {name: [] for name in methods}
     recall_means = {name: [] for name in methods}
-
+    debug_metrics = {name: {">=50": [], "<50": []} for name in methods}
     for bucket in buckets_sorted:
         per_method_p = {name: [] for name in methods}
         per_method_r = {name: [] for name in methods}
@@ -260,12 +260,29 @@ def plot_precision_recall_by_bucket(
                 k = min(k, len(pmids))
 
                 p, r = compute_precision_recall_at_k(pmids, positives, k)
+                f3 = f_beta(p, r, beta=3)
                 per_method_p[name].append(p)
                 per_method_r[name].append(r)
+                
+                # Store debug info
+                bucket_key_dbg = ">=50" if num_positives >= 50 else "<50"
+                debug_metrics[name][bucket_key_dbg].append((p, r, f3))
 
         for name in methods:
             precision_means[name].append(np.mean(per_method_p[name]))
             recall_means[name].append(np.mean(per_method_r[name]))
+
+    # --- debug print ---
+    for name in methods:
+        for key in [">=50", "<50"]:
+            metrics = debug_metrics[name][key]
+            if metrics:
+                ps, rs, f3s = zip(*metrics)
+                print(f"{name} | {key} positives: "
+                      f"Precision={np.mean(ps):.4f}, "
+                      f"Recall={np.mean(rs):.4f}, "
+                      f"F3={np.mean(f3s):.4f}")
+
 
     x = np.arange(len(buckets_sorted))
 
@@ -516,7 +533,7 @@ if __name__ == "__main__":
     print(f"  min threshold = {cos_thr}")
     print(f"  mean precision = {cos_prec:.4f}")
     print(f"  mean recall    = {cos_recall:.4f}")
-    print(f"  mean F3-score  = {cos_f3:.4f}")
+    print(f"  mean F3-score  = {cos_f3:.4f}\n")
 
 
     fixed_k, cos_prec, cos_recall, cos_f3 = find_min_fixed_k_for_recall(
@@ -528,13 +545,14 @@ if __name__ == "__main__":
         k_max=5000,
     )
 
-    print(f"\nFixed-k method:")
+    print(f"Fixed-k method:")
     print(f"  min k       = {fixed_k}")
     print(f"  mean precision = {cos_prec:.4f}")
     print(f"  mean recall    = {cos_recall:.4f}")
-    print(f"  mean F3-score  = {cos_f3:.4f}")
-    # plot_metric_score_curve_by_bucket(bucket_scores=bucket_scores, out_folder=None)
-    # plot_positive_score_stats_by_bucket(bucket_positives_scores)
+    print(f"  mean F3-score  = {cos_f3:.4f}\n")
+    
+    plot_metric_score_curve_by_bucket(bucket_scores=bucket_scores, out_folder=None)
+    plot_positive_score_stats_by_bucket(bucket_positives_scores)
     plot_precision_recall_by_bucket(
         bucket_rankings, cosine_percentage_threshold=cos_thr, fixed_k=fixed_k
     )
