@@ -1,20 +1,8 @@
-import sys
-import os
 import json
 import re
 from collections import defaultdict
-from app.dataset.utils import review_id_to_dataset
+from app.dataset.utils import review_id_to_dataset, get_dataset_details
 from collections import Counter
-sys.path.append(
-    os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__), "../..", "../systematic-review-datasets"
-        )
-    )
-)
-from csmed.experiments.csmed_cochrane_retrieval import (
-    load_dataset,
-)
 
 def numbers_repeat_majority(s: str, threshold: float = 0.7) -> bool:
     # Step 1: find all numbers
@@ -36,9 +24,7 @@ def numbers_repeat_majority(s: str, threshold: float = 0.7) -> bool:
 
 qg_results_path = "data/statistics/optuna/best/lc=True,maxdf=0.5,mesh=True,ma=True,mindf=100,rw=True,rmn=True,rmp=True,d=503679/boot,=True,cw=0.2,dc=2,maxd=4,maxf=0.5,mof=10,maxs=None,midre=0.001,midrs=0.001,mins=3,mwfl=0.0002,ne=50,pfs=1.1,rmf=0.9,rmidr=0.9,rweight=1.5,k=1.5,tkoc=500/cf=0.002,cb=1.8,mh_noexp=False,mro=0.01,mrp=0.01,mto=0.12,pb=0.6,te=False,tiab=False/qg_results.jsonl"
 
-dataset = load_dataset()
-# dataset already loaded earlier
-reviews = dataset["EVAL"] | dataset["TRAIN"]
+dataset_details = get_dataset_details()
 
 def fmt(p, r):
     return f"(precision={p:.4f}, recall={r:.4f})"
@@ -54,22 +40,16 @@ with open(qg_results_path, "r", encoding="utf-8") as f:
 
         data = json.loads(line)
         query_id = data["query_id"]
-        # if query_id != "CD010864":
-        #     continue
-
-        if query_id not in reviews:
-            continue
-        
         dataset_name,_,_ = review_id_to_dataset(review_id=query_id)
         if dataset_name == "tar2017":
             dataset_name = "tar2018"
         
         c_final = None
         for accepted in ["pubmed", "medline", "central"]:#, " search strateg"]:
-            for s_name in sorted(reviews[query_id]["dataset_details"]["search_strategy"].keys()):
+            for s_name in sorted(dataset_details[query_id]["search_strategy"].keys()):
                 if "imaging" in s_name.lower():
                     continue
-                strategy = reviews[query_id]["dataset_details"]["search_strategy"][s_name].lower()
+                strategy = dataset_details[query_id]["search_strategy"][s_name].lower()
                 if accepted not in s_name.lower() or "search" not in s_name.lower() or "strategy" not in s_name.lower(): 
                     continue
                 cs = set()
