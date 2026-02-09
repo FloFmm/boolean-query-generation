@@ -15,6 +15,8 @@ from app.config.config import (
     CSMED_COCHRANE_REVIEWS,
     TOP_K,
     BOW_PARAMS,
+    FIXED_TOP_K,
+    COSINE_PCT_THRESHOLD,
 )
 
 ABBREVIATIONS = {
@@ -49,6 +51,7 @@ ABBREVIATIONS = {
     "randomize_min_impurity_decrease_range": "rmidr",
     "rank_weight": "rweight",
     "top_k": "k",
+    "top_k_type": "ktype",
     "top_k_or_candidates": "tkoc",
     "term_expansions": "te",
     "dont_cares": "dc",
@@ -294,6 +297,7 @@ def load_vectors(**bow_args):
     print("Done laoding vectors")
     return X, ordered_pmids, feature_names
 
+
 def document_count(word, X, feature_names):
     """
     Returns in how many documents `word` appears.
@@ -320,6 +324,7 @@ def document_count(word, X, feature_names):
     # Sum over documents for this word
     return int(X[:, idx].sum())
 
+
 def ranking_file_path(retriever_name, query_type, total_docs, query_id=None):
     base_dir = Path(
         f"../systematic-review-datasets/data/rankings/"
@@ -331,13 +336,39 @@ def ranking_file_path(retriever_name, query_type, total_docs, query_id=None):
     else:
         return list(base_dir.glob("*.npz"))
 
+
 def get_sorted_ids(retriever_name, query_type, total_docs, query_id):
     rankings_file = ranking_file_path(retriever_name, query_type, total_docs, query_id)
     if not rankings_file.exists():
         return None
     arr = np.load(rankings_file)
     sorted_ids = arr["ids"]
-    return sorted_ids
+    scores = arr["scores"]
+    return sorted_ids, scores
+
+def select_k_positive_dependent(num_positives: int) -> int:
+    """
+    Uses your provided approximation function.
+    """
+    return approximate_y(
+        TOP_K[0.7][0],
+        TOP_K[0.7][1],
+        num_positives,
+    )
+
+def select_k_cosine_threshold(scores: np.ndarray, cosine_percentage_threshold) -> int:
+    """
+    Cosine-threshold-based top-k:
+    threshold = 5% lower than the average of top-5 scores.
+    """
+    valid_scores = scores[~np.isnan(scores)]
+    if len(valid_scores) == 0:
+        return 0
+
+    top5 = valid_scores[:5]
+    threshold = (1.0 - cosine_percentage_threshold) * np.mean(top5)
+
+    return min(max(int(np.sum(valid_scores >= threshold)), 50), 3000)
 
 
 def generate_pseudo_labels_and_sample_weights(
@@ -346,12 +377,20 @@ def generate_pseudo_labels_and_sample_weights(
     k,
     dont_cares,
     max_weight: float = 1.5,
+    top_k_type="pos_count",
     num_positives=None,
+    sorted_scores=None,
 ):
-    if isinstance(k, float):
-        top_k = math.ceil(
-            approximate_y(TOP_K[0.7][0], TOP_K[0.7][1], num_positives) * k
-        )
+    if top_k_type == "pos_count":
+        top_k = select_k_positive_dependent(num_positives=num_positives) 
+    elif top_k_type == "fixed":
+        top_k = FIXED_TOP_K
+    elif top_k_type == "cosine":
+        top_k = select_k_cosine_threshold(sorted_scores, COSINE_PCT_THRESHOLD)
+    else:
+        raise Exception
+    top_k = math.ceil(top_k* k)
+
     N = len(ordered_pmids)
 
     # map pmid -> index in X
@@ -417,8 +456,10 @@ def get_positives(review_id, dataset):
                 positives.add(str(doc["pmid"]))
     return positives
 
+
 def get_all_review_ids(dataset):
     return set(dataset["EVAL"].keys()) | set(dataset["TRAIN"].keys())
+
 
 def load_bow(**bow_args):
     bow_by_pmid = {}
@@ -726,8 +767,12 @@ def dataset_names(short_name):
     }
     return mapping.get(short_name, short_name)
 
+
 def dataset_details_path():
-    return Path("../systematic-review-datasets/data/dataset_details/dataset_details.json")
+    return Path(
+        "../systematic-review-datasets/data/dataset_details/dataset_details.json"
+    )
+
 
 def get_dataset_details() -> dict:
     """

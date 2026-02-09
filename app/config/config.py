@@ -58,6 +58,8 @@ TOP_K = {
         ],  # smoothed y
     )
 }
+FIXED_TOP_K=752
+COSINE_PCT_THRESHOLD=0.0266
 
 DEBUG = False  # TODO remove
 
@@ -82,6 +84,7 @@ BOW_PARAMS = {
 
 RF_PARAMS = {
     "top_k": 1.5,
+    "top_k_type": "pos_count", # alternatives: "fixed", "cosine"
     "dont_cares": 2.0,
     "rank_weight": 1.5,  # how much more weighted shall rank 1 be than rank k
     "n_estimators": 50,  # TODO change back

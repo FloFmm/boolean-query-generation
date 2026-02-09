@@ -1,14 +1,14 @@
 import numpy as np
 import os
 import sys
+import math
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 from collections import defaultdict
-from app.dataset.utils import ranking_file_path, get_dataset_details
-from app.parameter_tuning.compute_top_k import BUCKETS, approximate_y
+from app.dataset.utils import ranking_file_path, get_dataset_details, select_k_positive_dependent, select_k_cosine_threshold
+from app.parameter_tuning.compute_top_k import BUCKETS
 from app.helper.helper import f_beta
-from app.config.config import TOP_K
 
 
 def find_bucket(n_pos: int, buckets: list[tuple[int, int]]):
@@ -16,7 +16,6 @@ def find_bucket(n_pos: int, buckets: list[tuple[int, int]]):
         if start <= n_pos <= end:
             return f"{start}-{end}"
     return None
-
 
 def plot_metric_score_curve_by_bucket(
     bucket_scores: dict,
@@ -77,8 +76,8 @@ def plot_metric_score_curve_by_bucket(
     plt.grid(True, which="both", linestyle="--", alpha=0.6)
     plt.legend(title="Number of positives")
     plt.tight_layout()
-    plt.show()
-
+    plt.savefig(os.path.join(SAVE_DIR, "metric_score_curve_by_bucket.png"), dpi=300)
+    plt.close()
 
 def plot_positive_score_stats_by_bucket(bucket_scores: dict):
     """
@@ -130,29 +129,8 @@ def plot_positive_score_stats_by_bucket(bucket_scores: dict):
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.legend()
     plt.tight_layout()
-    plt.show()
-
-
-def compute_f_at_k(
-    pmids: np.ndarray,
-    positives: set,
-    k: int,
-) -> float:
-    """
-    Compute F0.5 at cutoff k for a single query.
-    """
-    topk_ids = pmids[:k]
-
-    tp = sum(pid in positives for pid in topk_ids)
-    fp = k - tp
-    fn = len(positives) - tp
-
-    # precision & recall
-    p = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-    r = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-
-    return f_beta(precision=p, recall=r, beta=3)
-
+    plt.savefig(os.path.join(SAVE_DIR, "positive_score_stats_by_bucket.png"), dpi=300)
+    plt.close()
 
 def compute_precision_recall_at_k(
     pmids: np.ndarray,
@@ -172,39 +150,6 @@ def compute_precision_recall_at_k(
     recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
 
     return precision, recall
-
-
-def select_k_fixed(k_fixed: int) -> int:
-    return k_fixed
-
-
-def select_k_positive_dependent(num_positives: int) -> int:
-    """
-    Uses your provided approximation function.
-    """
-    return int(
-        approximate_y(
-            TOP_K[0.7][0],
-            TOP_K[0.7][1],
-            num_positives,
-        )
-    )
-
-
-def select_k_cosine_threshold(scores: np.ndarray, cosine_percentage_threshold) -> int:
-    """
-    Cosine-threshold-based top-k:
-    threshold = 5% lower than the average of top-5 scores.
-    """
-    valid_scores = scores[~np.isnan(scores)]
-    if len(valid_scores) == 0:
-        return 0
-
-    top5 = valid_scores[:5]
-    threshold = (1.0 - cosine_percentage_threshold) * np.mean(top5)
-
-    return min(max(int(np.sum(valid_scores >= threshold)), 50), 3000)
-
 
 def plot_precision_recall_by_bucket(
     bucket_rankings: dict,
@@ -227,8 +172,8 @@ def plot_precision_recall_by_bucket(
     buckets_sorted = sorted(bucket_rankings.keys(), key=bucket_key)
 
     methods = {
-        f"Fixed k={fixed_k}": lambda npos, scores: select_k_fixed(fixed_k),
-        "Positive-dependent k": lambda npos, scores: select_k_positive_dependent(npos),
+        f"Fixed k={fixed_k}": lambda npos, scores: fixed_k,
+        "Positive-dependent k": lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
         f"Cosine-threshold ({cosine_percentage_threshold*100:.2f}%) k": lambda npos, scores: select_k_cosine_threshold(
             scores, cosine_percentage_threshold
         ),
@@ -314,7 +259,8 @@ def plot_precision_recall_by_bucket(
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    plt.savefig(os.path.join(SAVE_DIR, "precision_recall_by_bucket.png"), dpi=300)
+    plt.close()
 
 def collect_samples_with_min_positives(
     bucket_rankings: dict,
@@ -427,8 +373,8 @@ def plot_actual_topk_by_bucket(bucket_rankings: dict, cosine_percentage_threshol
     buckets_sorted = sorted(bucket_rankings.keys(), key=bucket_key)
 
     methods = {
-        f"Fixed k={fixed_k}": lambda npos, scores: select_k_fixed(fixed_k),
-        "Positive-dependent k": lambda npos, scores: select_k_positive_dependent(npos),
+        f"Fixed k={fixed_k}": lambda npos, scores: fixed_k,
+        "Positive-dependent k": lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
         f"Cosine-threshold ({cosine_percentage_threshold*100:.2f}%) k": lambda npos, scores: select_k_cosine_threshold(
             scores, cosine_percentage_threshold
         ),
@@ -473,11 +419,13 @@ def plot_actual_topk_by_bucket(bucket_rankings: dict, cosine_percentage_threshol
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    plt.savefig(os.path.join(SAVE_DIR, "actual_topk_by_bucket.png"), dpi=300)
+    plt.close()
 
-
+SAVE_DIR = "data/statistics/images/top_k_type_comparison"
 MAX_K = 10000  # how far you want the curve
 if __name__ == "__main__":
+    os.makedirs(SAVE_DIR, exist_ok=True)
     bucket_scores = defaultdict(list)
     bucket_positives_scores = defaultdict(list)
     bucket_rankings = defaultdict(list)

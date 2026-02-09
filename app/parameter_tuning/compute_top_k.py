@@ -89,7 +89,6 @@ def compute_weighted_metric_curve(
 
     return ks, bucket_labels, bucket_vals, bucket_avg_positives
 
-
 def compute_k_at_recall_threshold(
     ks: list[int],
     bucket_vals: dict[str, np.ndarray],
@@ -128,7 +127,6 @@ def compute_k_at_recall_threshold(
 
     return k_at_p
 
-
 def compute_top_ks(csv_path, p, buckets):
     # 1. Compute curve
     ks, bucket_labels, bucket_vals, bucket_avg_positives = (
@@ -138,7 +136,6 @@ def compute_top_ks(csv_path, p, buckets):
     # 3. Compute exact k for 70% and 95% recall
     ks = compute_k_at_recall_threshold(ks, bucket_vals, p)
     return ks, bucket_avg_positives
-
 
 def approximate_y(x_vals, y_vals, x_query):
     """
@@ -185,7 +182,6 @@ def approximate_y(x_vals, y_vals, x_query):
     # Should never reach here
     raise RuntimeError("Interpolation failed")
 
-
 def compute_top_k(n_positive, csv_path, p, buckets):
     ks, bucket_avg_positives = compute_top_ks(csv_path, p, buckets)
     return approximate_y(
@@ -193,7 +189,6 @@ def compute_top_k(n_positive, csv_path, p, buckets):
         y_vals=list(ks.values()),
         x_query=n_positive,
     )
-
 
 def compute_top_k_curve(csv_path, buckets, recall=0.7):
     ks, bucket_avg_positives = compute_top_ks(csv_path, recall, buckets)
@@ -209,7 +204,6 @@ def compute_top_k_curve(csv_path, buckets, recall=0.7):
     y_smooth = iso.fit_transform(xs, ys)
     print("smoothed y")
     print([round(y) for y in y_smooth])
-
 
 if __name__ == "__main__":
     compute_top_k_curve(CSV_PATH, BUCKETS, recall=0.7)

@@ -52,6 +52,7 @@ def evaluate_rf(
     max_retrieved=100_000,
     always_retrieve=False,
     ignore_pubmed_errors=False,
+    sorted_scores=None,
 ):
     dataset, _, end_year = review_id_to_dataset(query_id)
 
@@ -91,9 +92,11 @@ def evaluate_rf(
 
     pseudo_labels, sample_weight, top_k = generate_pseudo_labels_and_sample_weights(
         k=rf_params["top_k"],
+        top_k_type=rf_params["top_k_type"],
         dont_cares=rf_params["dont_cares"],
         ordered_pmids=ordered_pmids,
         sorted_ids=sorted_ids,
+        sorted_scores=sorted_scores,
         max_weight=rf_params["rank_weight"],
         num_positives=len(positives),
     )

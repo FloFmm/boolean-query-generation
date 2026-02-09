@@ -56,7 +56,7 @@ term_expansions = load_synonym_map(**BOW_PARAMS)
 #     with open(SORTED_IDS_PATH, "rb") as f:
 #         sorted_ids = pickle.load(f)
 # else:
-sorted_ids = get_sorted_ids(
+sorted_ids, scores = get_sorted_ids(
     retriever_name="pubmedbert",
     query_type="title_abstract",
     total_docs=total_docs,

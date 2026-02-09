@@ -222,7 +222,7 @@ def optimize_with_optuna_parallel(
     total_docs = BOW_PARAMS["total_docs"]
 
     for query_id in query_ids:
-        s_ids = get_sorted_ids(
+        s_ids, scores = get_sorted_ids(
             retriever_name=ret_config["model"],
             query_type=ret_config["query_type"],
             total_docs=total_docs,
