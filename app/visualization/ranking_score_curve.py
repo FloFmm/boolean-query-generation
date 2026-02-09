@@ -5,14 +5,18 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 from collections import defaultdict
-from app.dataset.utils import ranking_file_path, get_dataset_details, get_positives
-from app.parameter_tuning.compute_top_k import BUCKETS
+from app.dataset.utils import ranking_file_path, get_dataset_details
+from app.parameter_tuning.compute_top_k import BUCKETS, approximate_y
+from app.helper.helper import f_beta
+from app.config.config import TOP_K
+
 
 def find_bucket(n_pos: int, buckets: list[tuple[int, int]]):
     for start, end in buckets:
         if start <= n_pos <= end:
             return f"{start}-{end}"
     return None
+
 
 def plot_metric_score_curve_by_bucket(
     bucket_scores: dict,
@@ -47,7 +51,7 @@ def plot_metric_score_curve_by_bucket(
         )
 
     # DEBUG: print k where each bucket reaches certain score thresholds
-        # DEBUG: for each score threshold, print list of ks ordered by bucket
+    # DEBUG: for each score threshold, print list of ks ordered by bucket
     debug_scores = [0.98, 0.97, 0.96, 0.955, 0.95]
 
     sorted_buckets = sorted(bucket_mean_scores.keys(), key=bucket_key)
@@ -66,7 +70,6 @@ def plot_metric_score_curve_by_bucket(
                 ks_for_score.append(None)
         print(f"score <= {s}: {ks_for_score}")
 
-
     plt.xscale("log")
     plt.xlabel("Rank position (k)")
     plt.ylabel("Average retrieval score")
@@ -75,6 +78,7 @@ def plot_metric_score_curve_by_bucket(
     plt.legend(title="Number of positives")
     plt.tight_layout()
     plt.show()
+
 
 def plot_positive_score_stats_by_bucket(bucket_scores: dict):
     """
@@ -93,11 +97,17 @@ def plot_positive_score_stats_by_bucket(bucket_scores: dict):
     median_scores = []
 
     for bucket in buckets_sorted:
-        # stack: (num_queries, K)
-        stacked = np.vstack(bucket_scores[bucket])
+        arrays = [arr for arr in bucket_scores[bucket] if arr.size > 0]
 
-        # consider only positive scores (> 0)
-        positives = stacked[stacked > 0]
+        if len(arrays) == 0:
+            min_scores.append(np.nan)
+            max_scores.append(np.nan)
+            mean_scores.append(np.nan)
+            median_scores.append(np.nan)
+            continue
+
+        positives = np.concatenate(arrays)
+        positives = positives[positives > 0]
 
         min_scores.append(np.min(positives))
         max_scores.append(np.max(positives))
@@ -123,23 +133,280 @@ def plot_positive_score_stats_by_bucket(bucket_scores: dict):
     plt.show()
 
 
+def compute_f_at_k(
+    pmids: np.ndarray,
+    positives: set,
+    k: int,
+) -> float:
+    """
+    Compute F0.5 at cutoff k for a single query.
+    """
+    topk_ids = pmids[:k]
+
+    tp = sum(pid in positives for pid in topk_ids)
+    fp = k - tp
+    fn = len(positives) - tp
+
+    # precision & recall
+    p = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    r = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+
+    return f_beta(precision=p, recall=r, beta=3)
+
+
+def compute_precision_recall_at_k(
+    pmids: np.ndarray,
+    positives: set,
+    k: int,
+) -> tuple[float, float]:
+    """
+    Compute precision and recall at cutoff k.
+    """
+    topk_ids = pmids[:k]
+
+    tp = sum(pid in positives for pid in topk_ids)
+    fp = k - tp
+    fn = len(positives) - tp
+
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+
+    return precision, recall
+
+
+def select_k_fixed(k_fixed: int) -> int:
+    return k_fixed
+
+
+def select_k_positive_dependent(num_positives: int) -> int:
+    """
+    Uses your provided approximation function.
+    """
+    return int(
+        approximate_y(
+            TOP_K[0.7][0],
+            TOP_K[0.7][1],
+            num_positives,
+        )
+    )
+
+
+def select_k_cosine_threshold(scores: np.ndarray, cosine_percentage_threshold) -> int:
+    """
+    Cosine-threshold-based top-k:
+    threshold = 5% lower than the average of top-5 scores.
+    """
+    valid_scores = scores[~np.isnan(scores)]
+    if len(valid_scores) == 0:
+        return 0
+
+    top5 = valid_scores[:10]
+    threshold = (1.0 - cosine_percentage_threshold) * np.mean(top5)
+
+    return min(max(int(np.sum(valid_scores >= threshold)), 20), 3000)
+
+
+def plot_precision_recall_by_bucket(
+    bucket_rankings: dict,
+    cosine_percentage_threshold: float,
+    fixed_k=500,
+):
+    """
+    bucket_rankings[bucket] = list of dicts:
+        {
+            "scores": np.ndarray,
+            "pmids": np.ndarray,
+            "positives": set
+        }
+    """
+
+    def bucket_key(bucket_str: str):
+        start, end = bucket_str.split("-")
+        return int(start), int(end)
+
+    buckets_sorted = sorted(bucket_rankings.keys(), key=bucket_key)
+
+    methods = {
+        f"Fixed k={fixed_k}": lambda npos, scores: select_k_fixed(fixed_k),
+        "Positive-dependent k": lambda npos, scores: select_k_positive_dependent(npos),
+        f"Cosine-threshold ({cosine_percentage_threshold*100:.2f}%) k": lambda npos, scores: select_k_cosine_threshold(
+            scores, cosine_percentage_threshold
+        ),
+    }
+
+    # base colors per strategy
+    colors = {
+        f"Fixed k={fixed_k}": "tab:blue",
+        "Positive-dependent k": "tab:green",
+        f"Cosine-threshold ({cosine_percentage_threshold*100:.2f}%) k": "tab:red",
+    }
+
+    precision_means = {name: [] for name in methods}
+    recall_means = {name: [] for name in methods}
+
+    for bucket in buckets_sorted:
+        per_method_p = {name: [] for name in methods}
+        per_method_r = {name: [] for name in methods}
+
+        for entry in bucket_rankings[bucket]:
+            scores = entry["scores"]
+            pmids = entry["pmids"]
+            positives = entry["positives"]
+
+            num_positives = len(positives)
+
+            for name, k_fn in methods.items():
+                k = max(1, k_fn(num_positives, scores))
+                k = min(k, len(pmids))
+
+                p, r = compute_precision_recall_at_k(pmids, positives, k)
+                per_method_p[name].append(p)
+                per_method_r[name].append(r)
+
+        for name in methods:
+            precision_means[name].append(np.mean(per_method_p[name]))
+            recall_means[name].append(np.mean(per_method_r[name]))
+
+    x = np.arange(len(buckets_sorted))
+
+    plt.figure(figsize=(9, 6))
+
+    for name in methods:
+        plt.plot(
+            x,
+            precision_means[name],
+            marker="o",
+            linestyle="-",
+            color=colors[name],
+            label=f"{name} – Precision",
+        )
+        plt.plot(
+            x,
+            recall_means[name],
+            marker="o",
+            linestyle="--",
+            color=colors[name],
+            alpha=0.6,
+            label=f"{name} – Recall",
+        )
+
+    plt.xticks(x, buckets_sorted, rotation=45)
+    plt.xlabel("Bucket (number of positives)")
+    plt.ylabel("Score")
+    plt.title("Precision and Recall by bucket for different top-k selection strategies")
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def collect_samples_with_min_positives(
+    bucket_rankings: dict,
+    min_positives: int = 50,
+):
+    """
+    Collect all samples with at least `min_positives` positives.
+    Returns a flat list of entries.
+    """
+    samples = []
+
+    for bucket_entries in bucket_rankings.values():
+        for entry in bucket_entries:
+            if len(entry["positives"]) >= min_positives:
+                samples.append(entry)
+
+    return samples
+
+def find_min_cosine_threshold_for_recall(
+    bucket_rankings: dict,
+    min_positives: int = 50,
+    target_recall: float = 0.7,
+    step: float = 0.001,
+    threshold_min: float = 0.0,
+    threshold_max: float = 0.2,
+):
+    samples = collect_samples_with_min_positives(
+        bucket_rankings, min_positives
+    )
+
+    if len(samples) == 0:
+        raise ValueError("No samples with required minimum positives.")
+
+    thresholds = np.arange(threshold_min, threshold_max + step, step)
+
+    for cosine_threshold in thresholds:
+        recalls = []
+
+        for entry in samples:
+            scores = entry["scores"]
+            pmids = entry["pmids"]
+            positives = entry["positives"]
+
+            k = select_k_cosine_threshold(scores, cosine_threshold)
+            k = max(1, min(k, len(pmids)))
+
+            _, r = compute_precision_recall_at_k(pmids, positives, k)
+            recalls.append(r)
+
+        mean_recall = np.mean(recalls)
+
+        if mean_recall >= target_recall:
+            return cosine_threshold, mean_recall
+
+    return None, None
+
+def find_min_fixed_k_for_recall(
+    bucket_rankings: dict,
+    min_positives: int = 50,
+    target_recall: float = 0.7,
+    step: int = 1,
+    k_min: int = 1,
+    k_max: int = 5000,
+):
+    samples = collect_samples_with_min_positives(
+        bucket_rankings, min_positives
+    )
+
+    if len(samples) == 0:
+        raise ValueError("No samples with required minimum positives.")
+
+    for k in range(k_min, k_max + 1, step):
+        recalls = []
+
+        for entry in samples:
+            pmids = entry["pmids"]
+            positives = entry["positives"]
+
+            k_eff = min(k, len(pmids))
+            _, r = compute_precision_recall_at_k(pmids, positives, k_eff)
+            recalls.append(r)
+
+        mean_recall = np.mean(recalls)
+
+        if mean_recall >= target_recall:
+            return k, mean_recall
+
+    return None, None
+
+
+
 MAX_K = 10000  # how far you want the curve
 if __name__ == "__main__":
     bucket_scores = defaultdict(list)
     bucket_positives_scores = defaultdict(list)
+    bucket_rankings = defaultdict(list)
     npz_files = ranking_file_path(
         retriever_name="pubmedbert",
         query_type="title_abstract",
         total_docs=503679,
     )
     dataset_details = get_dataset_details()
+    assert len(dataset_details) == 295
 
     for npz_path in sorted(npz_files):
         review_id = npz_path.stem  # removes .npz
-        # positives = get_positives(review_id=review_id)
-        n_pos = dataset_details[review_id]["real_num_positives"]
+        positives = dataset_details[review_id]["positives"]
 
-        bucket = find_bucket(n_pos, BUCKETS)
+        bucket = find_bucket(len(positives), BUCKETS)
         if bucket is None:
             continue
 
@@ -149,15 +416,55 @@ if __name__ == "__main__":
 
             # pad if ranking shorter than MAX_K
             if len(scores) < MAX_K:
-                scores = np.pad(scores, (0, MAX_K - len(scores)), constant_values=np.nan)
+                scores = np.pad(
+                    scores, (0, MAX_K - len(scores)), constant_values=np.nan
+                )
 
             bucket_scores[bucket].append(scores)
-            
+
             # extract scores corresponding to positives
-            # mask = np.isin(pmids, positives)
-            # bucket_positives_scores[bucket].append(scores[mask])
-                
+            mask = np.isin(pmids, positives)
+            bucket_positives_scores[bucket].append(scores[mask])
+            bucket_rankings[bucket].append(
+                {
+                    "scores": scores,
+                    "pmids": pmids,
+                    "positives": positives,
+                }
+            )
+
+    cos_thr, cos_recall = find_min_cosine_threshold_for_recall(
+        bucket_rankings,
+        min_positives=50,
+        target_recall=0.7,
+        threshold_min=0.02,
+        step=0.0001,
+    )
+
+    print(f"Cosine-threshold method:")
+    print(f"  min threshold = {cos_thr}")
+    print(f"  mean recall   = {cos_recall:.4f}")
+
+
+    fixed_k, fixed_recall = find_min_fixed_k_for_recall(
+        bucket_rankings,
+        min_positives=50,
+        target_recall=0.7,
+        step=1,
+        k_min=700,
+        k_max=5000,
+    )
+
+    print(f"\nFixed-k method:")
+    print(f"  min k       = {fixed_k}")
+    print(f"  mean recall = {fixed_recall:.4f}")
     plot_metric_score_curve_by_bucket(bucket_scores=bucket_scores, out_folder=None)
-    # plot_positive_score_stats_by_bucket(bucket_positives_scores)
+    plot_positive_score_stats_by_bucket(bucket_positives_scores)
+    plot_precision_recall_by_bucket(
+        bucket_rankings, cosine_percentage_threshold=cos_thr, fixed_k=fixed_k
+    )
+    
+
+    
     
     
