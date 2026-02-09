@@ -4,13 +4,9 @@ import argparse
 import numpy as np
 from pathlib import Path
 import optuna
-from optuna.storages import JournalStorage
-from optuna.storages.journal import JournalFileBackend
-import sys
 import os
 from filelock import FileLock
 from datetime import datetime
-from pathlib import Path
 from app.config.config import BOW_PARAMS, QG_PARAMS, RF_PARAMS, TRAIN_REVIEWS, PREVIOUS_RUNS
 from app.experiments.evaluate_rf import evaluate_rf
 from app.dataset.utils import (
@@ -18,18 +14,9 @@ from app.dataset.utils import (
     load_synonym_map,
     qg_statistics_path,
     get_sorted_ids,
-    get_positives,
+    get_dataset_details,
 )
 from app.helper.helper import f_beta
-
-sys.path.append(
-    os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__), "../..", "../systematic-review-datasets"
-        )
-    )
-)
-from csmed.experiments.csmed_cochrane_retrieval import load_dataset
 
 def params_from_opt_params(opt_params, default):
     params = copy.deepcopy(default)
@@ -209,9 +196,7 @@ def optimize_with_optuna_parallel(
     n_jobs : int
         Number of parallel trials to run.
     """
-    print("started loading dataset", flush=True)
-    # --- Load data once ---
-    dataset = load_dataset()
+    dataset_details = get_dataset_details()
     print("finished loading dataset", flush=True)
     X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
     term_expansions = load_synonym_map(**BOW_PARAMS)
@@ -234,7 +219,7 @@ def optimize_with_optuna_parallel(
         sorted_ids[query_id] = s_ids
 
         # Ground truth
-        positives[query_id] = get_positives(review_id=query_id, dataset=dataset)
+        positives[query_id] = set(dataset_details[query_id]["positives"])
 
     # --- Define Optuna objective ---
     def objective(trial):
@@ -328,11 +313,11 @@ def optimize_with_optuna_parallel(
                         qg_params=copy.deepcopy(qg_params),
                         term_expansions=term_expansions,
                     )
-                except Exception as e:
+                except Exception:
                     # Prune the Optuna trial
                     traceback.print_exc()
                     # trial.report(float("nan"), step=0)
-                    LAST_RF_P = None  # dont repeat bad parameters actively
+                    # LAST_RF_P = None  # dont repeat bad parameters actively
                     raise optuna.exceptions.TrialPruned()
 
                 results_list.append(qg_results)
