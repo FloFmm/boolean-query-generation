@@ -3,8 +3,8 @@
         "title": "Towards semantic-driven boolean query formalization for biomedical systematic literature reviews",
         "examples": [
             {
-                "query_id": "",
-                "query": "GALACTOMANNAN DETECTION FOR INVASIVE ASPERGILLOSIS IN IMMUNOCOMPROMISED PATIENTS",
+                "query_id": "CD007394",
+                "query": "Galactomannan detection for invasive aspergillosis in immunocompromised patients",
                 "info": "Topic: GALACTOMANNAN DETECTION FOR INVASIVE ASPERGILLOSIS IN IMMUNOCOMPROMISED PATIENTS\nBERT: immunocompromised, aspergillosis, patients, invasive, galactomannan\nCLUSTERING BASED ON CONTEXTUAL EMBEDDINGS: (immunocompromised patients OR invasive OR galactomannan) AND (aspergillosis)\nEXPANSION:(invasive OR cryptococcosis OR Patient immunosuppressed OR zygomycosis OR minimally-invasive OR galactomannan OR immunocompromised OR 1²-d-glucan OR immuno-compromised OR beta-d-glucan OR detections OR minimally OR detecting OR detection OR immunocompromized OR Aspergillosis) AND (aspergillosis)",
                 "result": "(invasive OR cryptococcosis OR Patient immunosuppressed OR zygomycosis OR minimally-invasive OR galactomannan OR immunocompromised OR 1²-d-glucan OR immuno-compromised OR beta-d-glucan OR detections OR minimally OR detecting OR detection OR immunocompromized OR Aspergillosis) AND (aspergillosis)"
             }
@@ -15,7 +15,7 @@
         "examples": [
             {
                 "query_id": "CD009579",
-                "query": "",
+                "query": "Circulating antigen tests and urine reagent strips for diagnosis of active schistosomiasis in endemic areas",
                 "info": "Highest FOR query for topic CD009579.",
                 "result": "((schistosomiasis[tiab] OR cca[tiab] OR used[tiab] OR found[tiab] OR hematuria[tiab] OR either[tiab]) AND (strips[tiab] OR urinalysis[tiab] OR dipstick[tiab] OR dipsticks[tiab] OR mg[tiab] OR \"Parasite Egg Count\"[mh:noexp) AND (village[tiab] OR villages[tiab] OR kg[tiab]))",
                 "precision": 0.0019,
@@ -23,7 +23,7 @@
             },
             {
                 "query_id": "CD009647",
-                "query": "",
+                "query": "Clinical symptoms, signs and tests for identification of impending and current water\u2010loss dehydration in older people",
                 "info": "Lowest FOR query for topic CD009647.",
                 "result": "((found[tiab] OR urine[tiab] OR balance[tiab] OR \"Aged, OR and over\"[mh:noexp]) AND fluid[tiab])",
                 "precision": 0.000026,
@@ -36,6 +36,29 @@
                 "result": "(prostate[tiab] OR psa[tiab] OR used[tiab] OR either[tiab] OR seed[tiab] OR symptom[tiab] OR ml[tiab] OR toxicities[tiab] OR prostatic[tiab] OR \"Prostatic Neoplasms\"[mh:noexp]) AND (beam[tiab] OR brachytherapy[tiab] OR radical[tiab] OR prostatectomy[tiab] OR ebrt[tiab] OR cox[tiab] OR androgen[tiab] OR implantation[tiab] OR consensus[tiab] OR pretreatment[tiab] OR sexual[tiab] OR neoadjuvant[tiab] OR mailed[tiab] OR implant[tiab] OR curative[tiab])",
                 "precision": 0.0003,
                 "recall": 1.0
+            }
+        ]
+    },
+    "scellsAutomaticBooleanQuery2020": {
+        "title": "Automatic Boolean Query Formulation for Systematic Review Literature Search",
+        "examples": [
+        ]
+    },
+    "scellsComparisonAutomaticBoolean2021": {
+        "title": "A comparison of automatic Boolean query formulation for systematic reviews",
+        "examples": [
+        ]
+    },
+    "wangCanChatGPTWrite2023": {
+        "title": "Can ChatGPT Write a Good Boolean Query for Systematic Review Literature Search?",
+        "examples": [
+            {
+                "query_id": "",
+                "query": "Prevalence of Differentiated Thyroid Cancer in Autopsy Studies Over Six Decades: A Meta-Analysis",
+                "info": "created in 4 steps (4 queries to Chat-GPT)",
+                "result": "(((differentiated thyroid cancer[mh] OR \"differentiated thyroid\"[All Fields] OR \"thyroid carcinoma\"[All Fields] OR \"papillary microcarcinoma\"[All Fields]) AND (prevalence[All Fields] OR incidence[mh] OR \"etiology of\"[All Fields] OR \"risk factors\"[All Fields] OR gender[All Fields] OR hormonal[All Fields] OR \"nodular goiter\"[All Fields] OR \"Hashimoto’s thyroiditis\"[mh] OR malignancy[mh] OR \"concomitant lesion\"[All Fields] OR tumor[All Fields] OR infiltrate[All Fields] OR fibrosis[All Fields] OR \"early stages of development\"[All Fields] OR frequency[All Fields])) AND (autopsy[mh] OR surgical[All Fields] OR material[All Fields] OR series[All Fields] OR specimens[All Fields] OR cases[All Fields]))",
+                "precision": null,
+                "recall": null
             }
         ]
     }
