@@ -69,6 +69,7 @@ def process_jsonl_folder(folder_path, output_csv):
                         count_value = data["pubmed_query"].count("AND") + data["pubmed_query"].count("OR") + data["pubmed_query"].count("NOT") 
                         assert check == count_value
                         stats[key]["logical_operators"].append(count_value)
+                        stats[key]["all_ORs"].append(data["pubmed_query"].count("OR"))
                         # Calculate F1 and F3 for pubmed
                         p = data.get("pubmed_precision", 0) or 0
                         r = data.get("pubmed_recall", 0) or 0
@@ -95,7 +96,7 @@ def process_jsonl_folder(folder_path, output_csv):
                 row.append(avg)
             writer.writerow(row)
 
-def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
+def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metrics=None, text_size=10.3):
     """
     Generates a Typst table from a CSV containing metrics and a baseline dictionary.
 
@@ -103,7 +104,14 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
         csv_file (str): Path to the input CSV file.
         typst_file (str): Path where the Typst table will be written.
         baseline_dict (dict): Dictionary of baselines for each dataset.
-                              Format: {dataset: [(name, p, f1, f3, r), ...]}
+                              Format: {dataset: [(name, p, f1, f3, r, ops), ...]}
+        metrics (dict | None): Ordered mapping of display name to metric config.
+                                Each config supports:
+                                  - key (str): CSV field name
+                                  - direction ("max" | "min"): for best-value bolding
+                                  - fmt (str): format string for values
+                                  - baseline_index (int | None): index in baseline tuple
+                                  - vline_before (bool, optional): add vline before column
     """
     # Read CSV into nested dict: stats[dataset][bucket] = row_dict
     stats = {}
@@ -124,7 +132,7 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
     def config_name(row, betas):
         parts = row["selection_betas"].split(",")
         if betas is not None:
-            c_name = "F" + ", ".join(sorted(set(parts) & betas))
+            c_name = "#algo-name-short\-F" + ", ".join(sorted(set(parts) & betas))
         else:
             c_name = f"{parts[0]}-{parts[-1]}" if len(parts) > 1 else parts[0]
         
@@ -132,24 +140,30 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
     
     with open(typst_file, "w") as f:
         # Table preamble
-        f.write("#set table(\n")
+        f.write("#import \"../../thesis/assets/assets.typ\": *\n")
+        f.write(f"#text(size: {text_size}pt)[#set table(\n")
         f.write("  stroke: (x, y) => (top: 0.5pt, bottom: 0.5pt),\n")
         f.write("  align: horizon + center\n")
         f.write(")\n\n")
 
         f.write("#table(\n")
-        f.write("  columns: 8,\n")
-        f.write("  table.header([], [], [Prompt], table.vline(start:0, stroke:(thickness:0.5pt)), [Precision], [F1], [F3], [Recall], [\#Ops]),\n")
-        seperator = "  table.cell(colspan: 8, inset: (top: 1pt, bottom: 1pt))[],\n"
+        f.write(f"  columns: {3 + len(metrics)},\n")
+        header_cells = [
+            "[]",
+            "[]",
+            "[Prompt]",
+            "table.vline(start:0, stroke:(thickness:0.5pt))",
+        ]
+        for name, cfg in metrics.items():
+            if cfg.get("vline_before"):
+                header_cells.append("table.vline(start:0, stroke:(thickness:0.5pt))")
+            header_cells.append(f"[{name}]")
+        f.write(f"  table.header({', '.join(header_cells)}),\n")
+        seperator = f"  table.cell(colspan: {3 + len(metrics)}, inset: (top: 1pt, bottom: 1pt))[],\n"
         for i, dataset in enumerate(["tar2018", "tar2019", "sigir2017", "sr_updates"]):#enumerate(stats.items())]
             buckets = stats[dataset]
             if i != 0:
                 f.write(seperator)
-            # Determine rowspans
-            # baseline_count = len(baseline_dict.get(dataset, []))
-            # config_rows_ge50 = 1 if ">=50" in buckets else 0
-            # config_rows_le50 = 1 if "<50" in buckets else 0
-            # config_rows_all = 1 if "all" in buckets else 0
             baseline_count = len(baseline_dict.get(dataset, []))
             config_rows_ge50 = len(buckets.get(">=50", []))
             config_rows_le50 = len(buckets.get("<50", []))
@@ -160,50 +174,73 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
             f.write(f"  table.cell(rowspan: {total_rows}, rotate(-90deg, reflow:true)[{dataset_names(dataset)}]),\n")
 
             # Compute best values for bolding
-            best_metrics = {"Precision": -1, "F1": -1, "F3": -1, "Recall": -1, "#Ops": 1_000_000}
+            best_metrics = {}
+            for name, cfg in metrics.items():
+                direction = cfg.get("direction", "max")
+                best_metrics[name] = float("inf") if direction == "min" else float("-inf")
+
             for bucket in buckets.values():
                 for row in bucket:
-                    for m, key in zip(["Precision","F1","F3","Recall","#Ops"],
-                                      ["pubmed_precision","pubmed_f1","pubmed_f3","pubmed_recall","logical_operators"]):
-                        val = float(row[key])
-                        if m == "#Ops":
-                            best_metrics[m] = min(best_metrics[m], val)
+                    for name, cfg in metrics.items():
+                        key = cfg.get("key")
+                        if key is None:
+                            continue
+                        raw_val = row.get(key)
+                        if raw_val in (None, ""):
+                            continue
+                        try:
+                            val = float(raw_val)
+                        except (TypeError, ValueError):
+                            continue
+                        if cfg.get("direction", "max") == "min":
+                            best_metrics[name] = min(best_metrics[name], val)
                         else:
-                            best_metrics[m] = max(best_metrics[m], val)
-            for m, key in zip(["Precision","F1","F3","Recall","#Ops"],
-                              ["pubmed_precision","pubmed_f1","pubmed_f3","pubmed_recall","logical_operators"]):
-                if baseline_count > 0:
-                    for _, p, f1, f3, r, operators in baseline_dict[dataset]:
-                        val = {"Precision":p,"F1":f1,"F3":f3,"Recall":r,"#Ops":operators}[m]
-                        if m == "#Ops":
-                            if val is not None:
-                                best_metrics[m] = min(best_metrics[m], val) if best_metrics[m] != -1 else val
+                            best_metrics[name] = max(best_metrics[name], val)
+
+            if baseline_count > 0:
+                for name, cfg in metrics.items():
+                    idx = cfg.get("baseline_index")
+                    if idx is None:
+                        continue
+                    for baseline in baseline_dict[dataset]:
+                        if len(baseline) <= idx:
+                            continue
+                        val = baseline[idx]
+                        if val is None:
+                            continue
+                        if cfg.get("direction", "max") == "min":
+                            best_metrics[name] = min(best_metrics[name], float(val))
                         else:
-                            if val is not None:
-                                best_metrics[m] = max(best_metrics[m], val)
+                            best_metrics[name] = max(best_metrics[name], float(val))
 
             def fmt(x, metric=None):
                 if x is None:
                     return ""
                 x = float(x)
-                # Determine format string
-                if metric == "#Ops":  # or "#Opt" if you rename it
-                    fmt_str = "{:.1f}"
-                else:
-                    fmt_str = "{:.4f}"
-                
+                cfg = metrics.get(metric, {}) if metric is not None else {}
+                fmt_str = cfg.get("fmt", "{:.4f}")
                 formatted = fmt_str.format(x)
-                
-                # Bold if best
-                if metric is not None and x == best_metrics[metric]:
+
+                best_val = best_metrics.get(metric)
+                if best_val is None or best_val in (float("inf"), float("-inf")):
+                    return formatted
+                if metric is not None and x == best_val:
                     return f"*{formatted}*"
                 return formatted
 
             # Baselines
             if baseline_count > 0:
                 f.write(f"  table.cell(rowspan: {baseline_count})[Baselines],\n")
-                for name, p, f1, f3, r, operators in baseline_dict[dataset]:
-                    f.write(f"    [{name}], [{fmt(p,'Precision')}], [{fmt(f1,'F1')}], [{fmt(f3,'F3')}], [{fmt(r,'Recall')}], [{fmt(operators,'#Ops')}],\n")
+                for baseline in baseline_dict[dataset]:
+                    name = baseline[0] if baseline else ""
+                    metric_cells = []
+                    for m_name, cfg in metrics.items():
+                        idx = cfg.get("baseline_index")
+                        value = None
+                        if idx is not None and len(baseline) > idx:
+                            value = baseline[idx]
+                        metric_cells.append(f"[{fmt(value, m_name)}]")
+                    f.write(f"    [{name}], {', '.join(metric_cells)},\n")
 
             # Buckets
             for bucket_name in [">=50","<50","all"]:
@@ -212,23 +249,24 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None):
                     f.write(f"  table.cell(rowspan:{len(rows)})[{bucket_name} pos],\n".replace('<', '\<'))
                     for row in rows:
                         c_name = config_name(row, betas)
+                        metric_cells = []
+                        for m_name, cfg in metrics.items():
+                            key = cfg.get("key")
+                            value = row.get(key) if key is not None else None
+                            metric_cells.append(f"[{fmt(value, m_name)}]")
                         f.write(
                             f"    [{c_name}], "
-                            f"[{fmt(row['pubmed_precision'],'Precision')}], "
-                            f"[{fmt(row['pubmed_f1'],'F1')}], "
-                            f"[{fmt(row['pubmed_f3'],'F3')}], "
-                            f"[{fmt(row['pubmed_recall'],'Recall')}], "
-                            f"[{fmt(row['logical_operators'], '#Ops')}],\n"
+                            f"{', '.join(metric_cells)},\n"
                         )
                     
-        f.write(")\n")
+        f.write(")]\n")
 
     print(f"Typst table written to {typst_file}")
 
 if __name__ == "__main__":
     baseline_dict = {
         "tar2018": [
-            ("Manual", 0.0217, 0.0407, 0.1439, 0.9338, 77.6), # original, conceptional and obj all from https://bevankoopman.github.io/papers/irj2020-comparison.pdf (same as in other verions of that paper, was also chosen as source from ChatGPT paper)
+            ("Manual", 0.0217, 0.0407, 0.1439, 0.9338, 77.6, 1.0, 3.3, 45.9, 0.5), # original, conceptional and obj all from https://bevankoopman.github.io/papers/irj2020-comparison.pdf (same as in other verions of that paper, was also chosen as source from ChatGPT paper)
             ("Conceptual", 0.0021, 0.0037, 0.0114, 0.6286, None), # highest recall, highest f3
             ("Objective", 0.0002, 0.0005, 0.0022, 0.8780, None), # highest recall (since highest f3 has very low recall)
             ("ChatGPT", 0.0752, 0.0642, 0.0847, 0.5035, None), # https://arxiv.org/pdf/2302.03495, highest recall, highest F3, with example q4
@@ -246,21 +284,95 @@ if __name__ == "__main__":
         ],
     }
     
-    best_chocie = "best1"
-    csv_path = f"data/statistics/final/{best_chocie}/best_average.csv"
+    best_choice = "best1"
+    csv_path = f"../master-thesis-writing/writing/tables/{best_choice}/best_average.csv"
+    metrics = {
+        "Precision": {
+            "key": "pubmed_precision",
+            "direction": "max",
+            "fmt": "{:.4f}",
+            "baseline_index": 1,
+        },
+        "F1": {
+            "key": "pubmed_f1",
+            "direction": "max",
+            "fmt": "{:.4f}",
+            "baseline_index": 2,
+        },
+        "F3": {
+            "key": "pubmed_f3",
+            "direction": "max",
+            "fmt": "{:.4f}",
+            "baseline_index": 3,
+        },
+        "Recall": {
+            "key": "pubmed_recall",
+            "direction": "max",
+            "fmt": "{:.4f}",
+            "baseline_index": 4,
+        },
+        "\#Ops": {
+            "key": "logical_operators",
+            "direction": "min",
+            "fmt": "{:.1f}",
+            "baseline_index": 5,
+            "vline_before": True,
+        },
+        "\#Rules": {
+            "key": "query_size_paths",
+            "direction": "min",
+            "fmt": "{:.1f}",
+            "baseline_index": 6,
+            "vline_before": False,
+        },
+        "\#AND": {
+            "key": "query_size_ANDs",
+            "direction": "min",
+            "fmt": "{:.1f}",
+            "baseline_index": 7,
+            "vline_before": False,
+        },
+        "\#OR": {
+            "key": "all_ORs",
+            "direction": "min",
+            "fmt": "{:.1f}",
+            "baseline_index": 8,
+            "vline_before": False,
+        },
+        "\#NOT": {
+            "key": "query_size_NOTs",
+            "direction": "min",
+            "fmt": "{:.1f}",
+            "baseline_index": 9,
+            "vline_before": False,
+        },
+        # "\#Ops per Rule": {
+        #     "key": "query_size_avg_path_len",
+        #     "direction": "min",
+        #     "fmt": "{:.1f}",
+        #     "baseline_index": 10,
+        #     "vline_before": False,
+        # },
+    }
+    
     process_jsonl_folder(
-        folder_path=f"data/statistics/optuna/{best_chocie}",
+        folder_path=f"data/statistics/optuna/{best_choice}",
         output_csv=csv_path,
     )
     generate_typst_table(
         csv_file=csv_path,
-        typst_file=f"data/statistics/final/{best_chocie}/best_average.typ",
+        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/best_average.typ",
         baseline_dict=baseline_dict,
         betas={"3","15","30","50"},
+        metrics=metrics,
+        text_size=10.3,
     )
     generate_typst_table(
         csv_file=csv_path,
-        typst_file=f"data/statistics/final/{best_chocie}/best_average_all.typ",
+        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/best_average_all.typ",
         baseline_dict=baseline_dict,
+        metrics=metrics,
+        text_size=10.3,
     )
+    
     print("done")
