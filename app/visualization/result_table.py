@@ -131,11 +131,19 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
             
     def config_name(row, betas):
         parts = row["selection_betas"].split(",")
+        source_file = row["source_file"]
+        if "ktype=cosine" in source_file:
+            ktype = "cosine"
+        elif "ktype=pos_count" in source_file:
+            ktype = "\#pos"
+        elif "ktype=fixed" in source_file:
+            ktype = "fixed"
+        c_name = "#algo-name-short\-F"
         if betas is not None:
-            c_name = "#algo-name-short\-F" + ", ".join(sorted(set(parts) & betas))
+            c_name += ", ".join(sorted(set(parts) & betas))
         else:
-            c_name = f"{parts[0]}-{parts[-1]}" if len(parts) > 1 else parts[0]
-        
+            c_name += f"{parts[0]}-{parts[-1]}" if len(parts) > 1 else parts[0]
+        c_name += f"\-{ktype}"
         return c_name
     
     with open(typst_file, "w") as f:
@@ -148,7 +156,7 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
         header_cells = [
             "[]",
             "[]",
-            "[Prompt]",
+            "[Method]",
             "table.vline(start:0, stroke:(thickness:0.5pt))",
         ]
         for name, cfg in metrics.items():
@@ -239,10 +247,22 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
                         metric_cells.append(f"[{fmt(value, m_name)}]")
                     f.write(f"    [{name}], {', '.join(metric_cells)},\n")
 
+            def config_type_order(row):
+                source_file = row["source_file"]
+                if "ktype=pos_count" in source_file:
+                    return 0
+                elif "ktype=cosine" in source_file:
+                    return 1
+                elif "ktype=fixed" in source_file:
+                    return 2
+                return 3
             # Buckets
             for bucket_name in [">=50","<50","all"]:
                 if bucket_name in buckets:
-                    rows = sorted(buckets[bucket_name], key=lambda r: int(r["selection_betas"].split(",")[0]))
+                    rows = sorted(
+                        buckets[bucket_name],
+                        key=lambda r: (-int(r["selection_betas"].split(",")[0]), config_type_order(r))
+                    )
                     f.write(f"  table.cell(rowspan:{len(rows)}, rotate(-90deg, reflow:true)[{bucket_name} pos]),\n".replace('<', '\<'))
                     for row in rows:
                         c_name = config_name(row, betas)
@@ -281,7 +301,7 @@ if __name__ == "__main__":
         ],
     }
     
-    best_choice = "best1"
+    best_choice = "best_3"
     csv_path = f"../master-thesis-writing/writing/tables/{best_choice}/best_average.csv"
     metrics = {
         "Precision": {
