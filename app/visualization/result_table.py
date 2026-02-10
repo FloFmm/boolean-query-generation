@@ -141,11 +141,8 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
     with open(typst_file, "w") as f:
         # Table preamble
         f.write("#import \"../../thesis/assets/assets.typ\": *\n")
-        f.write(f"#text(size: {text_size}pt)[#set table(\n")
-        f.write("  stroke: (x, y) => (top: 0.5pt, bottom: 0.5pt),\n")
-        f.write("  align: horizon + center\n")
-        f.write(")\n\n")
 
+        f.write("#let result_table() = [\n")
         f.write("#table(\n")
         f.write(f"  columns: {3 + len(metrics)},\n")
         header_cells = [
@@ -230,7 +227,7 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
 
             # Baselines
             if baseline_count > 0:
-                f.write(f"  table.cell(rowspan: {baseline_count})[Baselines],\n")
+                f.write(f"  table.cell(rowspan: {baseline_count}, rotate(-90deg, reflow:true)[Baselines]),\n")
                 for baseline in baseline_dict[dataset]:
                     name = baseline[0] if baseline else ""
                     metric_cells = []
@@ -246,7 +243,7 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
             for bucket_name in [">=50","<50","all"]:
                 if bucket_name in buckets:
                     rows = sorted(buckets[bucket_name], key=lambda r: int(r["selection_betas"].split(",")[0]))
-                    f.write(f"  table.cell(rowspan:{len(rows)})[{bucket_name} pos],\n".replace('<', '\<'))
+                    f.write(f"  table.cell(rowspan:{len(rows)}, rotate(-90deg, reflow:true)[{bucket_name} pos]),\n".replace('<', '\<'))
                     for row in rows:
                         c_name = config_name(row, betas)
                         metric_cells = []
