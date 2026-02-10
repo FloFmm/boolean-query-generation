@@ -636,3 +636,41 @@ TRAIN_REVIEWS = [ #atleast 50 positiives
     "CD002117",
     "CD003344",  # sigir2017
 ]
+
+# Matplotlib color palette for consistent styling across all visualizations
+COLORS = {
+    # Primary colors
+    "primary": "#2E86AB",        # Steel blue
+    "primary_light": "#A3D5FF",  # Light steel blue
+    "secondary": "#1B998B",      # Teal/green
+    "secondary_light": "#7DD3C0", # Light teal
+    
+    # Semantic colors
+    "positive": "#2E86AB",       # Blue for positive/high values
+    "positive_light": "#A3D5FF",
+    "negative": "#E94F37",       # Red for negative/low values
+    "negative_light": "#F5A69A",
+    
+    # Neutral colors
+    "neutral": "#6C757D",        # Gray
+    "neutral_light": "#ADB5BD",
+    
+    # Category colors (for multiple groups)
+    "category": [
+        "#2E86AB",  # Blue
+        "#E94F37",  # Red
+        "#1B998B",  # Teal
+        "#F4A261",  # Orange
+        "#9B5DE5",  # Purple
+        "#00F5D4",  # Cyan
+        "#FEE440",  # Yellow
+        "#F15BB5",  # Pink
+    ],
+}
+
+# Colormaps for heatmaps
+COLORMAPS = {
+    "default": "YlGnBu",
+    "diverging": "RdBu_r",
+    "sequential": "Blues",
+}
