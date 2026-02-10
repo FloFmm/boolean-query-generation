@@ -1,5 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from app.config.config import apply_matplotlib_style, COLORS
+
+apply_matplotlib_style()
 
 def f_beta(precision, recall, beta):
     """Compute F-beta score."""
@@ -21,9 +24,9 @@ x = np.arange(1, 51)
 
 plt.figure()
 
-for p, r in pr_pairs:
+for i, (p, r) in enumerate(pr_pairs):
     y = [f_beta(p, r, beta) for beta in x]
-    plt.plot(x, y, label=f"P={p}, R={r}")
+    plt.plot(x, y, label=f"P={p}, R={r}", color=COLORS["category"][i % len(COLORS["category"])])
 
 plt.xlabel("beta (β)")
 plt.ylabel("F-beta score")

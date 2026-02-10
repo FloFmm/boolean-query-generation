@@ -4,7 +4,10 @@ import numpy as np
 import os
 import json
 
-from app.config.config import COLORS, COLORMAPS
+from app.config.config import COLORS, COLORMAPS, FIGURE_CONFIG, apply_matplotlib_style
+
+# Apply consistent styling for all figures
+apply_matplotlib_style()
 
 def plot_precision_recall_heatmap(data, out_path="precision_recall_heatmap.png", bins=20, min_positive_threshold=50):
     """
@@ -14,7 +17,7 @@ def plot_precision_recall_heatmap(data, out_path="precision_recall_heatmap.png",
     - data: A DataFrame containing 'Precision' and 'Recall' columns.
     - bins: Number of bins for both axes (default 20).
     """
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots()  # uses default figsize from apply_matplotlib_style()
     
     # remove all triples fromd ata that do not satisify min_positive_threshold
     data = data[data['num_positive'] >= min_positive_threshold]
@@ -42,7 +45,7 @@ def plot_precision_recall_heatmap(data, out_path="precision_recall_heatmap.png",
         origin='lower', 
         extent=[precision_range[0], precision_range[1], recall_range[0], recall_range[1]],
         aspect='auto',
-        cmap=COLORMAPS['default'],
+        cmap=COLORMAPS['heatmap'],
         interpolation='bilinear'
     )
     
@@ -68,7 +71,7 @@ def plot_precision_recall_scatter(data, out_path="precision_recall_scatter.png",
     # remove all triples fromd ata that do not satisify min_positive_threshold
     data = data[data['num_positive'] >= min_positive_threshold]
     
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots()  # uses default figsize from apply_matplotlib_style()
     
     ax.scatter(data['Precision'], data['Recall'], alpha=alpha, s=size, c=COLORS['primary'])
     
@@ -130,7 +133,8 @@ def plot_precision_recall_histograms(data, out_path="precision_recall_histograms
     - bins: Number of bins for histograms (default 20).
     - threshold: Threshold for splitting data (default 50).
     """
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    fig, axes = plt.subplots(1, 2, figsize=(FIGURE_CONFIG["full_width"], 
+                                             FIGURE_CONFIG["full_width"] * 0.45))
     
     # Split data by threshold
     data_high = data[data['num_positive'] >= threshold]
@@ -142,7 +146,7 @@ def plot_precision_recall_histograms(data, out_path="precision_recall_histograms
         [data_high['Precision'], data_low['Precision']], 
         bins=bins, 
         stacked=True,
-        color=[COLORS['primary'], COLORS['primary_light']], 
+        color=[COLORS['precision'], COLORS['precision_light']], 
         label=[f'≥ {threshold} positives', f'< {threshold} positives']
     )
     ax.set_xlabel("Precision")
@@ -156,7 +160,7 @@ def plot_precision_recall_histograms(data, out_path="precision_recall_histograms
         [data_high['Recall'], data_low['Recall']], 
         bins=bins, 
         stacked=True,
-        color=[COLORS['secondary'], COLORS['secondary_light']], 
+        color=[COLORS['recall'], COLORS['recall_light']], 
         label=[f'≥ {threshold} positives', f'< {threshold} positives']
     )
     ax.set_xlabel("Recall")

@@ -10,6 +10,9 @@ from app.parameter_tuning.compute_top_k import (
 )
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
+from app.config.config import apply_matplotlib_style, COLORS, COLORMAPS
+
+apply_matplotlib_style()
 
 
 def plot_metric_curve_by_bucket(
@@ -24,14 +27,14 @@ def plot_metric_curve_by_bucket(
     )
 
     num_buckets = len(buckets)
-    cmap = cm.viridis
+    cmap = cm.get_cmap(COLORMAPS["spectrum"])
     norm = mcolors.Normalize(vmin=0, vmax=num_buckets - 1)
 
-    plt.figure(figsize=(8, 6))
+    plt.figure()
 
     for idx, ((start, end), raw_label) in enumerate(zip(buckets, bucket_labels)):
         label = f"{start}-{end}"
-        color = cmap(norm(idx))  # 🎯 index-based coloring
+        color = cmap(norm(idx))
 
         plt.plot(
             ks,
@@ -51,7 +54,7 @@ def plot_metric_curve_by_bucket(
         plt.title(title)
 
     plt.tight_layout()
-    out_img = Path(out_folder) / f"_{metric}_at_k_curve.jpg"
+    out_img = Path(out_folder) / f"{metric}_at_k_curve.jpg"
     plt.savefig(out_img, dpi=300, bbox_inches="tight")
     plt.close()
 
@@ -85,12 +88,17 @@ def plot_k_at_recall_thresholds_buckets(
     for p in ps:
         k_at_ps[p], bucket_avg_positives = compute_top_ks(csv_path, p, buckets)
     # Prepare plot
-    plt.figure(figsize=(10, 6))
+    plt.figure()
     bucket_labels = [f"{lo}-{hi}" for lo, hi in buckets]
+    
+    num_ps = len(ps)
+    cmap = cm.get_cmap(COLORMAPS["spectrum"])
+    norm = mcolors.Normalize(vmin=0, vmax=num_ps - 1)
 
-    for p, ks_dict in k_at_ps.items():
+    for i, (p, ks_dict) in enumerate(k_at_ps.items()):
         ys = [ks_dict.get((lo, hi), float("nan")) for lo, hi in buckets]
-        plt.plot(bucket_labels, ys, marker="o", label=f"k@{int(p * 100)}% recall")
+        plt.plot(bucket_labels, ys, marker="o", label=f"k@{int(p * 100)}% recall", 
+                 color=cmap(norm(i)))
 
     plt.xlabel("Number of positives (bucket)")
     plt.ylabel("k")
@@ -102,7 +110,7 @@ def plot_k_at_recall_thresholds_buckets(
         plt.title(title)
 
     plt.tight_layout()
-    out_img = Path(out_folder) / f"{Path(csv_path).stem}_k_at_recall_per_bucket.jpg"
+    out_img = Path(out_folder) / "top_k_curve.jpg"
     plt.savefig(out_img, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"✓ Saved k@recall per bucket plot to: {out_img}")
@@ -114,20 +122,20 @@ if __name__ == "__main__":
         title="Recall by Number of Positives",
         metric="recall",
         buckets=BUCKETS,
-        out_folder="data/statistics/images/recall_curve_by_bucket",
+        out_folder="../master-thesis-writing/writing/thesis/images/graphs",
     )
     plot_metric_curve_by_bucket(
         csv_path=CSV_PATH,
         title="Precision by Number of Positives",
         metric="precision",
         buckets=BUCKETS,
-        out_folder="data/statistics/images/recall_curve_by_bucket",
+        out_folder="../master-thesis-writing/writing/thesis/images/graphs",
     )
     plot_k_at_recall_thresholds_buckets(
         csv_path=CSV_PATH,
         ps=[0.8, 0.7, 0.6, 0.3],
         buckets=BUCKETS,
-        title="k@p-recall per bucket",
-        out_folder="data/statistics/images/recall_curve_by_bucket",
+        title="k@recall per bucket",
+        out_folder="../master-thesis-writing/writing/thesis/images/graphs",
     )
     compute_top_k_curve(CSV_PATH, BUCKETS, recall=0.7)

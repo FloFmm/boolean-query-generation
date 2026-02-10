@@ -9,6 +9,9 @@ from collections import defaultdict
 from app.dataset.utils import ranking_file_path, get_dataset_details, select_k_positive_dependent, select_k_cosine_threshold
 from app.parameter_tuning.compute_top_k import BUCKETS
 from app.helper.helper import f_beta
+from app.config.config import apply_matplotlib_style, COLORS, COLORMAPS
+
+apply_matplotlib_style()
 
 
 def find_bucket(n_pos: int, buckets: list[tuple[int, int]]):
@@ -30,18 +33,18 @@ def plot_metric_score_curve_by_bucket(
 
     ks = np.arange(1, MAX_K + 1)
 
-    plt.figure(figsize=(8, 6))
-
-    cmap = cm.viridis
-    norm = mcolors.Normalize(vmin=0, vmax=len(bucket_mean_scores) - 1)
+    plt.figure()
 
     def bucket_key(bucket_str: str):
         start, end = bucket_str.split("-")
         return int(start), int(end)
 
-    for idx, (bucket, mean_scores) in enumerate(
-        sorted(bucket_mean_scores.items(), key=lambda x: bucket_key(x[0]))
-    ):
+    sorted_buckets = sorted(bucket_mean_scores.items(), key=lambda x: bucket_key(x[0]))
+    num_buckets = len(sorted_buckets)
+    cmap = cm.get_cmap(COLORMAPS["spectrum"])
+    norm = mcolors.Normalize(vmin=0, vmax=num_buckets - 1)
+
+    for idx, (bucket, mean_scores) in enumerate(sorted_buckets):
         plt.plot(
             ks,
             mean_scores,
@@ -115,12 +118,12 @@ def plot_positive_score_stats_by_bucket(bucket_scores: dict):
 
     x = np.arange(len(buckets_sorted))
 
-    plt.figure(figsize=(9, 6))
+    plt.figure()
 
-    plt.plot(x, min_scores, marker="o", label="Min")
-    plt.plot(x, max_scores, marker="o", label="Max")
-    plt.plot(x, mean_scores, marker="o", label="Mean")
-    plt.plot(x, median_scores, marker="o", label="Median")
+    plt.plot(x, min_scores, marker="o", label="Min", color=COLORS["category"][0])
+    plt.plot(x, max_scores, marker="o", label="Max", color=COLORS["category"][1])
+    plt.plot(x, mean_scores, marker="o", label="Mean", color=COLORS["category"][2])
+    plt.plot(x, median_scores, marker="o", label="Median", color=COLORS["category"][3])
 
     plt.xticks(x, buckets_sorted, rotation=45)
     plt.xlabel("Bucket (number of positives)")
@@ -179,11 +182,11 @@ def plot_precision_recall_by_bucket(
         ),
     }
 
-    # base colors per strategy
+    # base colors per strategy using centralized config
     colors = {
-        f"Fixed k={fixed_k}": "tab:blue",
-        "Positive-dependent k": "tab:green",
-        f"Cosine-threshold ({cosine_percentage_threshold*100:.2f}%) k": "tab:red",
+        f"Fixed k={fixed_k}": COLORS["fixed_k"],
+        "Positive-dependent k": COLORS["pos_count_k"],
+        f"Cosine-threshold ({cosine_percentage_threshold*100:.2f}%) k": COLORS["cosine_k"],
     }
 
     precision_means = {name: [] for name in methods}
@@ -231,7 +234,7 @@ def plot_precision_recall_by_bucket(
 
     x = np.arange(len(buckets_sorted))
 
-    plt.figure(figsize=(9, 6))
+    plt.figure()
 
     for name in methods:
         plt.plot(
@@ -380,11 +383,11 @@ def plot_actual_topk_by_bucket(bucket_rankings: dict, cosine_percentage_threshol
         ),
     }
 
-    # base colors per strategy
+    # base colors per strategy using centralized config
     colors = {
-        f"Fixed k={fixed_k}": "tab:blue",
-        "Positive-dependent k": "tab:green",
-        f"Cosine-threshold ({cosine_percentage_threshold*100:.2f}%) k": "tab:red",
+        f"Fixed k={fixed_k}": COLORS["fixed_k"],
+        "Positive-dependent k": COLORS["pos_count_k"],
+        f"Cosine-threshold ({cosine_percentage_threshold*100:.2f}%) k": COLORS["cosine_k"],
     }
 
     avg_ks = {name: [] for name in methods}
@@ -401,7 +404,7 @@ def plot_actual_topk_by_bucket(bucket_rankings: dict, cosine_percentage_threshol
 
     x = np.arange(len(buckets_sorted))
 
-    plt.figure(figsize=(9, 6))
+    plt.figure()
     for name in methods:
         plt.plot(
             x,
@@ -422,7 +425,7 @@ def plot_actual_topk_by_bucket(bucket_rankings: dict, cosine_percentage_threshol
     plt.savefig(os.path.join(SAVE_DIR, "actual_topk_by_bucket.png"), dpi=300)
     plt.close()
 
-SAVE_DIR = "data/statistics/images/top_k_type_comparison"
+SAVE_DIR = "../master-thesis-writing/writing/thesis/images/graphs"
 MAX_K = 10000  # how far you want the curve
 if __name__ == "__main__":
     os.makedirs(SAVE_DIR, exist_ok=True)

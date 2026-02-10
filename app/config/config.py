@@ -655,22 +655,87 @@ COLORS = {
     "neutral": "#6C757D",        # Gray
     "neutral_light": "#ADB5BD",
     
-    # Category colors (for multiple groups)
+    # Category colors (for multiple groups/lines in plots)
     "category": [
         "#2E86AB",  # Blue
         "#E94F37",  # Red
-        "#1B998B",  # Teal
+        "#1B993D",  # Green
         "#F4A261",  # Orange
         "#9B5DE5",  # Purple
         "#00F5D4",  # Cyan
         "#FEE440",  # Yellow
         "#F15BB5",  # Pink
     ],
+    
+    # Metric-specific colors (for consistent use across visualizations)
+    "precision": "#2E86AB",      # Blue
+    "precision_light": "#91bfdb",
+    "recall": "#E94F37",         # Red  
+    "recall_light": "#fd8383",
+    "f_score": "#9B5DE5",        # Purple
+    "time": "#1B993D",           # Green
+    "query_size": "#F4A261",     # Orange
+    "map": "#F15BB5",            # Pink
+    "mrr": "#1B993D",            # Green
+    # Top-k strategy colors
+    "fixed_k": "#2E86AB",        
+    "cosine_k": "#E94F37",       
+    "pos_count_k": "#1B993D",   # Green 
 }
 
-# Colormaps for heatmaps
+# Colormaps for heatmaps and spectrum colors
 COLORMAPS = {
-    "default": "YlGnBu",
+    "heatmap": "YlGnBu",
     "diverging": "RdBu_r",
     "sequential": "Blues",
+    "spectrum": "viridis",  # For ordered categorical data (e.g., buckets)
 }
+
+# Figure settings for consistent sizing across all plots
+# A4 paper: 210mm width, with ~25mm margins on each side = 160mm text width ≈ 6.3 inches
+FIGURE_CONFIG = {
+    "full_width": 5.7834646,       # inches - full text width
+    "half_width": 2.7417323,       # inches - for side-by-side figures
+    "aspect_ratio": 0.75,    # height = width * aspect_ratio (for single plots)
+    "dpi": 300,              # resolution for saving
+    "font_size": 10,         # base font size in points
+    "font_family": "serif",  # or "sans-serif"
+}
+
+def apply_matplotlib_style():
+    """
+    Apply consistent matplotlib styling for thesis figures.
+    Call this at the start of any visualization script.
+    """
+    import matplotlib.pyplot as plt
+    
+    plt.rcParams.update({
+        # Figure size
+        "figure.figsize": (FIGURE_CONFIG["full_width"], 
+                          FIGURE_CONFIG["full_width"] * FIGURE_CONFIG["aspect_ratio"]),
+        "figure.dpi": FIGURE_CONFIG["dpi"],
+        "savefig.dpi": FIGURE_CONFIG["dpi"],
+        "savefig.bbox": "tight",
+        
+        # Font settings
+        "font.size": FIGURE_CONFIG["font_size"],
+        "font.family": FIGURE_CONFIG["font_family"],
+        "axes.titlesize": FIGURE_CONFIG["font_size"],
+        "axes.labelsize": FIGURE_CONFIG["font_size"],
+        "xtick.labelsize": FIGURE_CONFIG["font_size"] - 1,
+        "ytick.labelsize": FIGURE_CONFIG["font_size"] - 1,
+        "legend.fontsize": FIGURE_CONFIG["font_size"] - 1,
+        
+        # Line and marker settings
+        "lines.linewidth": 1.5,
+        "lines.markersize": 5,
+        
+        # Axes settings
+        "axes.linewidth": 0.8,
+        "axes.grid": False,
+        
+        # Legend
+        "legend.frameon": True,
+        "legend.framealpha": 0.9,
+    })
+

@@ -1,6 +1,10 @@
 from app.helper.helper import f_beta
+from app.config.config import apply_matplotlib_style, COLORS
 import optuna
 import numpy as np
+import matplotlib.pyplot as plt
+
+apply_matplotlib_style()
 
 study_name = "rf_optimization"
 # db_path = "sqlite:///data/statistics/optuna/run_2_nodes_10tasks_1cpu_per_task/optuna.db" 
@@ -101,7 +105,6 @@ df.head()
 param = "max_depth"
 avg_df = df.groupby(f"params_{param}")["value"].mean().reset_index()
 avg_df = avg_df.sort_values(f"params_{param}")
-import matplotlib.pyplot as plt
 
 plt.figure(figsize=(6, 4))
 plt.plot(avg_df[f"params_{param}"], avg_df["value"], marker="o")

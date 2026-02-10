@@ -1,10 +1,10 @@
-import json
 import os
-import re
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 from app.dataset.utils import load_statistics_data, statistics_base_path
+from app.config.config import apply_matplotlib_style, COLORS
+
+apply_matplotlib_style()
 
 
 def analyze_dataframe_results(df, variables, metrics):
@@ -243,21 +243,21 @@ def visualize_results(
     if not qg:
         opt_metric = "f3_dt"
         metrics = [
-            ("precision_dt", "o", "tab:blue", None, "axis1"),
-            ("recall_dt", "s", "tab:orange", None, "axis1"),
-            ("f3_dt", "D", "tab:purple", None, "axis1"),
-            ("time_seconds_dt", "^", "tab:green", "--", "axis2"),
+            ("precision_dt", "o", COLORS["precision"], None, "axis1"),
+            ("recall_dt", "s", COLORS["recall"], None, "axis1"),
+            ("f3_dt", "D", COLORS["f_score"], None, "axis1"),
+            ("time_seconds_dt", "^", COLORS["time"], "--", "axis2"),
         ]
     else:
         opt_metric = "pubmed_f3_qg"
         metrics = [
-            ("pubmed_precision_qg", "o", "tab:blue", None, "axis1"),
-            ("pubmed_recall_qg", "s", "tab:orange", None, "axis1"),
-            ("pubmed_f3_qg", "D", "tab:purple", None, "axis1"),
-            ("f3_dt", "D", "tab:purple", "--", "axis1"),
-            ("query_size_ANDs_qg", "x", "tab:red", "-.", "axis2"),
-            ("query_size_added_ORs_qg", "*", "tab:brown", ":", "axis2"),
-            ("query_size_NOTs_qg", "*", "tab:pink", ":", "axis2"),
+            ("pubmed_precision_qg", "o", COLORS["precision"], None, "axis1"),
+            ("pubmed_recall_qg", "s", COLORS["recall"], None, "axis1"),
+            ("pubmed_f3_qg", "D", COLORS["f_score"], None, "axis1"),
+            ("f3_dt", "D", COLORS["f_score"], "--", "axis1"),
+            ("query_size_ANDs_qg", "x", COLORS["query_size"], "-.", "axis2"),
+            ("query_size_added_ORs_qg", "*", COLORS["category"][5], ":", "axis2"),
+            ("query_size_NOTs_qg", "*", COLORS["category"][7], ":", "axis2"),
         ]
 
     df, params = load_statistics_data(filter_vars=filter_vars, qg=qg, metrics=metrics)

@@ -4,6 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
+from app.config.config import apply_matplotlib_style, COLORS
+
+apply_matplotlib_style()
 
 
 def pretty_file_name(file_name):
@@ -93,28 +96,29 @@ def compare_dense_retrievers(folder_path, metrics, save_path):
     # Ensure numeric
     df = df.apply(pd.to_numeric, errors="coerce")
 
-    # Define colors per metric
+    # Define colors per metric using centralized config
     colors = {
-        "precision@10": "#d73027",  # Red
-        "precision@100": "#fd8383",  # Lighter red
-        "recall@10": "#4575b4",  # Blue
-        "recall@100": "#91bfdb",  # Lighter blue
-        "map": "#e41aef",
-        "mrr@100": "#5bb229",
+        "precision@10": COLORS["precision"],
+        "precision@100": COLORS["precision_light"],
+        "recall@10": COLORS["recall"],
+        "recall@100": COLORS["recall_light"],
+        "map": COLORS["map"],
+        "mrr@100": COLORS["mrr"],
     }
 
     # Match colors to metrics in df
     metric_colors = [colors.get(m, "#999999") for m in df.columns]
 
-    sns.set(style="whitegrid")
-    plt.figure(figsize=(max(10, len(df) * 0.6), 6))
-
-    df.plot(kind="bar", figsize=(max(10, len(df) * 0.6), 6), color=metric_colors)
-    plt.title("Dense Retriever Comparison")
-    plt.ylabel("Metric Value")
-    plt.xticks(rotation=45, ha="right")
-    plt.ylim(0, 1)
-    plt.legend(title="Metrics")
+    # Create figure with explicit settings, then use pandas plot on the axes
+    fig, ax = plt.subplots(figsize=(max(10, len(df) * 0.6), 6))
+    
+    df.plot(kind="bar", ax=ax, color=metric_colors)
+    ax.set_title("Dense Retriever Comparison")
+    ax.set_ylabel("Metric Value")
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
+    ax.set_ylim(0, 1)
+    ax.legend(title="Metrics")
+    ax.grid(True, linestyle="--", alpha=0.6)
     plt.tight_layout()
 
     plt.savefig(save_path, dpi=300)
@@ -124,7 +128,7 @@ def compare_dense_retrievers(folder_path, metrics, save_path):
 
 if __name__ == "__main__":
     data_folder = Path(
-        "/data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/reports/title_and_abstract"
+        "data/reports/title_and_abstract"
     )
     metrics_to_compare = [
         "map",
@@ -134,7 +138,8 @@ if __name__ == "__main__":
         "precision@10",
         "precision@100",
     ]
-    save_folder = Path("data/statistics/images/retriever_comparison")
+    # save_folder = Path("data/statistics/images/retriever_comparison")
+    save_folder = Path("../master-thesis-writing/writing/thesis/images/graphs")
     save_folder.mkdir(parents=True, exist_ok=True)
     save_file = save_folder / "retriever_comparison.png"
 
