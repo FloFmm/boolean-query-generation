@@ -222,7 +222,7 @@ if __name__ == "__main__":
 
     # 3 plot_slice (for specific parameters only)
     slice_params = {
-        "slice_1": [
+        "slice1": [
             "mh_noexp",
             "tiab",
             "term_expansions",
