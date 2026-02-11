@@ -680,15 +680,19 @@ COLORS = {
     # Top-k strategy colors
     "fixed_k": "#2E86AB",        
     "cosine_k": "#E94F37",       
-    "pos_count_k": "#1B993D",   # Green 
+    "pos_count_k": "#1B993D",   # Green
+    
+    # Bar colors
+    "bars": "#2E86AB",  # Primary blue for bar plots
 }
 
 # Colormaps for heatmaps and spectrum colors
 COLORMAPS = {
-    "heatmap": "YlGnBu",
+    "heatmap": "Blues",#"YlGnBu",
     "diverging": "RdBu_r",
     "sequential": "Blues",
     "spectrum": "viridis",  # For ordered categorical data (e.g., buckets)
+    "optuna": "Blues",#YlGnBu",    # Optuna default for contour/parallel coordinate (originally Blues_r?)
 }
 
 # Figure settings for consistent sizing across all plots
