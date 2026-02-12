@@ -44,3 +44,4 @@ def prettify_axes(ax):
     yticklabels = [pretty_print_param(label.get_text()) for label in ax.get_yticklabels()]
     if any(yticklabels):
         ax.set_yticklabels(yticklabels)
+        

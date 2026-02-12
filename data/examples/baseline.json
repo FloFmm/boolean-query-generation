@@ -1,6 +1,7 @@
 {
-    "pourrezaSemanticdrivenBooleanQuery2023a": {
+    "pourrezaSemanticdrivenBooleanQuery2023": {
         "title": "Towards semantic-driven boolean query formalization for biomedical systematic literature reviews",
+        "name": "#semantic-approach",
         "examples": [
             {
                 "query_id": "CD007394",
@@ -12,6 +13,7 @@
     },
     "scellsComputationalApproachObjectively2020": {
         "title": "A Computational Approach for Objectively Derived Systematic Review Search Strategies",
+        "name": "#objective-approach",
         "examples": [
             {
                 "query_id": "CD009579",
@@ -45,6 +47,7 @@
     },
     "scellsAutomaticBooleanQuery2020": {
         "title": "Automatic Boolean Query Formulation for Systematic Review Literature Search",
+        "name": "#conceptional-approach",
         "examples": [
             {
                 "query_id": "CD007394",
@@ -59,11 +62,13 @@
     },
     "scellsComparisonAutomaticBoolean2021": {
         "title": "A comparison of automatic Boolean query formulation for systematic reviews",
+        "name": "comparison",
         "examples": [
         ]
     },
     "wangCanChatGPTWrite2023": {
         "title": "Can ChatGPT Write a Good Boolean Query for Systematic Review Literature Search?",
+        "name": "#chatgpt-approach",
         "examples": [
             {
                 "query_id": "",
@@ -81,8 +86,9 @@
             }
         ]
     },
-    "Manual": {
+    "kusaCSMeDBridgingDataset2023": {
         "title": "Manual from CsMED",
+        "name": "#manual-approach",
         "examples": [
             {
                 "query_id": "CD007394",
