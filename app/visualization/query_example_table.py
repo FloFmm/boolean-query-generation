@@ -8,6 +8,7 @@ from app.dataset.utils import (
 )
 from app.config.config import CURRENT_BEST_RUN_FOLDER
 from app.pubmed.retrieval import evaluate_query
+from app.visualization.helper import escape_typst
 
 
 def dataframe_to_typst_query_table(
@@ -91,9 +92,8 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list) -
     num_rows = len(rows_data)
     first_row = rows_data[0]
 
-    # Format title cell
     title = first_row["title"]
-    escaped_title = _escape_typst(title)
+    escaped_title = escape_typst(title)
     for i, s in enumerate(escaped_title):
         if s == " " and i > len(escaped_title) // 2:
             escaped_title = escaped_title[:i-1] + "\\" + escaped_title[i :]
@@ -104,7 +104,7 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list) -
     my_query = first_row["my_query"]
     my_p = first_row["my_p"]
     my_r = first_row["my_r"]
-    my_query_text = f"*#algo-name-short\-F50\-cosine*\\ (*Precision:* {my_p:.4f}, *Recall:* {my_r:.4f})\\ {_escape_typst(my_query)}"
+    my_query_text = f"*#algo-name-short\-F50\-cosine*\\ (*Precision:* {my_p:.4f}, *Recall:* {my_r:.4f})\\ {escape_typst(my_query)}"
     my_query_cell = f"[{my_query_text}]"
 
     # If multiple rows (multiple baselines), add rowspan to first two columns
@@ -117,7 +117,7 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list) -
     paper_query = rows_data[0]["paper_query"]
     paper_p = rows_data[0]["paper_p"]
     paper_r = rows_data[0]["paper_r"]
-    paper_query_text = f"{paper}\\ (*Precision:* {paper_p:.4f}, *Recall:* {paper_r:.4f})\\ {_escape_typst(paper_query)}"
+    paper_query_text = f"{paper}\\ (*Precision:* {paper_p:.4f}, *Recall:* {paper_r:.4f})\\ {escape_typst(paper_query)}"
     paper_query_cell = f"[{paper_query_text}]"
 
     typst_lines.append(f"  {title_cell}, {my_query_cell}, {paper_query_cell},")
@@ -128,32 +128,10 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list) -
         paper_query = row_data["paper_query"]
         paper_p = row_data["paper_p"]
         paper_r = row_data["paper_r"]
-        paper_query_text = f"{paper}\\ (*Precision:* {paper_p:.4f}, *Recall:* {paper_r:.4f})\\ {_escape_typst(paper_query)}"
+        paper_query_text = f"{paper}\\ (*Precision:* {paper_p:.4f}, *Recall:* {paper_r:.4f})\\ {escape_typst(paper_query)}"
         paper_query_cell = f"[{paper_query_text}]"
 
         typst_lines.append(f"{paper_query_cell},")
-
-
-def _escape_typst(text: str) -> str:
-    """Escape special characters for Typst."""
-    if text is None:
-        return ""
-
-    # Escape backslash first to avoid double-escaping
-    text = str(text).replace("\\", "\\\\")
-
-    # Escape other special characters as needed
-    # In Typst, special characters in content might need escaping
-    # Common ones: [ ] # { } < >
-    text = text.replace("[", "\\[")
-    text = text.replace("]", "\\]")
-    text = text.replace("#", "\\#")
-    text = text.replace("{", "\\{")
-    text = text.replace("}", "\\}")
-    text = text.replace("*", "\\*")
-
-    return text
-
 
 if __name__ == "__main__":
     path = find_qg_results_file(

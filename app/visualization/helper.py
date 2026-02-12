@@ -45,3 +45,24 @@ def prettify_axes(ax):
     if any(yticklabels):
         ax.set_yticklabels(yticklabels)
         
+
+def escape_typst(text: str) -> str:
+    """Escape special characters for Typst."""
+    if text is None:
+        return ""
+
+    # Escape backslash first to avoid double-escaping
+    text = str(text).replace("\\", "\\\\")
+
+    # Escape other special characters as needed
+    # In Typst, special characters in content might need escaping
+    # Common ones: [ ] # { } < >
+    text = text.replace("[", "\\[")
+    text = text.replace("]", "\\]")
+    text = text.replace("#", "\\#")
+    text = text.replace("{", "\\{")
+    text = text.replace("}", "\\}")
+    text = text.replace("*", "\\*")
+
+    return text
+        
