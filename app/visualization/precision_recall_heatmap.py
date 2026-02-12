@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 import os
 import json
-
-from app.config.config import COLORS, COLORMAPS, FIGURE_CONFIG, apply_matplotlib_style
+from app.dataset.utils import find_qg_results_file
+from app.config.config import COLORS, COLORMAPS, CURRENT_BEST_RUN_FOLDER, FIGURE_CONFIG, apply_matplotlib_style
 
 # Apply consistent styling for all figures
 apply_matplotlib_style()
@@ -91,23 +91,6 @@ def plot_precision_recall_scatter(data, out_path="precision_recall_scatter.png",
     plt.close()
     print(f"Saved scatter plot to {out_path}")
 
-def find_qg_results_with_cosine_top_k(base_folder, top_k_type="cosine", betas_key="50"):
-    for root, dirs, files in os.walk(base_folder):
-        if "qg_results.jsonl" in files and "qg_meta_data.json" in files and "qg_config.json" in files:
-            meta_path = os.path.join(root, "qg_meta_data.json")
-            config_path = os.path.join(os.path.dirname(root), "rf_config.json")
-            with open(meta_path, "r") as f:
-                meta_data = json.load(f)
-            with open(config_path, "r") as f:
-                config_data = json.load(f)
-            if (
-                "betas" in meta_data and 
-                betas_key in meta_data["betas"] and 
-                config_data["top_k_type"] == top_k_type
-            ):
-                return os.path.join(root, "qg_results.jsonl")
-    return None 
-
 def get_precision_recall_pairs_from_jsonl(jsonl_path):
     precision_recall_pairs = []
     with open(jsonl_path, "r", encoding="utf-8") as f:
@@ -177,13 +160,13 @@ def plot_precision_recall_histograms(data, out_path="precision_recall_histograms
 if __name__ == "__main__":
     # Output directory for thesis images
     out_dir = "../master-thesis-writing/writing/thesis/images/graphs"
-    top_k_type="pos_count"
+    top_k_type="cosine"
     betas_key="50"
     
     os.makedirs(out_dir, exist_ok=True)
     
     # Example data with more points for smooth visualization
-    path = find_qg_results_with_cosine_top_k("data/statistics/optuna/best_3", top_k_type=top_k_type, betas_key=betas_key)
+    path = find_qg_results_file(CURRENT_BEST_RUN_FOLDER, top_k_type=top_k_type, betas_key=betas_key)
     if path is None:
         print("No matching qg_results.jsonl found with cosine top_k_type")
         exit(1)
