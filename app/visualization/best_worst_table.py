@@ -28,7 +28,7 @@ def dataframe_to_best_worst_table(
     - highest Precision (recall as tie-breaker)
     - average precision and recall
 
-    Columns: name, precision, recall, title, query
+    Columns: type, title, query
     """
     if df.empty:
         raise ValueError("Input dataframe is empty.")
@@ -49,6 +49,14 @@ def dataframe_to_best_worst_table(
 
     avg_precision = working[precision_col].mean()
     avg_recall = working[recall_col].mean()
+    eps = 1e-12
+    precision_weight = 1.0 / max(avg_precision, eps)
+    recall_weight = 1.0 / max(avg_recall, eps)
+    working["avg_distance"] = (
+        (precision_weight * (working[precision_col] - avg_precision)) ** 2
+        + (recall_weight * (working[recall_col] - avg_recall)) ** 2
+    ) ** 0.5
+    closest_to_avg = working.sort_values(["avg_distance", precision_col, recall_col], ascending=[True, False, False]).iloc[0]
 
     def get_title(row):
         """Get title from dataset_details using query_id."""
@@ -56,27 +64,31 @@ def dataframe_to_best_worst_table(
         return dataset_details.get(query_id, {}).get("title", "")
 
     rows = [
-        ("highest F50", highest_f50[precision_col], highest_f50[recall_col], get_title(highest_f50), highest_f50[query_col]),
-        ("lowest F50", lowest_f50[precision_col], lowest_f50[recall_col], get_title(lowest_f50), lowest_f50[query_col]),
-        ("highest Recall", highest_recall[precision_col], highest_recall[recall_col], get_title(highest_recall), highest_recall[query_col]),
-        ("highest Precision", highest_precision[precision_col], highest_precision[recall_col], get_title(highest_precision), highest_precision[query_col]),
-        ("average", avg_precision, avg_recall, "", ""),
+        ("Highest F50", highest_f50[precision_col], highest_f50[recall_col], get_title(highest_f50), highest_f50[query_col]),
+        ("Lowest F50", lowest_f50[precision_col], lowest_f50[recall_col], get_title(lowest_f50), lowest_f50[query_col]),
+        ("Highest Recall", highest_recall[precision_col], highest_recall[recall_col], get_title(highest_recall), highest_recall[query_col]),
+        ("Highest Precision", highest_precision[precision_col], highest_precision[recall_col], get_title(highest_precision), highest_precision[query_col]),
+        ("Closest to Average", closest_to_avg[precision_col], closest_to_avg[recall_col], get_title(closest_to_avg), closest_to_avg[query_col]),
     ]
+
+    if highest_f50[query_id_col] == highest_recall[query_id_col]:
+        rows = [row for row in rows if row[0] != "Highest Recall"]
 
     typst_lines = []
     typst_lines.append('#import "../thesis/assets/assets.typ": *')
     typst_lines.append("#let best_worst_table() = [")
     typst_lines.append("#table(")
-    typst_lines.append("  columns: 5,")
-    typst_lines.append("  table.header([Name], [Precision], [Recall], [Title], [Query]),")
+    typst_lines.append("  columns: (auto, 1fr, 2fr),")
+    typst_lines.append("  table.header([Type], [Title], [Query]),")
 
     for name, precision, recall, title, query in rows:
         precision_text = f"{precision:.4f}" if pd.notna(precision) else ""
         recall_text = f"{recall:.4f}" if pd.notna(recall) else ""
         title_text = escape_typst(title) if title else ""
         query_text = escape_typst(query) if query else ""
+        type_text = f"*{escape_typst(name)}*\\ *Precision:* {precision_text}\\ *Recall:* {recall_text}"
         typst_lines.append(
-            f"  [{escape_typst(name)}], [{precision_text}], [{recall_text}], [{title_text}], [{query_text}],"
+            f"  [{type_text}], [{title_text}], [{query_text}],"
         )
 
     typst_lines.append(")")

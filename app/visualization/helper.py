@@ -11,6 +11,13 @@ def pretty_print_param(name: str) -> str:
         "term_expansions": "word exp",
         "mh_noexp": "MeSH no exp",
         "top_k_or_candidates": "k OR candidates",
+        "paths": "Rules",
+        "added_ORs": "Inner ORs",
+        "avg_path_len": "Avg. Rule Length",
+        "avg_term_len": "Avg. Term Length",
+        "ops_count": "Logical Operators",
+        "synonym_ORs": "Synonym ORs",
+        "all_ORs": "ORs",
     }
     replacements = {
         "randomize": "rand.",
