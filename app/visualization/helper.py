@@ -14,10 +14,11 @@ def pretty_print_param(name: str) -> str:
         "paths": "Rules",
         "added_ORs": "Inner ORs",
         "avg_path_len": "Avg. Rule Length",
-        "avg_term_len": "Avg. Term Length",
+        "avg_term_len": "Avg. Disj. Length",
         "ops_count": "Logical Operators",
         "synonym_ORs": "Synonym ORs",
         "all_ORs": "ORs",
+        "avg_df": "Median DF",
     }
     replacements = {
         "randomize": "rand.",
