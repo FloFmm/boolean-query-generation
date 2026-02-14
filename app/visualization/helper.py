@@ -19,6 +19,8 @@ def pretty_print_param(name: str) -> str:
         "synonym_ORs": "Synonym ORs",
         "all_ORs": "ORs",
         "avg_df": "Median DF",
+        "duplicate_pct_exact": "Exact Duplicates %",
+        "duplicate_pct_substring": "Substr. Duplicates %",
     }
     replacements = {
         "randomize": "rand.",

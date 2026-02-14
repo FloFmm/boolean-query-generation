@@ -11,6 +11,7 @@ from app.config.config import (
     apply_matplotlib_style,
 )
 from app.helper.helper import f_beta
+from app.statistics.duplicate_features import calculate_duplicate_features_percentage
 from app.visualization.helper import pretty_print_param
 
 # Apply consistent styling for all figures
@@ -246,7 +247,7 @@ def _prepare_size_data(
             lambda x: sum(x.get(k, 0) for k in keys) if isinstance(x, dict) else None
         )
         size_label = "all_ORs"
-    elif size_key == "avg_term_len" or size_key == "avg_df":
+    elif size_key == "avg_term_len" or size_key == "avg_df" or size_key == "duplicate_pct_exact" or size_key == "duplicate_pct_substring":
         if size_key in working.columns:
             working["size_value"] = working[size_key]
         size_label = size_key
@@ -351,6 +352,8 @@ def plot_size_impact(top_k_types, betas_key, min_points_in_bucket, out_dir):
         return float(np.median(feature_doc_freq[f_ids]))
 
     dataframe["avg_df"] = dataframe["rules"].apply(compute_avg_df)
+    dataframe["duplicate_pct_exact"] = dataframe["rules"].apply(lambda rules: calculate_duplicate_features_percentage(rules, feature_names, exact_match=True))
+    dataframe["duplicate_pct_substring"] = dataframe["rules"].apply(lambda rules: calculate_duplicate_features_percentage(rules, feature_names, exact_match=False))
 
     os.makedirs(out_dir, exist_ok=True)
 
@@ -358,8 +361,8 @@ def plot_size_impact(top_k_types, betas_key, min_points_in_bucket, out_dir):
     groups = [
         ("group1", [("paths", None), ("avg_path_len", 0.5), ("avg_term_len", 0.5)]),
         ("group2", [("all_ORs", 5), ("ANDs", 2), ("NOTs", None)]),
-        ("group3", [("ops_count", 10), ("added_ORs", 5), ("avg_df", 3000)]),
-        ("group4", [("synonym_ORs", 5)]),
+        ("group3", [("avg_df", 3000), ("duplicate_pct_exact", 7), ("duplicate_pct_substring", 7)]),
+        ("group4", [("ops_count", 10), ("added_ORs", 5), ("synonym_ORs", 5)]),
     ]
 
     for group_name, size_configs in groups:
