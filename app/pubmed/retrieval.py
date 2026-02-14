@@ -52,7 +52,7 @@ def search_pubmed_date_range(query, mindate=None, maxdate=None, retries=50):
     )
 
 
-def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=9500, max_retrieved=100_000, always_retrieve=False):
+def search_pubmed_dynamic(query, start_year=1800, end_year=2026, target_count=9500, max_retrieved=100_000, always_retrieve=False):
     """Retrieve all PMIDs using dynamic window sizing to avoid 10k limit."""
     if not query or not str(query).strip():
         print("Empty query — nothing to search.")
