@@ -787,3 +787,48 @@ def get_dataset_details() -> dict:
         data = json.load(f)
 
     return data
+
+def get_qg_results(path, min_positive_threshold=None):
+    records = []
+    # if path is already a file then only take the data from that file
+    files = []
+    if os.path.isfile(path) and path.endswith("qg_results.jsonl"):
+        files = [path]
+    else:        
+        files = list(Path(path).glob("**/qg_results.jsonl"))
+    for jsonl_path in files:
+        with open(jsonl_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                data = json.loads(line)
+                records.append(data)
+    df = pd.DataFrame(records)
+    if min_positive_threshold is not None:
+        df = df[df["num_positive"] >= min_positive_threshold].copy()
+    return df
+
+
+def find_qg_results_file(base_folder, top_k_type="cosine", betas_key="50"):
+    for root, dirs, files in os.walk(base_folder):
+        if "qg_results.jsonl" in files and "qg_meta_data.json" in files and "qg_config.json" in files:
+            meta_path = os.path.join(root, "qg_meta_data.json")
+            config_path = os.path.join(os.path.dirname(root), "rf_config.json")
+            with open(meta_path, "r") as f:
+                meta_data = json.load(f)
+            with open(config_path, "r") as f:
+                config_data = json.load(f)
+            if (
+                "betas" in meta_data and 
+                betas_key in meta_data["betas"] and 
+                config_data["top_k_type"] == top_k_type
+            ):
+                return os.path.join(root, "qg_results.jsonl")
+    return None 
+
+def get_paper_query_examples():
+    path = Path("data/examples/baseline.json")
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data 

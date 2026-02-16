@@ -52,7 +52,7 @@ def search_pubmed_date_range(query, mindate=None, maxdate=None, retries=50):
     )
 
 
-def search_pubmed_dynamic(query, start_year=1800, end_year=2025, target_count=9500, max_retrieved=100_000, always_retrieve=False):
+def search_pubmed_dynamic(query, start_year=1800, end_year=2026, target_count=9500, max_retrieved=100_000, always_retrieve=False):
     """Retrieve all PMIDs using dynamic window sizing to avoid 10k limit."""
     if not query or not str(query).strip():
         print("Empty query — nothing to search.")
@@ -541,3 +541,13 @@ def classify_by_mesh(folder_path, n_docs=1_000_000_000_000):
                     continue
     print(f"Failed to extract {fail_count} jsonl lines")
     return docs_by_pmid, pmids_by_mesh
+
+def evaluate_query(pubmed_query, positives, end_year):
+    retrieved = search_pubmed_dynamic(pubmed_query, end_year=end_year)
+    retrieved = set(str(x) for x in retrieved)  # retrieved PMIDs
+    true_positives = retrieved & positives
+    TP = len(true_positives)
+    pubmed_precision = TP / len(retrieved) if len(retrieved) > 0 else 0.0
+    pubmed_recall = TP / len(positives) if len(positives) > 0 else 0.0
+    
+    return pubmed_precision, pubmed_recall, len(retrieved), TP

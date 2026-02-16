@@ -680,10 +680,7 @@ COLORS = {
     # Top-k strategy colors
     "fixed_k": "#2E86AB",        
     "cosine_k": "#E94F37",       
-    "pos_count_k": "#1B993D",   # Green
-    
-    # Bar colors
-    "bars": "#2E86AB",  # Primary blue for bar plots
+    "pos_count_k": "#1B993D",   # Green 
 }
 
 # Colormaps for heatmaps and spectrum colors
@@ -742,4 +739,6 @@ def apply_matplotlib_style():
         "legend.frameon": True,
         "legend.framealpha": 0.9,
     })
+    
+CURRENT_BEST_RUN_FOLDER = "data/statistics/optuna/best_3"
 

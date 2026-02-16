@@ -11,6 +11,16 @@ def pretty_print_param(name: str) -> str:
         "term_expansions": "word exp",
         "mh_noexp": "MeSH no exp",
         "top_k_or_candidates": "k OR candidates",
+        "paths": "Rules",
+        "added_ORs": "Inner ORs",
+        "avg_path_len": "Avg. Rule Length",
+        "avg_term_len": "Avg. Disj. Length",
+        "ops_count": "Logical Operators",
+        "synonym_ORs": "Synonym ORs",
+        "all_ORs": "ORs",
+        "avg_df": "Median DF",
+        "duplicate_pct_exact": "Exact Duplicates %",
+        "duplicate_pct_substring": "Substr. Duplicates %",
     }
     replacements = {
         "randomize": "rand.",
@@ -44,3 +54,25 @@ def prettify_axes(ax):
     yticklabels = [pretty_print_param(label.get_text()) for label in ax.get_yticklabels()]
     if any(yticklabels):
         ax.set_yticklabels(yticklabels)
+        
+
+def escape_typst(text: str) -> str:
+    """Escape special characters for Typst."""
+    if text is None:
+        return ""
+
+    # Escape backslash first to avoid double-escaping
+    text = str(text).replace("\\", "\\\\")
+
+    # Escape other special characters as needed
+    # In Typst, special characters in content might need escaping
+    # Common ones: [ ] # { } < >
+    text = text.replace("[", "\\[")
+    text = text.replace("]", "\\]")
+    text = text.replace("#", "\\#")
+    text = text.replace("{", "\\{")
+    text = text.replace("}", "\\}")
+    text = text.replace("*", "\\*")
+
+    return text
+        

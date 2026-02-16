@@ -1,6 +1,7 @@
 {
-    "pourrezaSemanticdrivenBooleanQuery2023a": {
+    "pourrezaSemanticdrivenBooleanQuery2023": {
         "title": "Towards semantic-driven boolean query formalization for biomedical systematic literature reviews",
+        "name": "#semantic-approach",
         "examples": [
             {
                 "query_id": "CD007394",
@@ -12,22 +13,27 @@
     },
     "scellsComputationalApproachObjectively2020": {
         "title": "A Computational Approach for Objectively Derived Systematic Review Search Strategies",
+        "name": "#objective-approach",
         "examples": [
             {
                 "query_id": "CD009579",
                 "query": "Circulating antigen tests and urine reagent strips for diagnosis of active schistosomiasis in endemic areas",
                 "info": "Highest FOR query for topic CD009579.",
-                "result": "((schistosomiasis[tiab] OR cca[tiab] OR used[tiab] OR found[tiab] OR hematuria[tiab] OR either[tiab]) AND (strips[tiab] OR urinalysis[tiab] OR dipstick[tiab] OR dipsticks[tiab] OR mg[tiab] OR \"Parasite Egg Count\"[mh:noexp) AND (village[tiab] OR villages[tiab] OR kg[tiab]))",
-                "precision": 0.0019,
-                "recall": 1.0
+                "result": "((schistosomiasis[tiab] OR cca[tiab] OR used[tiab] OR found[tiab] OR hematuria[tiab] OR either[tiab]) AND (strips[tiab] OR urinalysis[tiab] OR dipstick[tiab] OR dipsticks[tiab] OR mg[tiab] OR \"Parasite Egg Count\"[mh:noexp]) AND (village[tiab] OR villages[tiab] OR kg[tiab]))",
+                "manual_precision": 0.0019,
+                "manual_recall": 1.0,
+                "precision": 0.0330,
+                "recall": 0.1765
             },
             {
                 "query_id": "CD009647",
                 "query": "Clinical symptoms, signs and tests for identification of impending and current water\u2010loss dehydration in older people",
                 "info": "Lowest FOR query for topic CD009647.",
-                "result": "((found[tiab] OR urine[tiab] OR balance[tiab] OR \"Aged, OR and over\"[mh:noexp]) AND fluid[tiab])",
-                "precision": 0.000026,
-                "recall": 1.0
+                "result": "((found[tiab] OR urine[tiab] OR balance[tiab] OR \"Aged, 80 and over\"[mh:noexp]) AND fluid[tiab])",
+                "manual_precision": 0.000026,
+                "manual_recall": 1.0,
+                "precision": 0.0002,
+                "recall": 0.4286
             },
             {
                 "query_id": "",
@@ -41,24 +47,69 @@
     },
     "scellsAutomaticBooleanQuery2020": {
         "title": "Automatic Boolean Query Formulation for Systematic Review Literature Search",
+        "name": "#conceptional-approach",
         "examples": [
+            {
+                "query_id": "CD007394",
+                "query": "Galactomannan detection for invasive aspergillosis in immunocompromised patients",
+                "info": "TODO: the query is not complete (contains ...), but it is the one they used in the paper",
+                "result": "((asperg*, invasive OR amphotericin b OR ... OR cytovene OR patients, immunocompromised) AND (detect* OR immune suppression OR ... OR mycelex OR galactomannan))",
+                "precision": null,
+                "recall": null,
+                "usable_for_stats": false
+            }
         ]
     },
     "scellsComparisonAutomaticBoolean2021": {
         "title": "A comparison of automatic Boolean query formulation for systematic reviews",
+        "name": "comparison",
         "examples": [
         ]
     },
     "wangCanChatGPTWrite2023": {
         "title": "Can ChatGPT Write a Good Boolean Query for Systematic Review Literature Search?",
+        "name": "#chatgpt-approach",
         "examples": [
             {
                 "query_id": "",
                 "query": "Prevalence of Differentiated Thyroid Cancer in Autopsy Studies Over Six Decades: A Meta-Analysis",
-                "info": "created in 4 steps (4 queries to Chat-GPT)",
+                "info": "created in 4 steps (4 queries to Chat-GPT) TODO -> that is not the standard approach they used",
                 "result": "(((differentiated thyroid cancer[mh] OR \"differentiated thyroid\"[All Fields] OR \"thyroid carcinoma\"[All Fields] OR \"papillary microcarcinoma\"[All Fields]) AND (prevalence[All Fields] OR incidence[mh] OR \"etiology of\"[All Fields] OR \"risk factors\"[All Fields] OR gender[All Fields] OR hormonal[All Fields] OR \"nodular goiter\"[All Fields] OR \"Hashimoto’s thyroiditis\"[mh] OR malignancy[mh] OR \"concomitant lesion\"[All Fields] OR tumor[All Fields] OR infiltrate[All Fields] OR fibrosis[All Fields] OR \"early stages of development\"[All Fields] OR frequency[All Fields])) AND (autopsy[mh] OR surgical[All Fields] OR material[All Fields] OR series[All Fields] OR specimens[All Fields] OR cases[All Fields]))",
                 "precision": null,
                 "recall": null
+            },
+            {
+                "query_id": "CD007394",
+                "query": "Galactomannan detection for invasive aspergillosis in immunocompromised patients",
+                "info": "generated using TODO use better model: You are an information specialist who develops Boolean queries for systematic reviews. You have extensive experience developing highly effective queries for searching the medical literature. Your specialty is developing queries that retrieve as few irrelevant documents as possible and retrieve all relevant documents for your information need. You are able to take an information need such as: “{Thromboelastography (TEG) and rotational thromboelastometry (ROTEM) for trauma-induced coagulopathy in adult trauma patients with bleeding}” and generate valid pubmed queries such as: “{((Thrombelastogra* OR Thromboelastogra* OR (thromb* AND elastogra*) OR TEG OR haemoscope OR haemonetics) OR Thrombelastography[mh:noexp] OR (thromboelasto* OR thrombelasto* OR (thromb* AND elastom*) OR (rotational AND thrombelasto) OR ROTEM OR \"tem international\")) NOT (animals[mh] NOT humans[mh:noexp])}\". Now you have your information need to conduct research on “{Galactomannan detection for invasive aspergillosis in immunocompromised patients}”, please generate a highly effective systematic review Boolean query for the information need.",
+                "result": "((galactomannan OR  \"GM antigen\" OR  \"GM assay\" OR  \"Platelia Aspergillus\" OR  \"Aspergillus ELISA\" OR  \"Aspergillus antigen detection\") AND ( \"invasive aspergillosis\" OR  \"aspergillus infection\" OR IA OR  \"aspergillosis \"[mh]) AND (immunocompromised OR  \"immunosuppressed patients\" OR neutropenia OR  \"hematopoietic stem cell transplant\" OR HSCT OR  \"solid organ transplant\" OR chemotherapy OR  \"cancer patients\")) NOT (animals[mh] NOT humans[mh:noexp])"
+            }
+        ]
+    },
+    "kusaCSMeDBridgingDataset2023": {
+        "title": "Manual from CsMED",
+        "name": "#manual-approach",
+        "examples": [
+            {
+                "query_id": "CD007394",
+                "query": "Galactomannan detection for invasive aspergillosis in immunocompromised patients",
+                "cochrane": "1. \"Aspergillus\"[MeSH] \n2. \"Aspergillosis\"[MeSH] \n3. \"Pulmonary Aspergillosis\"[MeSH] \n4. aspergill*[tiab] \n5. fungal infection[tw] \n6. (invasive[tiab] AND fungal[tiab]) \n7. #1 OR #2 OR #3 OR #4 OR #5 OR 6\n8. \"Serology\"[MeSH] \n9. \"Serology\"[MeSH] \n10. (serology[tiab] OR serodiagnosis[tiab] OR serologic[tiab]) \n11. #8 OR #9 OR #10\n12. \"Immunoassay\"[MeSH] \n13. (immunoassay[tiab] OR immunoassays[tiab]) \n14. (immuno assay[tiab] OR immuno assays[tiab]) \n15. (ELISA[tiab] OR ELISAs[tiab] OR EIA[tiab] OR EIAs[tiab]) \n16. immunosorbent[tiab] \n17. #12 OR #13 OR #14 OR #15 OR #16\n18. Platelia[tw] \n19. \"Mannans\"[MeSH]\n20. galactomannan[tw] \n21. #18 OR #19 OR #20\n22. #11 OR #17 OR #21\n23. #7 AND #22",
+                "info": "MEDLINE (through PubMed)  1. \"Aspergillus\"[MeSH] 2. \"Aspergillosis\"[MeSH] 3. \"Pulmonary Aspergillosis\"[MeSH] 4. aspergill*[tiab] 5. fungal infection[tw] 6. (invasive[tiab] AND fungal[tiab]) 7. #1 OR #2 OR #3 OR #4 OR #5 OR 6 \u00a0 43462 \u00a0hits  8. \"Serology\"[MeSH] 9. \"Serology\"[MeSH] 10. (serology[tiab] OR serodiagnosis[tiab] OR serologic[tiab]) 11. #8 OR #9 OR #10 \u00a0 190568 hits\u00a0  12. \"Immunoassay\"[MeSH] 13. (immunoassay[tiab] OR immunoassays[tiab]) 14. (immuno assay[tiab] OR immuno assays[tiab]) 15. (ELISA[tiab] OR ELISAs[tiab] OR EIA[tiab] OR EIAs[tiab]) 16. immunosorbent[tiab] 17. #12 OR #13 OR #14 OR #15 OR #16 \u00a0 452423 hits  18. Platelia[tw] 19. \"Mannans\"[MeSH]\u00a0 20. galactomannan[tw] 21. #18 OR #19 OR #20 \u00a0 3860 hits  22. #11 OR #17 OR #21 \u00a0 609778 hits  23. #7 AND #22 \u00a0 2621 hits ",
+                "result": "(\"Aspergillus\"[mh] OR \"Aspergillosis\"[mh] OR \"Pulmonary Aspergillosis\"[mh] OR aspergill*[tiab] OR fungal infection[tw] OR (invasive[tiab] AND fungal[tiab])) AND ((\"Serology\"[mh] OR \"Serology\"[mh] OR (serology[tiab] OR serodiagnosis[tiab] OR serologic[tiab])) OR (\"Immunoassay\"[mh] OR (immunoassay[tiab] OR immunoassays[tiab]) OR (immuno assay[tiab] OR immuno assays[tiab]) OR (ELISA[tiab] OR ELISAs[tiab] OR EIA[tiab] OR EIAs[tiab]) OR immunosorbent[tiab]) OR (Platelia[tw] OR \"Mannans\"[mh] OR galactomannan[tw]))"
+            },
+            {
+                "query_id": "CD009579",
+                "query": "Circulating antigen tests and urine reagent strips for diagnosis of active schistosomiasis in endemic areas",
+                "cochrane": "1. (anodic adj3 antigen*).ti,ab.\n2. (cathodic adj3 antigen*).ti,ab.\n3. exp Enzyme\u2010Linked Immunosorbent Assay/\n4. exp Immunoenzyme Techniques/\n5. hematuria/ or exp proteinuria/\n6. leukocyturia.ti,ab.\n7. leucocyturia.ti,ab.\n8. hematuria.ti,ab.\n9. proteinuria.ti,ab.\n10. albuminuria.ti,ab.\n11. CCA.ti,ab.\n12. CAA.ti,ab.\n13. urinalysis.ti,ab.\n14. elisa.ti,ab.\n15. eia.ti,ab.\n16. exp Reagent Strips/ or dipstick.mp.\n17. (reagent adj3 strip*).ti,ab.\n18. (test adj3 strip*).ti,ab.\n19. haemastix.ti,ab.\n20. \"schistosoma mansoni\".ti,ab. or \"schistosoma haematobium\".ti,ab.\n21. exp Glycoproteins/\n22. exp Antigens, Helminth/\n23. exp Helminth Proteins/\n24. exp Schistosoma haematobium/\n25. exp Antibodies, Monoclonal/\n26. exp Schistosoma mansoni/\n27. or/1-26\n28. schistosomiasis/ or schistosomiasis haematobia/ or schistosomiasis mansoni/\n29. schistosomiasis.ti,ab.\n30. bilharzia*.ti,ab.\n31. or/28-30\n32. animals/ not humans/\n33. exp Letter/\n34. exp Case Reports/\n35. or/32-34\n36. 27 and 31\n37. 36 not 35",
+                "info": "careful: cochrane variant contained adj3 operators -> replaced by AND",
+                "result": "((anodic[tiab] AND antigen*[tiab]) OR (cathodic[tiab] AND antigen*[tiab]) OR \"Enzyme-Linked Immunosorbent Assay\"[mh] OR \"Immunoenzyme Techniques\"[mh] OR hematuria[mh:noexp] OR proteinuria[mh] OR leukocyturia[tiab] OR leucocyturia[tiab] OR hematuria[tiab] OR proteinuria[tiab] OR albuminuria[tiab] OR CCA[tiab] OR CAA[tiab] OR urinalysis[tiab] OR elisa[tiab] OR eia[tiab] OR \"Reagent Strips\"[mh] OR dipstick OR (reagent[tiab] AND strip*[tiab]) OR (test[tiab] AND strip*[tiab]) OR haemastix[tiab] OR \"schistosoma mansoni\"[tiab] OR \"schistosoma haematobium\"[tiab] OR Glycoproteins[mh] OR \"Antigens, Helminth\"[mh] OR \"Helminth Proteins\"[mh] OR \"Schistosoma haematobium\"[mh] OR \"Antibodies, Monoclonal\"[mh] OR \"Schistosoma mansoni\"[mh]) AND (schistosomiasis[mh:noexp] OR \"schistosomiasis haematobia\"[mh:noexp] OR \"schistosomiasis mansoni\"[mh:noexp] OR schistosomiasis[tiab] OR bilharzia*[tiab]) NOT (animals[mh:noexp] NOT humans[mh:noexp] OR Letter OR \"Case Reports\")"
+            },
+            {
+                "query_id": "CD010438",
+                "query": "Thromboelastography (TEG) and rotational thromboelastometry (ROTEM) for trauma\u2011induced coagulopathy in adult trauma patients with bleeding",
+                "cochrane": "1   (Thrombelastogra$ or Thromboelastogra$ or (thromb$ adj2 elastogra$) or TEG or haemoscope or haemonetics).mp.    4711     2   Thrombelastography/   3190     3   (thromboelasto$ or thrombelasto$ or (thromb$ adj2 elastom$) or (rotational adj2 thrombelast) or ROTEM or \"tem international\").mp.    4174     4   1 or 2 or 3   4832     5   exp animals/ not humans.sh.   3,765,894     6   4 not 5   4247     7   limit 6 to yr=\"1970 \u2010Current\"   3336 ",
+                "info": "example query used for ChatGPT (q4)",
+                "result": "((Thrombelastogra* OR Thromboelastogra* OR (thromb* AND elastogra*) OR TEG OR haemoscope OR haemonetics) OR Thrombelastography[mh:noexp] OR (thromboelasto* OR thrombelasto* OR (thromb* AND elastom*) OR (rotational AND thrombelasto) OR ROTEM OR \"tem international\")) NOT (animals[mh] NOT humans[mh:noexp])"    
             }
         ]
     }
