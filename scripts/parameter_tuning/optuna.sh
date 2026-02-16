@@ -17,4 +17,4 @@
 CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
 
 cd boolean-query-generation
-srun $CSMED_PY -m app.parameter_tuning.optuna --opt_beta 50.0
+srun $CSMED_PY -m app.parameter_tuning.optuna --opt_beta 3.0
