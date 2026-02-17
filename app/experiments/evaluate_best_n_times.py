@@ -1,6 +1,6 @@
 import os
 import copy
-from random import random
+import random
 from itertools import product
 from app.config.config import BOW_PARAMS, TRAIN_REVIEWS, RF_PARAMS, QG_PARAMS
 from app.experiments.evaluate_rf import evaluate_rf

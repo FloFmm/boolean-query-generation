@@ -11,7 +11,7 @@ from app.dataset.utils import (
 )
 
 if __name__ == "__main__":
-    run_name = "best_3"
+    run_name = "best4"
     sorted_ids = {}
     sorted_scores = {}
     positives = {}
