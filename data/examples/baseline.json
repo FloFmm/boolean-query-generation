@@ -19,7 +19,7 @@
                 "query_id": "CD009579",
                 "query": "Circulating antigen tests and urine reagent strips for diagnosis of active schistosomiasis in endemic areas",
                 "info": "Highest FOR query for topic CD009579.",
-                "result": "((schistosomiasis[tiab] OR cca[tiab] OR used[tiab] OR found[tiab] OR hematuria[tiab] OR either[tiab]) AND (strips[tiab] OR urinalysis[tiab] OR dipstick[tiab] OR dipsticks[tiab] OR mg[tiab] OR \"Parasite Egg Count\"[mh:noexp]) AND (village[tiab] OR villages[tiab] OR kg[tiab]))",
+                "result": "(schistosomiasis[tiab] OR cca[tiab] OR used[tiab] OR found[tiab] OR hematuria[tiab] OR either[tiab]) AND (strips[tiab] OR urinalysis[tiab] OR dipstick[tiab] OR dipsticks[tiab] OR mg[tiab] OR \"Parasite Egg Count\"[mh:noexp]) AND (village[tiab] OR villages[tiab] OR kg[tiab])",
                 "manual_precision": 0.0019,
                 "manual_recall": 1.0,
                 "precision": 0.0330,
@@ -29,7 +29,7 @@
                 "query_id": "CD009647",
                 "query": "Clinical symptoms, signs and tests for identification of impending and current water\u2010loss dehydration in older people",
                 "info": "Lowest FOR query for topic CD009647.",
-                "result": "((found[tiab] OR urine[tiab] OR balance[tiab] OR \"Aged, 80 and over\"[mh:noexp]) AND fluid[tiab])",
+                "result": "(found[tiab] OR urine[tiab] OR balance[tiab] OR \"Aged, 80 and over\"[mh:noexp]) AND fluid[tiab]",
                 "manual_precision": 0.000026,
                 "manual_recall": 1.0,
                 "precision": 0.0002,
@@ -53,7 +53,7 @@
                 "query_id": "CD007394",
                 "query": "Galactomannan detection for invasive aspergillosis in immunocompromised patients",
                 "info": "TODO: the query is not complete (contains ...), but it is the one they used in the paper",
-                "result": "((asperg*, invasive OR amphotericin b OR ... OR cytovene OR patients, immunocompromised) AND (detect* OR immune suppression OR ... OR mycelex OR galactomannan))",
+                "result": "(asperg*, invasive OR amphotericin b OR ... OR cytovene OR patients, immunocompromised) AND (detect* OR immune suppression OR ... OR mycelex OR galactomannan)",
                 "precision": null,
                 "recall": null,
                 "usable_for_stats": false
@@ -74,7 +74,7 @@
                 "query_id": "",
                 "query": "Prevalence of Differentiated Thyroid Cancer in Autopsy Studies Over Six Decades: A Meta-Analysis",
                 "info": "created in 4 steps (4 queries to Chat-GPT) TODO -> that is not the standard approach they used",
-                "result": "(((differentiated thyroid cancer[mh] OR \"differentiated thyroid\"[All Fields] OR \"thyroid carcinoma\"[All Fields] OR \"papillary microcarcinoma\"[All Fields]) AND (prevalence[All Fields] OR incidence[mh] OR \"etiology of\"[All Fields] OR \"risk factors\"[All Fields] OR gender[All Fields] OR hormonal[All Fields] OR \"nodular goiter\"[All Fields] OR \"Hashimoto’s thyroiditis\"[mh] OR malignancy[mh] OR \"concomitant lesion\"[All Fields] OR tumor[All Fields] OR infiltrate[All Fields] OR fibrosis[All Fields] OR \"early stages of development\"[All Fields] OR frequency[All Fields])) AND (autopsy[mh] OR surgical[All Fields] OR material[All Fields] OR series[All Fields] OR specimens[All Fields] OR cases[All Fields]))",
+                "result": "((differentiated thyroid cancer[mh] OR \"differentiated thyroid\"[All Fields] OR \"thyroid carcinoma\"[All Fields] OR \"papillary microcarcinoma\"[All Fields]) AND (prevalence[All Fields] OR incidence[mh] OR \"etiology of\"[All Fields] OR \"risk factors\"[All Fields] OR gender[All Fields] OR hormonal[All Fields] OR \"nodular goiter\"[All Fields] OR \"Hashimoto’s thyroiditis\"[mh] OR malignancy[mh] OR \"concomitant lesion\"[All Fields] OR tumor[All Fields] OR infiltrate[All Fields] OR fibrosis[All Fields] OR \"early stages of development\"[All Fields] OR frequency[All Fields])) AND (autopsy[mh] OR surgical[All Fields] OR material[All Fields] OR series[All Fields] OR specimens[All Fields] OR cases[All Fields])",
                 "precision": null,
                 "recall": null
             },
@@ -82,7 +82,7 @@
                 "query_id": "CD007394",
                 "query": "Galactomannan detection for invasive aspergillosis in immunocompromised patients",
                 "info": "generated using TODO use better model: You are an information specialist who develops Boolean queries for systematic reviews. You have extensive experience developing highly effective queries for searching the medical literature. Your specialty is developing queries that retrieve as few irrelevant documents as possible and retrieve all relevant documents for your information need. You are able to take an information need such as: “{Thromboelastography (TEG) and rotational thromboelastometry (ROTEM) for trauma-induced coagulopathy in adult trauma patients with bleeding}” and generate valid pubmed queries such as: “{((Thrombelastogra* OR Thromboelastogra* OR (thromb* AND elastogra*) OR TEG OR haemoscope OR haemonetics) OR Thrombelastography[mh:noexp] OR (thromboelasto* OR thrombelasto* OR (thromb* AND elastom*) OR (rotational AND thrombelasto) OR ROTEM OR \"tem international\")) NOT (animals[mh] NOT humans[mh:noexp])}\". Now you have your information need to conduct research on “{Galactomannan detection for invasive aspergillosis in immunocompromised patients}”, please generate a highly effective systematic review Boolean query for the information need.",
-                "result": "((galactomannan OR  \"GM antigen\" OR  \"GM assay\" OR  \"Platelia Aspergillus\" OR  \"Aspergillus ELISA\" OR  \"Aspergillus antigen detection\") AND ( \"invasive aspergillosis\" OR  \"aspergillus infection\" OR IA OR  \"aspergillosis \"[mh]) AND (immunocompromised OR  \"immunosuppressed patients\" OR neutropenia OR  \"hematopoietic stem cell transplant\" OR HSCT OR  \"solid organ transplant\" OR chemotherapy OR  \"cancer patients\")) NOT (animals[mh] NOT humans[mh:noexp])"
+                "result": "(galactomannan OR  \"GM antigen\" OR  \"GM assay\" OR  \"Platelia Aspergillus\" OR  \"Aspergillus ELISA\" OR  \"Aspergillus antigen detection\") AND ( \"invasive aspergillosis\" OR  \"aspergillus infection\" OR IA OR  \"aspergillosis \"[mh]) AND (immunocompromised OR  \"immunosuppressed patients\" OR neutropenia OR  \"hematopoietic stem cell transplant\" OR HSCT OR  \"solid organ transplant\" OR chemotherapy OR  \"cancer patients\") NOT (animals[mh] NOT humans[mh:noexp])"
             }
         ]
     },

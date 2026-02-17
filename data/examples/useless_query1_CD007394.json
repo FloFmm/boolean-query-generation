@@ -1,0 +1,42 @@
+[
+    {
+        "term": "assay",
+        "f_beta": 0.9649912542442639,
+        "f_beta_diff": 0.004041446997757214
+    },
+    {
+        "term": "detect",
+        "f_beta": 0.9619477422498013,
+        "f_beta_diff": 0.0009979350032945922
+    },
+    {
+        "term": "\"antigens, fungal/blood\"[mh]",
+        "f_beta": 0.9618203183420576,
+        "f_beta_diff": 0.0008705110955509188
+    },
+    {
+        "term": "\"immunoenzyme techniques\"[mh]",
+        "f_beta": 0.9610523798951377,
+        "f_beta_diff": 0.00010257264863100524
+    },
+    {
+        "term": "\"mannans/blood\"[mh]",
+        "f_beta": 0.9610236573463297,
+        "f_beta_diff": 7.385009982296964e-05
+    },
+    {
+        "term": "\"epidemiologic research design\"[mh]",
+        "f_beta": 0.9609785253810358,
+        "f_beta_diff": 2.871813452909322e-05
+    },
+    {
+        "term": "sensor",
+        "f_beta": 0.9609744226852978,
+        "f_beta_diff": 2.4615438791064648e-05
+    },
+    {
+        "term": "\"mannans\"[mh]",
+        "f_beta": 0.9609498072465067,
+        "f_beta_diff": 0.0
+    }
+]

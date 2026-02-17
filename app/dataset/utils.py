@@ -827,8 +827,17 @@ def find_qg_results_file(base_folder, top_k_type="cosine", betas_key="50"):
                 return os.path.join(root, "qg_results.jsonl")
     return None 
 
-def get_paper_query_examples():
+def get_paper_query_examples(paper=None, query_id=None):
     path = Path("data/examples/baseline.json")
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    return data 
+    if paper is None:
+        return data 
+    if paper is not None:
+        if query_id is None:
+            return data[paper]
+        else:
+            for example in data[paper]["examples"]:
+                if example["query_id"] == query_id:
+                    return example
+

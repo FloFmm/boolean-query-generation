@@ -10,7 +10,7 @@ from app.dataset.utils import (
     review_id_to_dataset,
 )
 from app.pubmed.retrieval import evaluate_query, search_pubmed_date_range
-from app.visualization.helper import escape_typst
+from app.visualization.helper import escape_typst, mark_outer_operators
 
 Entrez.email = "florian_maurus.mueller@mailbox.tu-dresden.de"
 
@@ -123,6 +123,7 @@ def steps_to_typst_table(steps_data: list, output_path: str) -> None:
     for step in steps_data:
         # Use annotated query
         query = escape_typst(step["annotated_query"])
+        query = mark_outer_operators(query, operator_types=["AND", "NOT"])
         precision = step["precision"]
         recall = step["recall"]
         retrieved = step["retrieved_count"]

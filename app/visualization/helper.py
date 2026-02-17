@@ -73,6 +73,55 @@ def escape_typst(text: str) -> str:
     text = text.replace("{", "\\{")
     text = text.replace("}", "\\}")
     text = text.replace("*", "\\*")
-
+    text = text.replace(")", "\\)")
+    text = text.replace("(", "\\(")
+    
+    text = strip_matching_outer_parens(text)
     return text
-        
+
+def mark_outer_operators(query, operator_types):
+    import re
+
+    text = query
+    text_size = "1.1em"
+    for o in operator_types:
+        # text = text.replace(f") {o} ((", f"#text(size: 1.1em, [*)* *{o}* *(*])//") # #emph(text(3pt)[(])
+        text = text.replace(f"\) {o} \(", f"#text(size: {text_size}, [*\)* *{o}* *\(*])") # #emph(text(3pt)[(])
+        # text = text.replace(f" {o} ((", f"#text(size: 1.1em, [ *{o}* *(*])//") # #emph(text(3pt)[(])
+        text = text.replace(f" {o} \(", f"#text(size: {text_size}, [ *{o}* *\(*])") # #emph(text(3pt)[(])
+        text = text.replace(f"\) {o} ", f"#text(size: {text_size}, [*\)* *{o}* ])") # #emph(text(3pt)[(])
+
+    # Mark a leading "\(" even if it starts after a line break ("\\ ")
+    if text.endswith("\)"):
+        text = text[:-2] + f"#text(size: {text_size}, [*\)*])"
+    if text.startswith("\("):
+        text = f"#text(size: {text_size}, [*\(*])" + text[2:]
+    return text
+
+
+def strip_matching_outer_parens(text: str) -> str:
+    """Remove matching outer escaped parentheses if they wrap the entire string."""
+    if not (text.startswith("\\(") and text.endswith("\\)")):
+        return text
+
+    depth = 0
+    i = 0
+    closing_idx = None
+    while i < len(text):
+        if text.startswith("\\(", i):
+            depth += 1
+            i += 2
+            continue
+        if text.startswith("\\)", i):
+            depth -= 1
+            i += 2
+            if depth == 0:
+                closing_idx = i - 2
+                break
+            continue
+        i += 1
+
+    if closing_idx == len(text) - 2:
+        return text[2:-2]
+    return text
+       

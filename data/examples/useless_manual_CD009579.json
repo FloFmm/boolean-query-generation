@@ -1,0 +1,122 @@
+[
+    {
+        "term": "\"schistosoma mansoni\"[tiab]",
+        "f_beta": 0.9842946569892627,
+        "f_beta_diff": 0.00248081980278414
+    },
+    {
+        "term": "schistosomiasis[tiab]",
+        "f_beta": 0.9841038113785345,
+        "f_beta_diff": 0.00228997419205601
+    },
+    {
+        "term": "\"Schistosoma mansoni\"[mh]",
+        "f_beta": 0.9833551769331587,
+        "f_beta_diff": 0.001541339746680137
+    },
+    {
+        "term": "\"Antigens, Helminth\"[mh]",
+        "f_beta": 0.9821882372359467,
+        "f_beta_diff": 0.00037440004946820427
+    },
+    {
+        "term": "Glycoproteins[mh]",
+        "f_beta": 0.9821798520204895,
+        "f_beta_diff": 0.000366014834010997
+    },
+    {
+        "term": "elisa[tiab]",
+        "f_beta": 0.9820121777727195,
+        "f_beta_diff": 0.00019834058624101925
+    },
+    {
+        "term": "\"Helminth Proteins\"[mh]",
+        "f_beta": 0.9819116007010037,
+        "f_beta_diff": 9.776351452517318e-05
+    },
+    {
+        "term": "bilharzia*[tiab]",
+        "f_beta": 0.981903220208308,
+        "f_beta_diff": 8.93830218294811e-05
+    },
+    {
+        "term": "\"Immunoenzyme Techniques\"[mh]",
+        "f_beta": 0.9818696996680047,
+        "f_beta_diff": 5.5862481526225416e-05
+    },
+    {
+        "term": "hematuria[tiab]",
+        "f_beta": 0.9818669063929538,
+        "f_beta_diff": 5.3069206475298e-05
+    },
+    {
+        "term": "\"Antibodies, Monoclonal\"[mh]",
+        "f_beta": 0.9818613198905306,
+        "f_beta_diff": 4.748270405208199e-05
+    },
+    {
+        "term": "proteinuria[tiab]",
+        "f_beta": 0.9818473539125908,
+        "f_beta_diff": 3.3516726112292616e-05
+    },
+    {
+        "term": "dipstick",
+        "f_beta": 0.9818473539125908,
+        "f_beta_diff": 3.3516726112292616e-05
+    },
+    {
+        "term": "proteinuria[mh]",
+        "f_beta": 0.9818333883319489,
+        "f_beta_diff": 1.9551145470364517e-05
+    },
+    {
+        "term": "urinalysis[tiab]",
+        "f_beta": 0.9818250091742596,
+        "f_beta_diff": 1.117198778111117e-05
+    },
+    {
+        "term": "eia[tiab]",
+        "f_beta": 0.9818194231485879,
+        "f_beta_diff": 5.585962109422304e-06
+    },
+    {
+        "term": "albuminuria[tiab]",
+        "f_beta": 0.9818166301595881,
+        "f_beta_diff": 2.79297310956661e-06
+    },
+    {
+        "term": "leukocyturia[tiab]",
+        "f_beta": 0.9818166301595881,
+        "f_beta_diff": 2.79297310956661e-06
+    },
+    {
+        "term": "\"Enzyme-Linked Immunosorbent Assay\"[mh]",
+        "f_beta": 0.9818138371864785,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "haemastix[tiab]",
+        "f_beta": 0.9818138371864785,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "CAA[tiab]",
+        "f_beta": 0.9818138371864785,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "antigen*[tiab]",
+        "f_beta": 0.9818138371864785,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "leucocyturia[tiab]",
+        "f_beta": 0.9818138371864785,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "CCA[tiab]",
+        "f_beta": 0.9818138371864785,
+        "f_beta_diff": 0.0
+    }
+]

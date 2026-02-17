@@ -1,0 +1,960 @@
+{
+    "replacements1": {
+        "\"immunoenzyme techniques\"[mh]": [
+            [
+                "galactomannan",
+                0.9709969324499017
+            ],
+            [
+                "\"aspergillosis \"[mh]",
+                0.9628387096774194
+            ],
+            [
+                "humans[mh:noexp]",
+                0.9623501553944057
+            ],
+            [
+                "animals[mh]",
+                0.9618661617655758
+            ],
+            [
+                "\"Aspergillus ELISA\"",
+                0.9610523798951377
+            ],
+            [
+                "\"Aspergillus antigen detection\"",
+                0.9610523798951377
+            ],
+            [
+                "\"invasive aspergillosis\"",
+                0.9610523798951377
+            ],
+            [
+                "\"hematopoietic stem cell transplant\"",
+                0.9610482765687643
+            ],
+            [
+                "\"GM assay\"",
+                0.9610482765687643
+            ],
+            [
+                "\"GM antigen\"",
+                0.96104417327743
+            ],
+            [
+                "\"cancer patients\"",
+                0.9610318636136576
+            ],
+            [
+                "IA",
+                0.9610318636136576
+            ],
+            [
+                "HSCT",
+                0.9610318636136576
+            ],
+            [
+                "\"Platelia Aspergillus\"",
+                0.9610277604624751
+            ],
+            [
+                "\"solid organ transplant\"",
+                0.9610072452321079
+            ],
+            [
+                "\"immunosuppressed patients\"",
+                0.9609990393852066
+            ]
+        ],
+        "invasive": [
+            [
+                "galactomannan",
+                0.9747104875458252
+            ],
+            [
+                "\"invasive aspergillosis\"",
+                0.9636155812131565
+            ]
+        ],
+        "assay": [
+            [
+                "\"Aspergillus ELISA\"",
+                0.9649912542442639
+            ],
+            [
+                "\"Aspergillus antigen detection\"",
+                0.9649912542442639
+            ],
+            [
+                "\"GM assay\"",
+                0.9649912542442639
+            ],
+            [
+                "\"GM antigen\"",
+                0.9649912542442639
+            ],
+            [
+                "\"Platelia Aspergillus\"",
+                0.9649912542442639
+            ],
+            [
+                "\"hematopoietic stem cell transplant\"",
+                0.9649829802193282
+            ],
+            [
+                "\"invasive aspergillosis\"",
+                0.9649829802193282
+            ],
+            [
+                "HSCT",
+                0.9649829802193282
+            ],
+            [
+                "\"cancer patients\"",
+                0.9649705694479576
+            ],
+            [
+                "IA",
+                0.9649705694479576
+            ],
+            [
+                "\"solid organ transplant\"",
+                0.9649622957777272
+            ],
+            [
+                "galactomannan",
+                0.9649622957777272
+            ],
+            [
+                "\"immunosuppressed patients\"",
+                0.9649167931273952
+            ],
+            [
+                "neutropenia",
+                0.9648133939708271
+            ],
+            [
+                "\"aspergillus infection\"",
+                0.9645487930820226
+            ],
+            [
+                "immunocompromised",
+                0.9637930000941999
+            ],
+            [
+                "chemotherapy",
+                0.9613479115059366
+            ]
+        ],
+        "\"epidemiologic research design\"[mh]": [
+            [
+                "\"Aspergillus ELISA\"",
+                0.9609785253810358
+            ],
+            [
+                "\"Aspergillus antigen detection\"",
+                0.9609785253810358
+            ],
+            [
+                "\"GM antigen\"",
+                0.9609785253810358
+            ],
+            [
+                "\"immunosuppressed patients\"",
+                0.9609744226852978
+            ],
+            [
+                "\"GM assay\"",
+                0.9609744226852978
+            ],
+            [
+                "\"Platelia Aspergillus\"",
+                0.9609744226852978
+            ],
+            [
+                "\"hematopoietic stem cell transplant\"",
+                0.960970320024591
+            ],
+            [
+                "\"cancer patients\"",
+                0.960970320024591
+            ],
+            [
+                "\"aspergillus infection\"",
+                0.960970320024591
+            ],
+            [
+                "\"solid organ transplant\"",
+                0.960970320024591
+            ],
+            [
+                "HSCT",
+                0.960970320024591
+            ]
+        ],
+        "sensor": [
+            [
+                "galactomannan",
+                0.9788524778463646
+            ],
+            [
+                "\"Aspergillus ELISA\"",
+                0.9609744226852978
+            ],
+            [
+                "\"GM antigen\"",
+                0.960970320024591
+            ],
+            [
+                "\"Aspergillus antigen detection\"",
+                0.9609662173989147
+            ],
+            [
+                "\"GM assay\"",
+                0.9609662173989147
+            ]
+        ],
+        "\"antigens, fungal/blood\"[mh]": [
+            [
+                "\"Aspergillus ELISA\"",
+                0.9618203183420576
+            ],
+            [
+                "galactomannan",
+                0.9618203183420576
+            ],
+            [
+                "\"Aspergillus antigen detection\"",
+                0.9618120986040072
+            ],
+            [
+                "\"Platelia Aspergillus\"",
+                0.9618079887876665
+            ],
+            [
+                "\"GM antigen\"",
+                0.9618038790064479
+            ],
+            [
+                "\"GM assay\"",
+                0.9617627831258894
+            ],
+            [
+                "\"aspergillus infection\"",
+                0.9613314883148831
+            ]
+        ],
+        "\"mannans/blood\"[mh]": [
+            [
+                "\"Aspergillus ELISA\"",
+                0.9610236573463297
+            ],
+            [
+                "\"Aspergillus antigen detection\"",
+                0.9610236573463297
+            ],
+            [
+                "\"GM antigen\"",
+                0.9610236573463297
+            ],
+            [
+                "\"immunosuppressed patients\"",
+                0.9610195542652207
+            ],
+            [
+                "\"GM assay\"",
+                0.9610195542652207
+            ],
+            [
+                "\"Platelia Aspergillus\"",
+                0.9610195542652207
+            ],
+            [
+                "\"hematopoietic stem cell transplant\"",
+                0.9610154512191478
+            ],
+            [
+                "\"cancer patients\"",
+                0.9610154512191478
+            ],
+            [
+                "\"solid organ transplant\"",
+                0.9610154512191478
+            ],
+            [
+                "\"aspergillus infection\"",
+                0.9610113482081103
+            ],
+            [
+                "HSCT",
+                0.9610113482081103
+            ],
+            [
+                "IA",
+                0.9609744226852978
+            ],
+            [
+                "neutropenia",
+                0.9609662173989147
+            ]
+        ],
+        "detect": [
+            [
+                "galactomannan",
+                0.9717224418694015
+            ],
+            [
+                "\"aspergillosis \"[mh]",
+                0.9632625248126092
+            ],
+            [
+                "humans[mh:noexp]",
+                0.962455966744055
+            ],
+            [
+                "\"Aspergillus antigen detection\"",
+                0.9619477422498013
+            ],
+            [
+                "\"Aspergillus ELISA\"",
+                0.9619436312741725
+            ],
+            [
+                "\"hematopoietic stem cell transplant\"",
+                0.9619436312741725
+            ],
+            [
+                "\"GM assay\"",
+                0.9619436312741725
+            ],
+            [
+                "\"invasive aspergillosis\"",
+                0.9619354094283259
+            ],
+            [
+                "\"GM antigen\"",
+                0.9619354094283259
+            ],
+            [
+                "IA",
+                0.9619271877230244
+            ],
+            [
+                "HSCT",
+                0.9619271877230244
+            ],
+            [
+                "\"cancer patients\"",
+                0.9619189661582643
+            ],
+            [
+                "\"Platelia Aspergillus\"",
+                0.9619107447340418
+            ],
+            [
+                "\"solid organ transplant\"",
+                0.9619066340746312
+            ],
+            [
+                "animals[mh]",
+                0.9618946185024112
+            ],
+            [
+                "\"immunosuppressed patients\"",
+                0.9618778604424577
+            ],
+            [
+                "neutropenia",
+                0.9617340180990063
+            ],
+            [
+                "\"aspergillus infection\"",
+                0.9616066508029408
+            ],
+            [
+                "immunocompromised",
+                0.9609908336784403
+            ]
+        ]
+    },
+    "replacements2": {
+        "chemotherapy": [
+            [
+                "aspergillosis",
+                0.9208554250268566
+            ],
+            [
+                "assay",
+                0.9102820746132848
+            ],
+            [
+                "diagnosi",
+                0.9101795369471787
+            ],
+            [
+                "\"mannans\"[mh]",
+                0.8781791462743245
+            ],
+            [
+                "invasive",
+                0.8671532340550943
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.7485912590825289
+            ],
+            [
+                "detect",
+                0.7374414076897393
+            ],
+            [
+                "\"mannans/blood\"[mh]",
+                0.7052130193172798
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.6944810829573065
+            ]
+        ],
+        "\"Aspergillus ELISA\"": [
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.5208020615515432
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.5206191155615885
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.5187765226485053
+            ],
+            [
+                "detect",
+                0.5180891879178121
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.5160158869345437
+            ],
+            [
+                "invasive",
+                0.5124168722628671
+            ]
+        ],
+        "\"hematopoietic stem cell transplant\"": [
+            [
+                "aspergillosis",
+                0.9208514361704432
+            ],
+            [
+                "assay",
+                0.9101637639719261
+            ],
+            [
+                "diagnosi",
+                0.9101243339253996
+            ],
+            [
+                "\"mannans\"[mh]",
+                0.8779888442485471
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.8670668024528179
+            ],
+            [
+                "invasive",
+                0.867029228869196
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.7916135522082607
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.7483412979939462
+            ],
+            [
+                "detect",
+                0.7371920744526369
+            ],
+            [
+                "\"mannans/blood\"[mh]",
+                0.7266502458781797
+            ],
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.6291551006245664
+            ]
+        ],
+        "\"cancer patients\"": [
+            [
+                "assay",
+                0.9101637639719261
+            ],
+            [
+                "diagnosi",
+                0.9101243339253996
+            ],
+            [
+                "\"mannans\"[mh]",
+                0.8779812338830261
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.8670705599902927
+            ],
+            [
+                "invasive",
+                0.8670329860810179
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.7916066875943045
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.7483380528440652
+            ],
+            [
+                "detect",
+                0.7371952699656691
+            ],
+            [
+                "\"mannans/blood\"[mh]",
+                0.7266407926974697
+            ],
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.6399942748836543
+            ],
+            [
+                "sensor",
+                0.5100183967094187
+            ]
+        ],
+        "\"Aspergillus antigen detection\"": [
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.5208043209474849
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.5206236311989071
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.5187810063784549
+            ],
+            [
+                "detect",
+                0.5180891879178121
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.5160181049934879
+            ],
+            [
+                "invasive",
+                0.5124168722628671
+            ]
+        ],
+        "\"immunosuppressed patients\"": [
+            [
+                "aspergillosis",
+                0.9208514361704432
+            ],
+            [
+                "assay",
+                0.9101677071644881
+            ],
+            [
+                "diagnosi",
+                0.9101203911086466
+            ],
+            [
+                "\"mannans\"[mh]",
+                0.8779964547460031
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.8670705599902927
+            ],
+            [
+                "invasive",
+                0.867029228869196
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.7916135522082607
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.7483412979939462
+            ],
+            [
+                "detect",
+                0.7371824880797573
+            ],
+            [
+                "\"mannans/blood\"[mh]",
+                0.7266565481352992
+            ],
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.6400026023594726
+            ],
+            [
+                "sensor",
+                0.5100206096105868
+            ]
+        ],
+        "\"solid organ transplant\"": [
+            [
+                "aspergillosis",
+                0.9208514361704432
+            ],
+            [
+                "assay",
+                0.9101716503912172
+            ],
+            [
+                "diagnosi",
+                0.9101203911086466
+            ],
+            [
+                "\"mannans\"[mh]",
+                0.8780002600442075
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.8670592874755695
+            ],
+            [
+                "invasive",
+                0.8670367433254031
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.7916066875943045
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.7483445431719724
+            ],
+            [
+                "detect",
+                0.7371952699656691
+            ],
+            [
+                "\"mannans/blood\"[mh]",
+                0.726659699304854
+            ],
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.6400053782329036
+            ],
+            [
+                "sensor",
+                0.5100228225309579
+            ]
+        ],
+        "\"GM assay\"": [
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.5208020615515432
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.5206191155615885
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.5187765226485053
+            ],
+            [
+                "detect",
+                0.5180891879178121
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.5160158869345437
+            ],
+            [
+                "invasive",
+                0.5124168722628671
+            ]
+        ],
+        "neutropenia": [
+            [
+                "aspergillosis",
+                0.9208514361704432
+            ],
+            [
+                "assay",
+                0.9101795369471787
+            ],
+            [
+                "diagnosi",
+                0.9101322196613928
+            ],
+            [
+                "\"mannans\"[mh]",
+                0.8780230925261351
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.8671006214625605
+            ],
+            [
+                "invasive",
+                0.8670367433254031
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.7808270856008015
+            ],
+            [
+                "\"mannans/blood\"[mh]",
+                0.7158574928984973
+            ],
+            [
+                "detect",
+                0.7047147154957908
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.6941829047745024
+            ],
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.574984926236157
+            ]
+        ],
+        "\"invasive aspergillosis\"": [
+            [
+                "sensor",
+                0.5100803652016942
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.5100803652016942
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.5100715116379985
+            ],
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.5100582318687136
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.510033887420868
+            ],
+            [
+                "\"mannans/blood\"[mh]",
+                0.5100250354705324
+            ]
+        ],
+        "HSCT": [
+            [
+                "aspergillosis",
+                0.9208514361704432
+            ],
+            [
+                "assay",
+                0.9101637639719261
+            ],
+            [
+                "diagnosi",
+                0.9101243339253996
+            ],
+            [
+                "\"mannans\"[mh]",
+                0.8671457175795504
+            ],
+            [
+                "invasive",
+                0.8670329860810179
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.8562284674221576
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.7590847797149586
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.7266470947906143
+            ],
+            [
+                "detect",
+                0.7155130561431494
+            ],
+            [
+                "\"mannans/blood\"[mh]",
+                0.704956136737163
+            ],
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.5857701749668196
+            ]
+        ],
+        "\"GM antigen\"": [
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.5208020615515432
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.5206191155615885
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.5187765226485053
+            ],
+            [
+                "detect",
+                0.5180891879178121
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.5160158869345437
+            ],
+            [
+                "invasive",
+                0.5124168722628671
+            ]
+        ],
+        "immunocompromised": [
+            [
+                "aspergillosis",
+                0.9208514361704432
+            ],
+            [
+                "assay",
+                0.9102071409693728
+            ],
+            [
+                "diagnosi",
+                0.9101401055340386
+            ],
+            [
+                "\"mannans\"[mh]",
+                0.8672547192301857
+            ],
+            [
+                "invasive",
+                0.8670480152539436
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.8563026848982599
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.7917680375039572
+            ],
+            [
+                "detect",
+                0.7047483212020584
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.6942792575917274
+            ],
+            [
+                "\"mannans/blood\"[mh]",
+                0.6725859481405013
+            ],
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.5533689950932542
+            ]
+        ],
+        "\"Platelia Aspergillus\"": [
+            [
+                "\"antigens, fungal/blood\"[mh]",
+                0.5208065803630306
+            ],
+            [
+                "\"immunoenzyme techniques\"[mh]",
+                0.5206236311989071
+            ],
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.5187810063784549
+            ],
+            [
+                "detect",
+                0.5180914238364867
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.5160181049934879
+            ],
+            [
+                "invasive",
+                0.5124168722628671
+            ]
+        ],
+        "galactomannan": [
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.5163443672149198
+            ],
+            [
+                "invasive",
+                0.5125350092219414
+            ]
+        ],
+        "humans[mh:noexp]": [
+            [
+                "assay",
+                0.5101002868438068
+            ],
+            [
+                "invasive",
+                0.5100493790733396
+            ],
+            [
+                "diagnosi",
+                0.5100183967094187
+            ]
+        ],
+        "\"aspergillosis \"[mh]": [
+            [
+                "\"epidemiologic research design\"[mh]",
+                0.510244211586377
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.5101379208582515
+            ]
+        ],
+        "\"aspergillus infection\"": [
+            [
+                "sensor",
+                0.5100117581211304
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.5100117581211304
+            ]
+        ],
+        "IA": [
+            [
+                "sensor",
+                0.5100117581211304
+            ],
+            [
+                "\"aspergillosis/diagnosis\"[mh]",
+                0.5100117581211304
+            ]
+        ]
+    }
+}

@@ -5,7 +5,7 @@ from app.dataset.utils import (
     get_dataset_details,
 )
 from app.config.config import CURRENT_BEST_RUN_FOLDER
-from app.visualization.helper import escape_typst
+from app.visualization.helper import escape_typst, mark_outer_operators
 from app.helper.helper import f_beta
 
 
@@ -86,6 +86,7 @@ def dataframe_to_best_worst_table(
         recall_text = f"{recall:.4f}" if pd.notna(recall) else ""
         title_text = escape_typst(title) if title else ""
         query_text = escape_typst(query) if query else ""
+        query_text = mark_outer_operators(query_text, operator_types=["OR"])
         type_text = f"*{escape_typst(name)}*\\ *Precision:* {precision_text}\\ *Recall:* {recall_text}"
         typst_lines.append(
             f"  [{type_text}], [{title_text}], [{query_text}],"

@@ -1,0 +1,57 @@
+[
+    {
+        "term": "\"invasive aspergillosis\"",
+        "f_beta": 0.5100803652016942,
+        "f_beta_diff": 7.303271007874645e-05
+    },
+    {
+        "term": "\"solid organ transplant\"",
+        "f_beta": 0.5100228225309579,
+        "f_beta_diff": 1.54900393424251e-05
+    },
+    {
+        "term": "\"immunosuppressed patients\"",
+        "f_beta": 0.5100206096105868,
+        "f_beta_diff": 1.327711897136652e-05
+    },
+    {
+        "term": "\"cancer patients\"",
+        "f_beta": 0.5100183967094187,
+        "f_beta_diff": 1.1064217803280485e-05
+    },
+    {
+        "term": "\"Platelia Aspergillus\"",
+        "f_beta": 0.5100117581211304,
+        "f_beta_diff": 4.425629514970275e-06
+    },
+    {
+        "term": "\"Aspergillus antigen detection\"",
+        "f_beta": 0.5100117581211304,
+        "f_beta_diff": 4.425629514970275e-06
+    },
+    {
+        "term": "\"aspergillus infection\"",
+        "f_beta": 0.5100117581211304,
+        "f_beta_diff": 4.425629514970275e-06
+    },
+    {
+        "term": "IA",
+        "f_beta": 0.5100117581211304,
+        "f_beta_diff": 4.425629514970275e-06
+    },
+    {
+        "term": "\"GM antigen\"",
+        "f_beta": 0.5100073324916155,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "\"GM assay\"",
+        "f_beta": 0.5100073324916155,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "\"Aspergillus ELISA\"",
+        "f_beta": 0.5100073324916155,
+        "f_beta_diff": 0.0
+    }
+]

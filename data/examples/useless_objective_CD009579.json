@@ -1,0 +1,37 @@
+[
+    {
+        "term": "used[tiab]",
+        "f_beta": 0.1159292650705727,
+        "f_beta_diff": 3.290449896869996e-05
+    },
+    {
+        "term": "mg[tiab]",
+        "f_beta": 0.11590710284380232,
+        "f_beta_diff": 1.0742272198313585e-05
+    },
+    {
+        "term": "kg[tiab]",
+        "f_beta": 0.11590475280160116,
+        "f_beta_diff": 8.392229997156164e-06
+    },
+    {
+        "term": "urinalysis[tiab]",
+        "f_beta": 0.11589770324673444,
+        "f_beta_diff": 1.3426751304390638e-06
+    },
+    {
+        "term": "found[tiab]",
+        "f_beta": 0.115896360571604,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "cca[tiab]",
+        "f_beta": 0.115896360571604,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "either[tiab]",
+        "f_beta": 0.115896360571604,
+        "f_beta_diff": 0.0
+    }
+]
