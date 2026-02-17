@@ -117,10 +117,11 @@ def mark_query_terms(query_text: str, markings: list) -> str:
 
         # Match term bounded by operators / parens / string boundaries on both sides
         pattern = (
-            r'((?:^|\(|\[| (?:OR|AND|NOT) ))'   # preceding: start, "(", or " OP "
+            r'((?:^|\\\(|\\\[|\#| (?:OR|AND|NOT) ))'   # preceding: start, "(", or " OP "
             + regex_term
-            + r'(?= (?:OR|AND|NOT) |\)|\]|$)'    # following: " OP ", ")", or end
+            + r'(?= (?:OR|AND|NOT) |\\\)|\\\]|\#|$)'    # following: " OP ", ")", or end
         )
+        print("regex_term", "'" + regex_term + "'", query_text)
         query_text = re.sub(pattern, lambda m: m.group(1) + replacement, query_text)
 
     return query_text
@@ -321,14 +322,14 @@ if __name__ == "__main__":
                     "Skipping example due to missing query_id or marked as not usable for stats."
                 )
                 continue
-            # positives = set(dataset_details[review_id]["positives"])
-            # dataset, _, end_year = review_id_to_dataset(review_id)
-            # precision, recall, retrieved_count, TP = evaluate_query(
-            #     example["result"],
-            #     positives,
-            #     end_year=end_year,
-            # )
-            precision, recall, retrieved_count, TP = 1,1,1,1 #TODO remove
+            positives = set(dataset_details[review_id]["positives"])
+            dataset, _, end_year = review_id_to_dataset(review_id)
+            precision, recall, retrieved_count, TP = evaluate_query(
+                example["result"],
+                positives,
+                end_year=end_year,
+            )
+            # precision, recall, retrieved_count, TP = 1,1,1,1 #TODO remove
             
 
             # compare to manual
