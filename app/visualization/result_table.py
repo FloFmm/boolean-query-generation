@@ -6,6 +6,7 @@ from app.helper.helper import f_beta
 from app.dataset.utils import review_id_to_dataset, dataset_names
 from app.tree_learning.query_generation import query_size_value
 
+
 def process_jsonl_folder(folder_path, output_csv):
     # Dictionary to store sum of values and counts
     # Key is now (dataset, bucket, file)
@@ -26,7 +27,7 @@ def process_jsonl_folder(folder_path, output_csv):
                         meta = json.load(mf)
                         betas = sorted(meta.get("betas", {}).keys(), key=int)
                         betas_str = ",".join(map(str, betas))
-                else: 
+                else:
                     print("warning meta file missing, value get lost if thats the case")
                     continue
                 print(sum(1 for _ in open(file_path, "r")))
@@ -37,8 +38,15 @@ def process_jsonl_folder(folder_path, output_csv):
                         if dataset == "tar2017":
                             dataset = "tar2018"  # tar2017 is part of 2018
 
-                        num_positive_bucket = "<50" if data["num_positive"] < 50 else ">=50"
-                        key = (dataset, num_positive_bucket, relative_path, betas_str)  # include filename in key
+                        num_positive_bucket = (
+                            "<50" if data["num_positive"] < 50 else ">=50"
+                        )
+                        key = (
+                            dataset,
+                            num_positive_bucket,
+                            relative_path,
+                            betas_str,
+                        )  # include filename in key
 
                         # Top-level numerical values
                         for field in [
@@ -65,18 +73,36 @@ def process_jsonl_folder(folder_path, output_csv):
                             if value is not None:
                                 stats[key][f"query_size_{field}"].append(value)
                         # stats[key]["logical_operators"].append(query_size_value(data["query_size"])) wrong for old data
-                        check = sum(data["query_size"][k] for k in ["paths", "ANDs", "NOTs", "added_ORs", "synonym_ORs"]) - 1
-                        count_value = data["pubmed_query"].count("AND") + data["pubmed_query"].count("OR") + data["pubmed_query"].count("NOT") 
+                        check = (
+                            sum(
+                                data["query_size"][k]
+                                for k in [
+                                    "paths",
+                                    "ANDs",
+                                    "NOTs",
+                                    "added_ORs",
+                                    "synonym_ORs",
+                                ]
+                            )
+                            - 1
+                        )
+                        count_value = (
+                            data["pubmed_query"].count("AND")
+                            + data["pubmed_query"].count("OR")
+                            + data["pubmed_query"].count("NOT")
+                        )
                         assert check == count_value
                         stats[key]["logical_operators"].append(count_value)
                         stats[key]["all_ORs"].append(data["pubmed_query"].count("OR"))
                         # Calculate F1 and F3 for pubmed
                         p = data.get("pubmed_precision", 0) or 0
                         r = data.get("pubmed_recall", 0) or 0
-                        stats[key]["pubmed_f1"].append(f_beta(precision=p, recall=r, beta=1))
-                        stats[key]["pubmed_f3"].append(f_beta(precision=p, recall=r, beta=3))
-                        
-                        
+                        stats[key]["pubmed_f1"].append(
+                            f_beta(precision=p, recall=r, beta=1)
+                        )
+                        stats[key]["pubmed_f3"].append(
+                            f_beta(precision=p, recall=r, beta=3)
+                        )
 
     # Write CSV
     os.makedirs(os.path.dirname(output_csv), exist_ok=True)
@@ -85,7 +111,12 @@ def process_jsonl_folder(folder_path, output_csv):
 
         # Header
         field_keys = list(next(iter(stats.values())).keys())
-        header = ["dataset", "num_positive_bucket", "source_file", "selection_betas"] + field_keys
+        header = [
+            "dataset",
+            "num_positive_bucket",
+            "source_file",
+            "selection_betas",
+        ] + field_keys
         writer.writerow(header)
 
         for (dataset, bucket, file_path, beta_str), fields in stats.items():
@@ -96,7 +127,16 @@ def process_jsonl_folder(folder_path, output_csv):
                 row.append(avg)
             writer.writerow(row)
 
-def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metrics=None, text_size=10.3):
+
+def generate_typst_table(
+    csv_file,
+    typst_file,
+    baseline_dict,
+    betas=None,
+    metrics=None,
+    text_size=10.3,
+    min_positive_buckets=["<50", ">=50", "all"],
+):
     """
     Generates a Typst table from a CSV containing metrics and a baseline dictionary.
 
@@ -120,15 +160,15 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
         for row in reader:
             dataset = row["dataset"]
             bucket = row["num_positive_bucket"]
-            
+
             # If betas is set, skip rows that don't contain any of the selected betas
             if betas is not None:
                 row_betas = set(row["selection_betas"].split(","))
                 if not row_betas & betas:
                     continue  # skip this row entirely
-            
+
             stats.setdefault(dataset, {}).setdefault(bucket, []).append(row)
-            
+
     def config_name(row, betas):
         parts = row["selection_betas"].split(",")
         source_file = row["source_file"]
@@ -145,10 +185,10 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
             c_name += f"{parts[0]}-{parts[-1]}" if len(parts) > 1 else parts[0]
         c_name += f"\-{ktype}"
         return c_name
-    
+
     with open(typst_file, "w") as f:
         # Table preamble
-        f.write("#import \"../../thesis/assets/assets.typ\": *\n")
+        f.write('#import "../../thesis/assets/assets.typ": *\n')
 
         f.write("#let result_table() = [\n")
         f.write("#table(\n")
@@ -165,7 +205,9 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
             header_cells.append(f"[{name}]")
         f.write(f"  table.header({', '.join(header_cells)}),\n")
         seperator = f"  table.cell(colspan: {3 + len(metrics)}, inset: (top: 1pt, bottom: 1pt))[],\n"
-        for i, dataset in enumerate(["tar2018", "tar2019", "sigir2017", "sr_updates"]):#enumerate(stats.items())]
+        for i, dataset in enumerate(
+            ["tar2018", "tar2019", "sigir2017", "sr_updates"]
+        ):  # enumerate(stats.items())]
             buckets = stats[dataset]
             if i != 0:
                 f.write(seperator)
@@ -173,16 +215,22 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
             config_rows_ge50 = len(buckets.get(">=50", []))
             config_rows_le50 = len(buckets.get("<50", []))
             config_rows_all = len(buckets.get("all", []))
-            total_rows = baseline_count + config_rows_ge50 + config_rows_le50 + config_rows_all
+            total_rows = (
+                baseline_count + config_rows_ge50 + config_rows_le50 + config_rows_all
+            )
 
             # Rotated dataset label
-            f.write(f"  table.cell(rowspan: {total_rows}, rotate(-90deg, reflow:true)[{dataset_names(dataset)}]),\n")
+            f.write(
+                f"  table.cell(rowspan: {total_rows}, rotate(-90deg, reflow:true)[{dataset_names(dataset)}]),\n"
+            )
 
             # Compute best values for bolding
             best_metrics = {}
             for name, cfg in metrics.items():
                 direction = cfg.get("direction", "max")
-                best_metrics[name] = float("inf") if direction == "min" else float("-inf")
+                best_metrics[name] = (
+                    float("inf") if direction == "min" else float("-inf")
+                )
 
             for bucket in buckets.values():
                 for row in bucket:
@@ -235,7 +283,9 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
 
             # Baselines
             if baseline_count > 0:
-                f.write(f"  table.cell(rowspan: {baseline_count}, rotate(-90deg, reflow:true)[Baselines]),\n")
+                f.write(
+                    f"  table.cell(rowspan: {baseline_count}, rotate(-90deg, reflow:true)[Baselines]),\n"
+                )
                 for baseline in baseline_dict[dataset]:
                     name = baseline[0] if baseline else ""
                     metric_cells = []
@@ -256,14 +306,22 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
                 elif "ktype=fixed" in source_file:
                     return 2
                 return 3
+
             # Buckets
-            for bucket_name in [">=50","<50","all"]:
+            for bucket_name in min_positive_buckets:
                 if bucket_name in buckets:
                     rows = sorted(
                         buckets[bucket_name],
-                        key=lambda r: (-int(r["selection_betas"].split(",")[0]), config_type_order(r))
+                        key=lambda r: (
+                            -int(r["selection_betas"].split(",")[0]),
+                            config_type_order(r),
+                        ),
                     )
-                    f.write(f"  table.cell(rowspan:{len(rows)}, rotate(-90deg, reflow:true)[{bucket_name} pos]),\n".replace('<', '\<'))
+                    f.write(
+                        f"  table.cell(rowspan:{len(rows)}, rotate(-90deg, reflow:true)[{bucket_name} pos]),\n".replace(
+                            "<", "\<"
+                        )
+                    )
                     for row in rows:
                         c_name = config_name(row, betas)
                         metric_cells = []
@@ -271,26 +329,63 @@ def generate_typst_table(csv_file, typst_file, baseline_dict, betas=None, metric
                             key = cfg.get("key")
                             value = row.get(key) if key is not None else None
                             metric_cells.append(f"[{fmt(value, m_name)}]")
-                        f.write(
-                            f"    [{c_name}], "
-                            f"{', '.join(metric_cells)},\n"
-                        )
-                    
+                        f.write(f"    [{c_name}], {', '.join(metric_cells)},\n")
+
         f.write(")]\n")
 
     print(f"Typst table written to {typst_file}")
 
+
 if __name__ == "__main__":
     baseline_dict = {
         "tar2018": [
-            ("Manual", 0.0217, 0.0407, 0.1439, 0.9338, 77.6, 1.0, 3.3, 45.9, 0.5), # original, conceptional and obj all from https://bevankoopman.github.io/papers/irj2020-comparison.pdf (same as in other verions of that paper, was also chosen as source from ChatGPT paper)
-            ("Conceptual", 0.0021, 0.0037, 0.0114, 0.6286, None), # highest recall, highest f3
-            ("Objective", 0.0002, 0.0005, 0.0022, 0.8780, None), # highest recall (since highest f3 has very low recall)
-            ("ChatGPT", 0.0752, 0.0642, 0.0847, 0.5035, None), # https://arxiv.org/pdf/2302.03495, highest recall, highest F3, with example q4
+            (
+                "Manual",
+                0.0217,
+                0.0407,
+                0.1439,
+                0.9338,
+                77.6,
+                1.0,
+                3.3,
+                45.9,
+                0.5,
+            ),  # original, conceptional and obj all from https://bevankoopman.github.io/papers/irj2020-comparison.pdf (same as in other verions of that paper, was also chosen as source from ChatGPT paper)
+            (
+                "Conceptual",
+                0.0021,
+                0.0037,
+                0.0114,
+                0.6286,
+                None,
+            ),  # highest recall, highest f3
+            (
+                "Objective",
+                0.0002,
+                0.0005,
+                0.0022,
+                0.8780,
+                None,
+            ),  # highest recall (since highest f3 has very low recall)
+            (
+                "ChatGPT",
+                0.0752,
+                0.0642,
+                0.0847,
+                0.5035,
+                None,
+            ),  # https://arxiv.org/pdf/2302.03495, highest recall, highest F3, with example q4
             # ("FI-BE-CONTXT", 0.0003, 0.0005, 0.0029, 0.9676 , None), # https://www.sciencedirect.com/science/article/pii/S1386505622002428 2 of the 3 above 80% recall frameworks (last of the 3 is simply bad (almost same recall as this and much lower precision)) -> simplys ay we only cosnidered above 80% recall in selection of those two values and then the best 2 of those 3
-            ("Semantic", 0.0236, 0.0458, 0.1872, 0.8159 , None), # https://www.sciencedirect.com/science/article/pii/S1386505622002428 FI-BioBE-CONTXT -> most competitive in preicsion and recall from the 3 configs that have above 80% recall (only considering above 80% recall)
+            (
+                "Semantic",
+                0.0236,
+                0.0458,
+                0.1872,
+                0.8159,
+                None,
+            ),  # https://www.sciencedirect.com/science/article/pii/S1386505622002428 FI-BioBE-CONTXT -> most competitive in preicsion and recall from the 3 configs that have above 80% recall (only considering above 80% recall)
         ],
-        "tar2019": [ # no value found
+        "tar2019": [  # no value found
             # ("Original", "≤0.012\*", "", "", ""),
         ],
         "sr_updates": [
@@ -300,7 +395,7 @@ if __name__ == "__main__":
             # ("Original", "≤0.089\*", "", "", ""),
         ],
     }
-    
+
     best_choice = "best_3"
     csv_path = f"../master-thesis-writing/writing/tables/{best_choice}/best_average.csv"
     metrics = {
@@ -371,7 +466,7 @@ if __name__ == "__main__":
         #     "vline_before": False,
         # },
     }
-    
+
     process_jsonl_folder(
         folder_path=f"data/statistics/optuna/{best_choice}",
         output_csv=csv_path,
@@ -380,9 +475,10 @@ if __name__ == "__main__":
         csv_file=csv_path,
         typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/best_average.typ",
         baseline_dict=baseline_dict,
-        betas={"3","15","30","50"},
+        betas={"3", "15", "30", "50"},
         metrics=metrics,
         text_size=10.3,
+        # min_positive_buckets=[">=50"],
     )
     generate_typst_table(
         csv_file=csv_path,
@@ -391,5 +487,5 @@ if __name__ == "__main__":
         metrics=metrics,
         text_size=10.3,
     )
-    
+
     print("done")

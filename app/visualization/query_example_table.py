@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import pandas as pd
 from app.dataset.utils import (
     get_qg_results,
@@ -30,7 +31,6 @@ def load_replacement_pairs(json_path: str, k: int = 2) -> list:
     """
     with open(json_path) as f:
         data = json.load(f)
-
     pairs = []
 
     # replacements1: keys = my_query terms, values = [(paper_term, score), ...]
@@ -121,7 +121,7 @@ def mark_query_terms(query_text: str, markings: list) -> str:
             + regex_term
             + r'(?= (?:OR|AND|NOT) |\\\)|\\\]|\#|$)'    # following: " OP ", ")", or end
         )
-        print("regex_term", "'" + regex_term + "'", query_text)
+        # print("regex_term", "'" + regex_term + "'", query_text)
         query_text = re.sub(pattern, lambda m: m.group(1) + replacement, query_text)
 
     return query_text
@@ -233,8 +233,16 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, r
                     # my_term is the good replacement -> highlight it
                     my_markings.append((pair["my_term"], "highlight", pair["color"]))
 
-    # Format my query cell
     my_query = first_row["my_query"]
+    # # debug
+    # if review_id == "CD009579":
+    #     tokens_my_query = [t.strip() for t in re.split(r'\s+AND\s+|\s+OR\s+|\s+NOT\s+|\(|\)', my_query) if t.strip()]
+    #     with open("data/examples/generated_manual_CD009579.json") as f:
+    #         data = json.load(f)
+    #     print("may query")
+    #     print(set(tokens_my_query) - set(data["replacements1"].keys()))
+    #     print()
+    
     my_p = first_row["my_p"]
     my_r = first_row["my_r"]
     my_query_marked = mark_outer_operators(mark_query_terms(my_query, my_markings), ['OR'])
@@ -284,6 +292,15 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, r
 
         paper = f"*{row_data['approach']}* @{row_data['paper']}"
         paper_query = row_data["paper_query"]
+        # # debug
+        # if review_id == "CD009579":
+        #     tokens_paper_query = [t.strip() for t in re.split(r'\s+AND\s+|\s+OR\s+|\s+NOT\s+|\(|\)', paper_query) if t.strip()]
+        #     with open("data/examples/generated_manual_CD009579.json") as f:
+        #         data = json.load(f)
+        #     print("paper query")
+        #     print(set(tokens_paper_query) - set(data["replacements2"].keys()))
+        #     print()
+        
         paper_p = row_data["paper_p"]
         paper_r = row_data["paper_r"]
         paper_query_marked = mark_outer_operators(mark_query_terms(paper_query, paper_markings), ['AND', 'NOT'])
@@ -322,14 +339,14 @@ if __name__ == "__main__":
                     "Skipping example due to missing query_id or marked as not usable for stats."
                 )
                 continue
-            positives = set(dataset_details[review_id]["positives"])
-            dataset, _, end_year = review_id_to_dataset(review_id)
-            precision, recall, retrieved_count, TP = evaluate_query(
-                example["result"],
-                positives,
-                end_year=end_year,
-            )
-            # precision, recall, retrieved_count, TP = 1,1,1,1 #TODO remove
+            # positives = set(dataset_details[review_id]["positives"])
+            # dataset, _, end_year = review_id_to_dataset(review_id)
+            # precision, recall, retrieved_count, TP = evaluate_query(
+            #     example["result"],
+            #     positives,
+            #     end_year=end_year,
+            # )
+            precision, recall, retrieved_count, TP = 1,1,1,1 #TODO remove
             
 
             # compare to manual
