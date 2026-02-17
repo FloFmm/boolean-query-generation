@@ -17,7 +17,7 @@ if __name__ == "__main__":
     n_query_ids = 5
     run_name = f"evaluate_best_{n_trials}_times"
     top_k_type = "cosine"
-    
+    os.makedirs(f"data/statistics/optuna/{run_name}", exist_ok=True)
     
     sorted_ids = {}
     sorted_scores = {}
