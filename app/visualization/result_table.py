@@ -1,6 +1,7 @@
 import json
 import csv
 import os
+import statistics
 from collections import defaultdict
 from app.helper.helper import f_beta
 from app.dataset.utils import review_id_to_dataset, dataset_names
@@ -39,7 +40,7 @@ def process_jsonl_folder(folder_path, output_csv):
                             dataset = "tar2018"  # tar2017 is part of 2018
 
                         num_positive_bucket = (
-                            "<50" if data["num_positive"] < 50 else ">=50"
+                            "\<50" if data["num_positive"] < 50 else "\>\=50"
                         )
                         key = (
                             dataset,
@@ -109,14 +110,17 @@ def process_jsonl_folder(folder_path, output_csv):
     with open(output_csv, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
 
-        # Header
+        # Header - include stddev columns alongside each metric
         field_keys = list(next(iter(stats.values())).keys())
         header = [
             "dataset",
             "num_positive_bucket",
             "source_file",
             "selection_betas",
-        ] + field_keys
+        ]
+        for field in field_keys:
+            header.append(field)
+            header.append(f"{field}_stddev")
         writer.writerow(header)
 
         for (dataset, bucket, file_path, beta_str), fields in stats.items():
@@ -124,7 +128,10 @@ def process_jsonl_folder(folder_path, output_csv):
             for field in field_keys:
                 values = [v for v in fields.get(field, []) if v is not None]
                 avg = sum(values) / len(values) if values else 0
+                # Calculate standard deviation if we have more than one value
+                stddev = statistics.stdev(values) if len(values) > 1 else 0
                 row.append(avg)
+                row.append(stddev)
             writer.writerow(row)
 
 
@@ -135,7 +142,11 @@ def generate_typst_table(
     betas=None,
     metrics=None,
     text_size=10.3,
-    min_positive_buckets=["<50", ">=50", "all"],
+    min_positive_buckets=["\<50", "\>\=50"],
+    used_datasets=["tar2018", "tar2019", "sigir2017", "sr_updates"],
+    show_performance=True,
+    show_operators=True,
+    table_name="result_table",
 ):
     """
     Generates a Typst table from a CSV containing metrics and a baseline dictionary.
@@ -153,6 +164,7 @@ def generate_typst_table(
                                   - baseline_index (int | None): index in baseline tuple
                                   - vline_before (bool, optional): add vline before column
     """
+    typst_file = os.path.join(typst_file, f"{table_name}.typ")
     # Read CSV into nested dict: stats[dataset][bucket] = row_dict
     stats = {}
     with open(csv_file, newline="") as f:
@@ -169,6 +181,22 @@ def generate_typst_table(
 
             stats.setdefault(dataset, {}).setdefault(bucket, []).append(row)
 
+    # Filter metrics based on show_performance and show_operators flags
+    filtered_metrics = {}
+    performance_metrics = {"Precision", "F1", "F3", "Recall"}
+    operator_metrics = {"\#Ops", "\#Rules", "\#ANDs", "\#ORs", "\#NOTs"}
+    
+    for name, cfg in metrics.items():
+        include = True
+        if name in performance_metrics and not show_performance:
+            include = False
+        if name in operator_metrics and not show_operators:
+            include = False
+        if include:
+            filtered_metrics[name] = cfg
+    
+    metrics = filtered_metrics
+
     def config_name(row, betas):
         parts = row["selection_betas"].split(",")
         source_file = row["source_file"]
@@ -178,19 +206,18 @@ def generate_typst_table(
             ktype = "\#pos"
         elif "ktype=fixed" in source_file:
             ktype = "fixed"
-        c_name = "#algo-name-short\-F"
+        algo_name = "#algo-name-short\-F"
         if betas is not None:
-            c_name += ", ".join(sorted(set(parts) & betas))
+            algo_name += ", ".join(sorted(set(parts) & betas))
         else:
-            c_name += f"{parts[0]}-{parts[-1]}" if len(parts) > 1 else parts[0]
-        c_name += f"\-{ktype}"
-        return c_name
+            algo_name += f"{parts[0]}-{parts[-1]}" if len(parts) > 1 else parts[0]
+        return algo_name, ktype
 
     with open(typst_file, "w") as f:
         # Table preamble
         f.write('#import "../../thesis/assets/assets.typ": *\n')
 
-        f.write("#let result_table() = [\n")
+        f.write(f"#let {table_name}() = [\n")
         f.write("#table(\n")
         f.write(f"  columns: {3 + len(metrics)},\n")
         header_cells = [
@@ -206,25 +233,56 @@ def generate_typst_table(
         f.write(f"  table.header({', '.join(header_cells)}),\n")
         seperator = f"  table.cell(colspan: {3 + len(metrics)}, inset: (top: 1pt, bottom: 1pt))[],\n"
         for i, dataset in enumerate(
-            ["tar2018", "tar2019", "sigir2017", "sr_updates"]
+            used_datasets
         ):  # enumerate(stats.items())]
-            buckets = stats[dataset]
+            buckets = stats.get(dataset, {})
+            baseline_count = len(baseline_dict.get(dataset, []))
+            
+            # Pre-count displayed rows to calculate correct total_rows
+            displayed_baseline_count = 0
+            if baseline_count > 0:
+                for baseline in baseline_dict[dataset]:
+                    # Check if baseline has any non-None values for filtered metrics
+                    has_value = False
+                    for name, cfg in metrics.items():
+                        idx = cfg.get("baseline_index")
+                        if idx is not None and len(baseline) > idx and baseline[idx] is not None:
+                            has_value = True
+                            break
+                    if has_value:
+                        displayed_baseline_count += 1
+            
+            displayed_config_count = 0
+            for bucket_name in min_positive_buckets:
+                if bucket_name in buckets:
+                    for row in buckets[bucket_name]:
+                        # Check if row has any non-empty values for filtered metrics
+                        has_value = False
+                        for name, cfg in metrics.items():
+                            key = cfg.get("key")
+                            if key is not None:
+                                val = row.get(key)
+                                if val not in (None, ""):
+                                    has_value = True
+                                    break
+                        if has_value:
+                            displayed_config_count += 1
+            
+            total_rows = displayed_baseline_count + displayed_config_count
+            
+            # Skip dataset if there are no rows to display
+            if total_rows == 0:
+                continue
+            
             if i != 0:
                 f.write(seperator)
-            baseline_count = len(baseline_dict.get(dataset, []))
-            config_rows_ge50 = len(buckets.get(">=50", []))
-            config_rows_le50 = len(buckets.get("<50", []))
-            config_rows_all = len(buckets.get("all", []))
-            total_rows = (
-                baseline_count + config_rows_ge50 + config_rows_le50 + config_rows_all
-            )
 
             # Rotated dataset label
             f.write(
                 f"  table.cell(rowspan: {total_rows}, rotate(-90deg, reflow:true)[{dataset_names(dataset)}]),\n"
             )
 
-            # Compute best values for bolding
+            # Compute best values for bolding (only from displayed buckets)
             best_metrics = {}
             for name, cfg in metrics.items():
                 direction = cfg.get("direction", "max")
@@ -232,23 +290,25 @@ def generate_typst_table(
                     float("inf") if direction == "min" else float("-inf")
                 )
 
-            for bucket in buckets.values():
-                for row in bucket:
-                    for name, cfg in metrics.items():
-                        key = cfg.get("key")
-                        if key is None:
-                            continue
-                        raw_val = row.get(key)
-                        if raw_val in (None, ""):
-                            continue
-                        try:
-                            val = float(raw_val)
-                        except (TypeError, ValueError):
-                            continue
-                        if cfg.get("direction", "max") == "min":
-                            best_metrics[name] = min(best_metrics[name], val)
-                        else:
-                            best_metrics[name] = max(best_metrics[name], val)
+            # Only consider rows from buckets that will be displayed
+            for bucket_name in min_positive_buckets:
+                if bucket_name in buckets:
+                    for row in buckets[bucket_name]:
+                        for name, cfg in metrics.items():
+                            key = cfg.get("key")
+                            if key is None:
+                                continue
+                            raw_val = row.get(key)
+                            if raw_val in (None, ""):
+                                continue
+                            try:
+                                val = float(raw_val)
+                            except (TypeError, ValueError):
+                                continue
+                            if cfg.get("direction", "max") == "min":
+                                best_metrics[name] = min(best_metrics[name], val)
+                            else:
+                                best_metrics[name] = max(best_metrics[name], val)
 
             if baseline_count > 0:
                 for name, cfg in metrics.items():
@@ -277,17 +337,15 @@ def generate_typst_table(
                 best_val = best_metrics.get(metric)
                 if best_val is None or best_val in (float("inf"), float("-inf")):
                     return formatted
-                if metric is not None and x == best_val:
+                if metric is not None and abs(x - best_val) < 1e-6:
                     return f"*{formatted}*"
                 return formatted
-
+            
             # Baselines
             if baseline_count > 0:
-                f.write(
-                    f"  table.cell(rowspan: {baseline_count}, rotate(-90deg, reflow:true)[Baselines]),\n"
-                )
+                # Count baselines that will actually be displayed
+                displayed_baseline_count = 0
                 for baseline in baseline_dict[dataset]:
-                    name = baseline[0] if baseline else ""
                     metric_cells = []
                     for m_name, cfg in metrics.items():
                         idx = cfg.get("baseline_index")
@@ -295,7 +353,28 @@ def generate_typst_table(
                         if idx is not None and len(baseline) > idx:
                             value = baseline[idx]
                         metric_cells.append(f"[{fmt(value, m_name)}]")
-                    f.write(f"    [{name}], {', '.join(metric_cells)},\n")
+                    if not all(cell == "[]" for cell in metric_cells):
+                        displayed_baseline_count += 1
+                
+                if displayed_baseline_count > 0:
+                    f.write(
+                        f"  table.cell(rowspan: {displayed_baseline_count}, rotate(-90deg, reflow:true)[Baselines]),\n"
+                    )
+                    for baseline in baseline_dict[dataset]:
+                        name = baseline[0] if baseline else ""
+                        metric_cells = []
+                        for m_name, cfg in metrics.items():
+                            idx = cfg.get("baseline_index")
+                            value = None
+                            if idx is not None and len(baseline) > idx:
+                                value = baseline[idx]
+                            metric_cells.append(f"[{fmt(value, m_name)}]")
+                        
+                        # Skip baseline if all metrics are empty
+                        if all(cell == "[]" for cell in metric_cells):
+                            continue
+                        
+                        f.write(f"    [{name}], {', '.join(metric_cells)},\n")
 
             def config_type_order(row):
                 source_file = row["source_file"]
@@ -307,7 +386,8 @@ def generate_typst_table(
                     return 2
                 return 3
 
-            # Buckets
+            # Collect all rows across all buckets and group by algo-name-Fscore with bucket label
+            all_rows_by_algo = {}
             for bucket_name in min_positive_buckets:
                 if bucket_name in buckets:
                     rows = sorted(
@@ -317,19 +397,56 @@ def generate_typst_table(
                             config_type_order(r),
                         ),
                     )
-                    f.write(
-                        f"  table.cell(rowspan:{len(rows)}, rotate(-90deg, reflow:true)[{bucket_name} pos]),\n".replace(
-                            "<", "\<"
-                        )
-                    )
+                    
                     for row in rows:
-                        c_name = config_name(row, betas)
+                        algo_name, ktype = config_name(row, betas)
+                        algo_name_with_bucket = f"{algo_name}"
+                        if len(min_positive_buckets) > 1:
+                            algo_name_with_bucket += f"{bucket_name}"
+                        if algo_name_with_bucket not in all_rows_by_algo:
+                            all_rows_by_algo[algo_name_with_bucket] = []
+                        all_rows_by_algo[algo_name_with_bucket].append((row, ktype, bucket_name))
+            
+            # Render rows grouped by algo-name-Fscore (each spans 3)
+            for algo_name in sorted(all_rows_by_algo.keys(), reverse=True, key=lambda x: int(x.split("-F")[-1].split("\\")[0])):
+                rows_with_ktype = all_rows_by_algo[algo_name]
+                
+                # Filter to only display rows with non-empty metrics
+                displayed_rows = []
+                for row, ktype, bucket_name in rows_with_ktype:
+                    metric_cells = []
+                    for m_name, cfg in metrics.items():
+                        key = cfg.get("key")
+                        value = row.get(key) if key is not None else None
+                        metric_cells.append(f"[{fmt(value, m_name)}]")
+                    if not all(cell == "[]" for cell in metric_cells):
+                        displayed_rows.append((row, ktype, bucket_name))
+                
+                if displayed_rows:
+                    num_displayed = len(displayed_rows)
+                    # Write algo_name with rowspan across all rows for this config
+                    f.write(
+                        f"  table.cell(rowspan: {num_displayed}, rotate(-90deg, reflow:true)[{algo_name}]),\n"
+                    )
+                    
+                    for idx, (row, ktype, bucket_name) in enumerate(displayed_rows):
                         metric_cells = []
                         for m_name, cfg in metrics.items():
                             key = cfg.get("key")
                             value = row.get(key) if key is not None else None
-                            metric_cells.append(f"[{fmt(value, m_name)}]")
-                        f.write(f"    [{c_name}], {', '.join(metric_cells)},\n")
+                            stddev_key = f"{key}_stddev" if key else None
+                            stddev = row.get(stddev_key) if stddev_key else None
+                            
+                            # Format as "value ± stddev" if both are present
+                            if value is not None and stddev is not None:
+                                formatted_value = fmt(value, m_name)
+                                formatted_stddev = fmt(stddev, m_name)
+                                cell = f"[{formatted_value} ± {formatted_stddev}]"
+                            else:
+                                cell = f"[{fmt(value, m_name)}]"
+                            metric_cells.append(cell)
+                        
+                        f.write(f"    [{ktype}], {', '.join(metric_cells)},\n")
 
         f.write(")]\n")
 
@@ -437,21 +554,21 @@ if __name__ == "__main__":
             "baseline_index": 6,
             "vline_before": False,
         },
-        "\#AND": {
+        "\#ANDs": {
             "key": "query_size_ANDs",
             "direction": "min",
             "fmt": "{:.1f}",
             "baseline_index": 7,
             "vline_before": False,
         },
-        "\#OR": {
+        "\#ORs": {
             "key": "all_ORs",
             "direction": "min",
             "fmt": "{:.1f}",
             "baseline_index": 8,
             "vline_before": False,
         },
-        "\#NOT": {
+        "\#NOTs": {
             "key": "query_size_NOTs",
             "direction": "min",
             "fmt": "{:.1f}",
@@ -473,19 +590,52 @@ if __name__ == "__main__":
     )
     generate_typst_table(
         csv_file=csv_path,
-        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/best_average.typ",
+        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
         baseline_dict=baseline_dict,
         betas={"3", "15", "30", "50"},
         metrics=metrics,
         text_size=10.3,
-        # min_positive_buckets=[">=50"],
+        min_positive_buckets=["\>\=50"],
+        used_datasets=["tar2018"],
+        show_performance=True,
+        show_operators=False,
+        table_name="best_table",
     )
     generate_typst_table(
         csv_file=csv_path,
-        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/best_average_all.typ",
+        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
         baseline_dict=baseline_dict,
+        betas={"3", "15", "30", "50"},
         metrics=metrics,
         text_size=10.3,
+        min_positive_buckets=["\>\=50", "\<50"],
+        used_datasets=["tar2018", "tar2019", "sigir2017", "sr_updates"],
+        show_performance=True,
+        show_operators=True,
+        table_name="best_table_appendix",
     )
+    generate_typst_table(
+        csv_file=csv_path,
+        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
+        baseline_dict=baseline_dict,
+        betas={"3", "15", "30", "50"},
+        metrics=metrics,
+        text_size=10.3,
+        min_positive_buckets=["\>\=50"],
+        used_datasets=["tar2018"],
+        show_performance=False,
+        show_operators=True,
+        table_name="best_table_operators",
+    )
+    # generate_typst_table(
+    #     csv_file=csv_path,
+    #     typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
+    #     baseline_dict=baseline_dict,
+    #     metrics=metrics,
+    #     text_size=10.3,
+    #     show_performance=True,
+    #     show_operators=True,
+    #     table_name="best_all",
+    # )
 
     print("done")
