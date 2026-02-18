@@ -831,10 +831,37 @@ def find_qg_results_file(base_folder, top_k_type="cosine", betas_key="50"):
 
 def get_rf_and_qg_params(base_folder, top_k_type="cosine", betas_key="50"):
     path = Path(find_qg_results_file(base_folder, top_k_type=top_k_type, betas_key=betas_key))
+
+    def _normalize_json_bool_strings(obj):
+        """
+        Recursively walk `obj` (dict/list/primitive) and convert string
+        values that look like boolean/null literals into their Python
+        equivalents. This only converts exact string values (case-insensitive)
+        'true' -> True, 'false' -> False, 'null'/'none' -> None.
+        """
+        if isinstance(obj, dict):
+            return {_normalize_json_bool_strings(k): _normalize_json_bool_strings(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_normalize_json_bool_strings(v) for v in obj]
+        if isinstance(obj, str):
+            low = obj.strip().lower()
+            if low == "true":
+                return True
+            if low == "false":
+                return False
+            if low in ("null", "none"):
+                return None
+            return obj
+        return obj
+
     with open(path.parent / "qg_config.json", "r") as f:
         qg_params = json.load(f)
     with open(path.parent.parent / "rf_config.json", "r") as f:
         rf_params = json.load(f)
+
+    qg_params = _normalize_json_bool_strings(qg_params)
+    rf_params = _normalize_json_bool_strings(rf_params)
+
     return rf_params, qg_params
 
 def get_paper_query_examples(paper=None, query_id=None):

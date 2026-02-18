@@ -29,9 +29,8 @@ if __name__ == "__main__":
     rf_params["min_impurity_decrease_range_end"] = 1.0 #no OR nodes
     rf_params["prefer_pos_splits"] = 1.0 # do not prefer positive splits
     for op in ["and", "or"]:
-        for case in ["true", "false"]:
+        for case in [True, False]:
              qg_params["pruning_thresholds"][op][case]["acceptance_threshold"] = 1000_000.0 # only pruning, no variation
-    
     run_name = f"evaluate_base_{CURRENT_BEST_RUN_FOLDER.split('/')[-1]}"
     sorted_ids = {}
     sorted_scores = {}
