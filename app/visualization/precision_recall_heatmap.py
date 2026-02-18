@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 import json
-from app.dataset.utils import find_qg_results_file
+from app.dataset.utils import find_qg_results_file, get_qg_results
 from app.config.config import (
     COLORS,
     COLORMAPS,
@@ -23,7 +23,7 @@ def plot_precision_recall_heatmap(
     Plots a smooth heatmap showing frequency of precision-recall combinations.
 
     Parameters:
-    - data: A DataFrame containing 'Precision' and 'Recall' columns.
+    - data: A DataFrame containing 'pubmed_precision' and 'pubmed_recall' columns.
     - bins: Number of bins for both axes (default 20).
     """
     fig, ax = plt.subplots()  # uses default figsize from apply_matplotlib_style()
@@ -32,8 +32,8 @@ def plot_precision_recall_heatmap(
     data = data[data["num_positive"] >= min_positive_threshold]
 
     # Determine range from data with small padding
-    precision_min, precision_max = data["Precision"].min(), data["Precision"].max()
-    recall_min, recall_max = data["Recall"].min(), data["Recall"].max()
+    precision_min, precision_max = data["pubmed_precision"].min(), data["pubmed_precision"].max()
+    recall_min, recall_max = data["pubmed_recall"].min(), data["pubmed_recall"].max()
     print(f"Precision range: {precision_min:.4f} - {precision_max:.4f}")
     print(f"Recall range: {recall_min:.4f} - {recall_max:.4f}")
     # Add small padding to avoid edge cases
@@ -43,8 +43,8 @@ def plot_precision_recall_heatmap(
 
     # Create 2D histogram for smooth heatmap
     heatmap, xedges, yedges = np.histogram2d(
-        data["Precision"],
-        data["Recall"],
+        data["pubmed_precision"],
+        data["pubmed_recall"],
         bins=bins,
         range=[precision_range, recall_range],
     )
@@ -85,7 +85,7 @@ def plot_precision_recall_scatter(
     Plots a scatter plot of precision-recall pairs.
 
     Parameters:
-    - data: A DataFrame containing 'Precision' and 'Recall' columns.
+    - data: A DataFrame containing 'pubmed_precision' and 'pubmed_recall' columns.
     - alpha: Transparency of dots (default 0.5).
     - size: Size of dots (default 20).
     """
@@ -95,12 +95,12 @@ def plot_precision_recall_scatter(
     fig, ax = plt.subplots()  # uses default figsize from apply_matplotlib_style()
 
     ax.scatter(
-        data["Precision"], data["Recall"], alpha=alpha, s=size, c=COLORS["primary"]
+        data["pubmed_precision"], data["pubmed_recall"], alpha=alpha, s=size, c=COLORS["primary"]
     )
 
     # Determine range from data with small padding
-    precision_min, precision_max = data["Precision"].min(), data["Precision"].max()
-    recall_min, recall_max = data["Recall"].min(), data["Recall"].max()
+    precision_min, precision_max = data["pubmed_precision"].min(), data["pubmed_precision"].max()
+    recall_min, recall_max = data["pubmed_recall"].min(), data["pubmed_recall"].max()
 
     padding = 0.0001
     ax.set_xlim(max(0, precision_min - padding), min(1, precision_max + padding))
@@ -132,51 +132,68 @@ def get_precision_recall_pairs_from_jsonl(jsonl_path):
 
 
 def plot_precision_recall_histograms(
-    data, out_path="precision_recall_histograms.png", bins=100, threshold=50
+    data, out_path="precision_recall_histograms.png", bins=100
 ):
     """
-    Plots two histograms (precision and recall) with stacked bars based on number of positives.
+    Plots two histograms (precision and recall) with stacked bars split by top_k_type.
 
     Parameters:
-    - data: A DataFrame containing 'Precision', 'Recall', and 'num_positive' columns.
+    - data: A DataFrame containing 'pubmed_precision', 'pubmed_recall', and 'top_k_type' columns.
     - bins: Number of bins for histograms (default 20).
-    - threshold: Threshold for splitting data (default 50).
     """
     fig, axes = plt.subplots(
         1, 2, figsize=(FIGURE_CONFIG["full_width"], FIGURE_CONFIG["full_width"] * 0.45)
     )
+    plt.subplots_adjust(wspace=0.05)
 
-    # Split data by threshold
-    data_high = data[data["num_positive"] >= threshold]
-    data_low = data[data["num_positive"] < threshold]
+    # Split data by top_k_type
+    top_k_types = data["top_k_type"].unique()
+    split_data = [data[data["top_k_type"] == t] for t in sorted(top_k_types)]
+    
+    # Color mapping for top_k_type
+    color_map = {
+        "cosine": COLORS["cosine_k"],
+        "fixed": COLORS["fixed_k"],
+        "pos_count": COLORS["pos_count_k"],
+    }
+    colors_split = [color_map.get(t, COLORS["primary"]) for t in sorted(top_k_types)]
+    labels_split = [f"top_k_type: {t}" for t in sorted(top_k_types)]
 
-    # Precision histogram - use matplotlib's native stacking
+    # Count total values for debugging
+    precision_count = sum(len(d["pubmed_precision"].dropna()) for d in split_data)
+    recall_count = sum(len(d["pubmed_recall"].dropna()) for d in split_data)
+    print(f"Precision subplot: {precision_count} values")
+    print(f"Recall subplot: {recall_count} values")
+
     ax = axes[0]
     ax.hist(
-        [data_high["Precision"], data_low["Precision"]],
+        [d["pubmed_precision"] for d in split_data],
         bins=bins,
         stacked=True,
-        color=[COLORS["precision"], COLORS["precision_light"]],
-        label=[f"≥ {threshold} positives", f"< {threshold} positives"],
+        color=colors_split,
+        label=labels_split,
     )
     ax.set_xlabel("Precision")
     ax.set_ylabel("Frequency")
     ax.set_title("Precision Distribution")
-    ax.legend()
 
-    # Recall histogram - use matplotlib's native stacking
     ax = axes[1]
     ax.hist(
-        [data_high["Recall"], data_low["Recall"]],
+        [d["pubmed_recall"] for d in split_data],
         bins=bins,
         stacked=True,
-        color=[COLORS["recall"], COLORS["recall_light"]],
-        label=[f"≥ {threshold} positives", f"< {threshold} positives"],
+        color=colors_split,
+        label=labels_split,
     )
     ax.set_xlabel("Recall")
-    ax.set_ylabel("Frequency")
     ax.set_title("Recall Distribution")
     ax.legend()
+    ax.set_yticklabels([])
+    
+    # Sync y-axis between both plots
+    y_max = max(axes[0].get_ylim()[1], axes[1].get_ylim()[1])
+    axes[0].set_ylim(0, y_max)
+    axes[1].set_ylim(0, y_max)
 
     plt.savefig(out_path, dpi=300, bbox_inches="tight")
     plt.close()
@@ -184,18 +201,21 @@ def plot_precision_recall_histograms(
 
 
 def plot_all_heatmaps(top_k_type, betas_key, out_dir):
-    # Example data with more points for smooth visualization
-    path = find_qg_results_file(
-        CURRENT_BEST_RUN_FOLDER, top_k_type=top_k_type, betas_key=betas_key
-    )
-    if path is None:
-        print(
-            f"No matching qg_results.jsonl found with top_k_type={top_k_type}, betas_key={betas_key}"
+    dataframes = []
+    for top_k_type in ["cosine", "fixed", "pos_count"]:
+        path = find_qg_results_file(
+            CURRENT_BEST_RUN_FOLDER, top_k_type=top_k_type, betas_key=betas_key
         )
-        exit(1)
-    print(f"Found: {path}")
-    p_r_pairs = get_precision_recall_pairs_from_jsonl(path)
-    data = pd.DataFrame(p_r_pairs, columns=["Precision", "Recall", "num_positive"])
+        df = get_qg_results(path, min_positive_threshold=50)
+        df["top_k_type"] = top_k_type
+        dataframes.append(df)
+    data = (
+        pd.concat(dataframes, ignore_index=True) if dataframes else pd.DataFrame()
+    )
+    # Filter to only num_positive >= 50
+    data = data[data["num_positive"] >= 50]
+    # p_r_pairs = get_precision_recall_pairs_from_jsonl(path)
+    # data = pd.DataFrame(p_r_pairs, columns=["Precision", "Recall", "num_positive"])
     plot_precision_recall_heatmap(
         data,
         out_path=os.path.join(out_dir, "precision_recall_heatmap.png"),
@@ -210,7 +230,6 @@ def plot_all_heatmaps(top_k_type, betas_key, out_dir):
         data,
         out_path=os.path.join(out_dir, "precision_recall_histograms.png"),
         bins=40,
-        threshold=50,
     )
 
 
