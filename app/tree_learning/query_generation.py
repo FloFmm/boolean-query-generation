@@ -512,7 +512,7 @@ def select_best_metric(
         ]
         removal_threshold = threshold[removal_mode][in_neg_term]["removal_threshold"]
 
-        if value < acceptance_threshold:
+        if value < acceptance_threshold and not value >= removal_threshold: # and not value >= removal_threshold is onyl relevant if acceptance_threshold > removal_threshold
             continue
 
         if value < removal_threshold:

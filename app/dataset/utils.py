@@ -829,6 +829,14 @@ def find_qg_results_file(base_folder, top_k_type="cosine", betas_key="50"):
                 return os.path.join(root, "qg_results.jsonl")
     return None 
 
+def get_rf_and_qg_params(base_folder, top_k_type="cosine", betas_key="50"):
+    path = Path(find_qg_results_file(base_folder, top_k_type=top_k_type, betas_key=betas_key))
+    with open(path.parent / "qg_config.json", "r") as f:
+        qg_params = json.load(f)
+    with open(path.parent.parent / "rf_config.json", "r") as f:
+        rf_params = json.load(f)
+    return rf_params, qg_params
+
 def get_paper_query_examples(paper=None, query_id=None):
     path = Path("data/examples/baseline.json")
     with open(path, "r", encoding="utf-8") as f:
