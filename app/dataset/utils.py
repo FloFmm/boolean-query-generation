@@ -788,7 +788,7 @@ def get_dataset_details() -> dict:
 
     return data
 
-def get_qg_results(path, min_positive_threshold=None):
+def get_qg_results(path, min_positive_threshold=None, query_ids=None):
     records = []
     # if path is already a file then only take the data from that file
     files = []
@@ -807,6 +807,8 @@ def get_qg_results(path, min_positive_threshold=None):
     df = pd.DataFrame(records)
     if min_positive_threshold is not None:
         df = df[df["num_positive"] >= min_positive_threshold].copy()
+    if query_ids is not None:
+        df = df[df["query_id"].isin(query_ids)].copy()
     return df
 
 

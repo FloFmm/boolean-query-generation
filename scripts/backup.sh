@@ -9,7 +9,7 @@ rsync -av --progress "$SOURCE/statistics/final" "$DEST/statistics"
 rsync -av --progress "$SOURCE/statistics/images" "$DEST/statistics"
 rsync -av --progress "$SOURCE/statistics/optuna/images" "$DEST/statistics/optuna"
 rsync -av --progress --exclude='*.pkl' --exclude='*.privatelock' --exclude='*.lock' $SOURCE/statistics/optuna/best* "$DEST/statistics/optuna"
-rsync -av --progress --exclude='*.pkl' --exclude='*.privatelock' --exclude='*.lock' $SOURCE/evaluate_best_* "$DEST/statistics/optuna"
+rsync -av --progress --exclude='*.pkl' --exclude='*.privatelock' --exclude='*.lock' $SOURCE/statistics/optuna/evaluate_best_* "$DEST/statistics/optuna"
 rsync -av --progress --relative $SOURCE/./statistics/optuna/run*/*.db $DEST/
 
 DEST=/home/florian/Data/dev/systematic-review-datasets/data

@@ -9,9 +9,9 @@ from app.dataset.utils import (
     get_paper_query_examples,
     review_id_to_dataset,
 )
-from app.config.config import COLORS, CURRENT_BEST_RUN_FOLDER
+from app.config.config import COLORS, CURRENT_BEST_RUN_FOLDER, HIGHLIGHT_LIGHTNESS
 from app.pubmed.retrieval import evaluate_query
-from app.visualization.helper import escape_typst, mark_outer_operators
+from app.visualization.helper import escape_typst, highlight_query_words, mark_outer_operators
 
 # Map (review_id, approach) to the replacement JSON file
 REPLACEMENT_FILES = {
@@ -98,8 +98,6 @@ def mark_query_terms(query_text: str, markings: list) -> str:
 
     Returns Typst-formatted string with marked terms and the rest escaped.
     """
-    import re
-
     query_text = escape_typst(query_text)
     if not markings:
         return query_text
@@ -108,21 +106,7 @@ def mark_query_terms(query_text: str, markings: list) -> str:
     markings = sorted(markings, key=lambda x: len(x[0]), reverse=True)
 
     for term, fmt, color in markings:
-        escaped_term = escape_typst(term)
-        regex_term = re.escape(escaped_term)
-        if fmt == "underline":
-            replacement = f"#underline(stroke: 1pt + {color})[{escaped_term}]"
-        else:
-            replacement = f"#highlight(fill: {color}.lighten(70%))[{escaped_term}]"
-
-        # Match term bounded by operators / parens / string boundaries on both sides
-        pattern = (
-            r'((?:^|\\\(|\\\[|\#| (?:OR|AND|NOT) ))'   # preceding: start, "(", or " OP "
-            + regex_term
-            + r'(?= (?:OR|AND|NOT) |\\\)|\\\]|\#|$)'    # following: " OP ", ")", or end
-        )
-        # print("regex_term", "'" + regex_term + "'", query_text)
-        query_text = re.sub(pattern, lambda m: m.group(1) + replacement, query_text)
+        query_text = highlight_query_words(query_text, {term}, color=color, fmt=fmt, lightness=HIGHLIGHT_LIGHTNESS)
 
     return query_text
 

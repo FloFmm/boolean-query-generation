@@ -683,6 +683,8 @@ COLORS = {
     "pos_count_k": "#1B993D",   # Green 
 }
 
+HIGHLIGHT_LIGHTNESS = 50.0
+
 # Colormaps for heatmaps and spectrum colors
 COLORMAPS = {
     "heatmap": "Blues",#"YlGnBu",
@@ -741,4 +743,5 @@ def apply_matplotlib_style():
     })
     
 CURRENT_BEST_RUN_FOLDER = "data/statistics/optuna/best_3"
+CURRENT_N_TRIALS_FOLDER = "data/statistics/optuna/evaluate_best_50_times"
 

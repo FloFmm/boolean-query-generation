@@ -1,3 +1,6 @@
+import re
+
+
 def pretty_print_param(name: str) -> str:
     """
     Transform parameter names into pretty-printed versions.
@@ -124,4 +127,30 @@ def strip_matching_outer_parens(text: str) -> str:
     if closing_idx == len(text) - 2:
         return text[2:-2]
     return text
+
+def split_query_into_words(query):
+    return [t.strip() for t in re.split(r'\s+AND\s+|\s+OR\s+|\s+NOT\s+|\(|\)', query) if t.strip()]
+
+def highlight_query_words(query_text: str, words: set, color: str, fmt: str = "highlight", lightness: float = 30.0) -> str:
+    # query_text = escape_typst(query)
+    # if not words:
+    #     return query_text
+
+    for term in sorted(words, key=len, reverse=True):
+        escaped_term = escape_typst(term)
+        regex_term = re.escape(escaped_term)
+        if fmt == "underline":
+            replacement = f"#underline(stroke: 1pt + {color})[{escaped_term}]"
+        else:
+            replacement = f"#highlight(fill: {color}.lighten({lightness}%))[{escaped_term}]"
+
+        # Match term bounded by operators / parens / string boundaries on both sides
+        pattern = (
+            r"((?:^|\\\(|\\\[|\\#| (?:OR|AND|NOT) ))"
+            + regex_term
+            + r"(?= (?:OR|AND|NOT) |\\\)|\\\]|\\#|$)"
+        )
+        query_text = re.sub(pattern, lambda m: m.group(1) + replacement, query_text)
+
+    return query_text
        
