@@ -58,8 +58,8 @@ TOP_K = {
         ],  # smoothed y
     )
 }
-FIXED_TOP_K=752
-COSINE_PCT_THRESHOLD=0.0266
+FIXED_TOP_K = 752
+COSINE_PCT_THRESHOLD = 0.0266
 
 DEBUG = False  # TODO remove
 
@@ -67,7 +67,7 @@ FORBIDDEN_FEATURES = {"nan"}  # used as empty abstract in csmed
 
 PREVIOUS_RUNS = [
     "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=6.0/optuna.db",
-    "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=10.0/optuna.db"
+    "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=10.0/optuna.db",
 ]
 
 BOW_PARAMS = {
@@ -84,7 +84,7 @@ BOW_PARAMS = {
 
 RF_PARAMS = {
     "top_k": 1.5,
-    "top_k_type": "pos_count", # alternatives: "fixed", "cosine"
+    "top_k_type": "pos_count",  # alternatives: "fixed", "cosine"
     "dont_cares": 2.0,
     "rank_weight": 1.5,  # how much more weighted shall rank 1 be than rank k
     "n_estimators": 50,  # TODO change back
@@ -624,7 +624,7 @@ TRAIN_REVIEWS_10_OLD = [
     "CD003344",  # sigir2017
 ]
 
-TRAIN_REVIEWS = [ #atleast 50 positiives
+TRAIN_REVIEWS = [  # atleast 50 positiives
     "CD011431",
     "CD008892",  # tar2018 # starting with the biggest sample (297 positives)
     "CD010339",
@@ -637,24 +637,34 @@ TRAIN_REVIEWS = [ #atleast 50 positiives
     "CD003344",  # sigir2017
 ]
 
+TEST_REVIEWS_SUBSET = [
+    "CD009579",
+    "CD011515",
+    "CD000031",
+    "CD009647",
+    "CD007470",
+    "CD012069",
+    "CD009069",
+    "CD008587",
+    "CD008803",
+    "CD012010",
+]
+
 # Matplotlib color palette for consistent styling across all visualizations
 COLORS = {
     # Primary colors
-    "primary": "#2E86AB",        # Steel blue
+    "primary": "#2E86AB",  # Steel blue
     "primary_light": "#A3D5FF",  # Light steel blue
-    "secondary": "#1B998B",      # Teal/green
-    "secondary_light": "#7DD3C0", # Light teal
-    
+    "secondary": "#1B998B",  # Teal/green
+    "secondary_light": "#7DD3C0",  # Light teal
     # Semantic colors
-    "positive": "#2E86AB",       # Blue for positive/high values
+    "positive": "#2E86AB",  # Blue for positive/high values
     "positive_light": "#A3D5FF",
-    "negative": "#E94F37",       # Red for negative/low values
+    "negative": "#E94F37",  # Red for negative/low values
     "negative_light": "#F5A69A",
-    
     # Neutral colors
-    "neutral": "#6C757D",        # Gray
+    "neutral": "#6C757D",  # Gray
     "neutral_light": "#ADB5BD",
-    
     # Category colors (for multiple groups/lines in plots)
     "category": [
         "#2E86AB",  # Blue
@@ -666,44 +676,44 @@ COLORS = {
         "#FEE440",  # Yellow
         "#F15BB5",  # Pink
     ],
-    
     # Metric-specific colors (for consistent use across visualizations)
-    "precision": "#2E86AB",      # Blue
+    "precision": "#2E86AB",  # Blue
     "precision_light": "#91bfdb",
-    "recall": "#E94F37",         # Red  
+    "recall": "#E94F37",  # Red
     "recall_light": "#fd8383",
-    "f_score": "#9B5DE5",        # Purple
-    "time": "#1B993D",           # Green
-    "query_size": "#F4A261",     # Orange
-    "map": "#F15BB5",            # Pink
-    "mrr": "#1B993D",            # Green
+    "f_score": "#9B5DE5",  # Purple
+    "time": "#1B993D",  # Green
+    "query_size": "#F4A261",  # Orange
+    "map": "#F15BB5",  # Pink
+    "mrr": "#1B993D",  # Green
     # Top-k strategy colors
-    "fixed_k": "#2E86AB",        
-    "cosine_k": "#E94F37",       
-    "pos_count_k": "#1B993D",   # Green 
+    "fixed_k": "#2E86AB",
+    "cosine_k": "#E94F37",
+    "pos_count_k": "#1B993D",  # Green
 }
 
 HIGHLIGHT_LIGHTNESS = 50.0
 
 # Colormaps for heatmaps and spectrum colors
 COLORMAPS = {
-    "heatmap": "Blues",#"YlGnBu",
+    "heatmap": "Blues",  # "YlGnBu",
     "diverging": "RdBu_r",
     "sequential": "Blues",
     "spectrum": "viridis",  # For ordered categorical data (e.g., buckets)
-    "optuna": "Blues",#YlGnBu",    # Optuna default for contour/parallel coordinate (originally Blues_r?)
+    "optuna": "Blues",  # YlGnBu",    # Optuna default for contour/parallel coordinate (originally Blues_r?)
 }
 
 # Figure settings for consistent sizing across all plots
 # A4 paper: 210mm width, with ~25mm margins on each side = 160mm text width ≈ 6.3 inches
 FIGURE_CONFIG = {
-    "full_width": 5.7834646,       # inches - full text width
-    "half_width": 2.7417323,       # inches - for side-by-side figures
-    "aspect_ratio": 0.75,    # height = width * aspect_ratio (for single plots)
-    "dpi": 300,              # resolution for saving
-    "font_size": 10,         # base font size in points
+    "full_width": 5.7834646,  # inches - full text width
+    "half_width": 2.7417323,  # inches - for side-by-side figures
+    "aspect_ratio": 0.75,  # height = width * aspect_ratio (for single plots)
+    "dpi": 300,  # resolution for saving
+    "font_size": 10,  # base font size in points
     "font_family": "serif",  # or "sans-serif"
 }
+
 
 def apply_matplotlib_style():
     """
@@ -711,37 +721,37 @@ def apply_matplotlib_style():
     Call this at the start of any visualization script.
     """
     import matplotlib.pyplot as plt
-    
-    plt.rcParams.update({
-        # Figure size
-        "figure.figsize": (FIGURE_CONFIG["full_width"], 
-                          FIGURE_CONFIG["full_width"] * FIGURE_CONFIG["aspect_ratio"]),
-        "figure.dpi": FIGURE_CONFIG["dpi"],
-        "savefig.dpi": FIGURE_CONFIG["dpi"],
-        "savefig.bbox": "tight",
-        
-        # Font settings
-        "font.size": FIGURE_CONFIG["font_size"],
-        "font.family": FIGURE_CONFIG["font_family"],
-        "axes.titlesize": FIGURE_CONFIG["font_size"],
-        "axes.labelsize": FIGURE_CONFIG["font_size"],
-        "xtick.labelsize": FIGURE_CONFIG["font_size"] - 1,
-        "ytick.labelsize": FIGURE_CONFIG["font_size"] - 1,
-        "legend.fontsize": FIGURE_CONFIG["font_size"] - 1,
-        
-        # Line and marker settings
-        "lines.linewidth": 1.5,
-        "lines.markersize": 5,
-        
-        # Axes settings
-        "axes.linewidth": 0.8,
-        "axes.grid": False,
-        
-        # Legend
-        "legend.frameon": True,
-        "legend.framealpha": 0.9,
-    })
-    
+
+    plt.rcParams.update(
+        {
+            # Figure size
+            "figure.figsize": (
+                FIGURE_CONFIG["full_width"],
+                FIGURE_CONFIG["full_width"] * FIGURE_CONFIG["aspect_ratio"],
+            ),
+            "figure.dpi": FIGURE_CONFIG["dpi"],
+            "savefig.dpi": FIGURE_CONFIG["dpi"],
+            "savefig.bbox": "tight",
+            # Font settings
+            "font.size": FIGURE_CONFIG["font_size"],
+            "font.family": FIGURE_CONFIG["font_family"],
+            "axes.titlesize": FIGURE_CONFIG["font_size"],
+            "axes.labelsize": FIGURE_CONFIG["font_size"],
+            "xtick.labelsize": FIGURE_CONFIG["font_size"] - 1,
+            "ytick.labelsize": FIGURE_CONFIG["font_size"] - 1,
+            "legend.fontsize": FIGURE_CONFIG["font_size"] - 1,
+            # Line and marker settings
+            "lines.linewidth": 1.5,
+            "lines.markersize": 5,
+            # Axes settings
+            "axes.linewidth": 0.8,
+            "axes.grid": False,
+            # Legend
+            "legend.frameon": True,
+            "legend.framealpha": 0.9,
+        }
+    )
+
+
 CURRENT_BEST_RUN_FOLDER = "data/statistics/optuna/best_3"
 CURRENT_N_TRIALS_FOLDER = "data/statistics/optuna/evaluate_best_50_times"
-
