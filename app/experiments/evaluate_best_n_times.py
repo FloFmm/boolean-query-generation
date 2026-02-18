@@ -2,7 +2,7 @@ import os
 import copy
 import random
 from itertools import product
-from app.config.config import BOW_PARAMS, TRAIN_REVIEWS, RF_PARAMS, QG_PARAMS
+from app.config.config import BOW_PARAMS, TEST_REVIEWS_SUBSET, TRAIN_REVIEWS, RF_PARAMS, QG_PARAMS
 from app.experiments.evaluate_rf import evaluate_rf
 from app.parameter_tuning.optuna import load_initial_solutions, params_from_opt_params
 from app.dataset.utils import (
@@ -13,8 +13,8 @@ from app.dataset.utils import (
 )
 
 if __name__ == "__main__":
-    n_trials = 50
-    n_query_ids = 5
+    n_trials = 100
+    # n_query_ids = 10
     run_name = f"evaluate_best_{n_trials}_times"
     top_k_type = "cosine"
     os.makedirs(f"data/statistics/optuna/{run_name}", exist_ok=True)
@@ -24,6 +24,9 @@ if __name__ == "__main__":
     positives = {}
     ret_config = {"model": "pubmedbert", "query_type": "title_abstract"}
     dataset_details = get_dataset_details()
+    # all_query_ids = [qid for qid in dataset_details.keys() if len(dataset_details[qid]["positives"]) >= 50 and qid not in TRAIN_REVIEWS]
+    # all_query_ids = sorted(random.sample(all_query_ids, n_query_ids))
+    all_query_ids = TEST_REVIEWS_SUBSET
     X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
     term_expansions = load_synonym_map(**BOW_PARAMS)
     initial_solutions = load_initial_solutions(beta_min=50, beta_max=50)
@@ -34,8 +37,7 @@ if __name__ == "__main__":
         "qg_params": params_from_opt_params(best_params, QG_PARAMS)
         }
     
-    all_query_ids = [qid for qid in dataset_details.keys() if len(dataset_details[qid]["positives"]) >= 50 and qid not in TRAIN_REVIEWS]
-    all_query_ids = sorted(random.sample(all_query_ids, n_query_ids))
+    
             
     # worker distribution: distribute 250 combinations (5 query_ids × 50 trials) across workers
     proc_id = int(os.environ.get("SLURM_PROCID", 0))
