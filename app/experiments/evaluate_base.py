@@ -17,21 +17,34 @@ from app.dataset.utils import (
     get_dataset_details,
 )
 
+base_variations = {
+    "no_Ors": {
+        "randomize_min_impurity_decrease_range": 1.0,
+        "min_impurity_decrease_range_start": 1.0, #no OR nodes
+        "min_impurity_decrease_range_end": 1.0, #no OR nodes
+    },
+    "no_variation": {
+        "acceptance_threshold": 1000_000.0, # only pruning, no variation
+    },
+    "random_forest": {
+        # rf_params["max_features"] = "sqrt"
+        # rf_params["randomize_max_feature"] = 1_000_000.0 # set amx features as RF would choose it
+        "randomize_min_impurity_decrease_range": 1.0,
+        "min_impurity_decrease_range_start": 1.0, #no OR nodes
+        "min_impurity_decrease_range_end": 1.0, #no OR nodes
+        "acceptance_threshold": 1000_000.0, # no variation
+        "removal_threshold": 1000_000.0, # no greedy pruning
+        "prefer_pos_splits": 1.0, # do not prefer positive splits
+    }
+}
+
+
 if __name__ == "__main__":
     top_k_type = "cosine"
     rf_params, qg_params = get_rf_and_qg_params(
         CURRENT_BEST_RUN_FOLDER, top_k_type=top_k_type, betas_key="50"
     )
-    # rf_params["max_features"] = "sqrt"
-    # rf_params["randomize_max_feature"] = 1_000_000.0 # set amx features as RF would choose it
-    rf_params["randomize_min_impurity_decrease_range"] = 1.0
-    rf_params["min_impurity_decrease_range_start"] = 1.0 #no OR nodes
-    rf_params["min_impurity_decrease_range_end"] = 1.0 #no OR nodes
-    rf_params["prefer_pos_splits"] = 1.0 # do not prefer positive splits
-    for op in ["and", "or"]:
-        for case in [True, False]:
-             qg_params["pruning_thresholds"][op][case]["acceptance_threshold"] = 1000_000.0 # only pruning, no variation
-    run_name = f"evaluate_base_{CURRENT_BEST_RUN_FOLDER.split('/')[-1]}"
+    
     sorted_ids = {}
     sorted_scores = {}
     positives = {}
@@ -64,24 +77,35 @@ if __name__ == "__main__":
         # Ground truth
         positives[query_id] = set(dataset_details[query_id]["positives"])
 
-    for query_id in my_query_ids:
+    for base_name, param_changes in base_variations.items():
+        run_name = f"evaluate_base_{base_name}_{CURRENT_BEST_RUN_FOLDER.split('/')[-1]}"
         rf_p = copy.deepcopy(rf_params)
-        qg_p = copy.deepcopy(qg_params)
         rf_p["top_k_type"] = top_k_type
-        qg_results = evaluate_rf(
-            run_name=run_name,
-            query_id=query_id,
-            X=X,
-            positives=positives[query_id],
-            feature_names=feature_names,
-            sorted_ids=sorted_ids[query_id],
-            sorted_scores=sorted_scores[query_id],
-            ordered_pmids=ordered_pmids,
-            rf_params=rf_p,
-            qg_params=qg_p,
-            term_expansions=term_expansions,
-            meta_data=None,
-            max_retrieved=1_000_000,
-            always_retrieve=True,
-            ignore_pubmed_errors=True,
-        )
+        qg_p = copy.deepcopy(qg_params)
+        
+        for k, v in param_changes.items():
+            if k == "acceptance_threshold" or k=="removal_threshold":
+                for op in ["and", "or"]:
+                    for case in [True, False]:
+                        qg_p["pruning_thresholds"][op][case][k] = v
+            else:
+                rf_p[k] = v
+
+        for query_id in my_query_ids:
+            qg_results = evaluate_rf(
+                run_name=run_name,
+                query_id=query_id,
+                X=X,
+                positives=positives[query_id],
+                feature_names=feature_names,
+                sorted_ids=sorted_ids[query_id],
+                sorted_scores=sorted_scores[query_id],
+                ordered_pmids=ordered_pmids,
+                rf_params=rf_p,
+                qg_params=qg_p,
+                term_expansions=term_expansions,
+                meta_data=None,
+                max_retrieved=1_000_000,
+                always_retrieve=True,
+                ignore_pubmed_errors=True,
+            )
