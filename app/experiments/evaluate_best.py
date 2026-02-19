@@ -74,4 +74,5 @@ if __name__ == "__main__":
                     max_retrieved=1_000_000,
                     always_retrieve=True,
                     ignore_pubmed_errors=True,
+                    skip_existing=True,
                 )

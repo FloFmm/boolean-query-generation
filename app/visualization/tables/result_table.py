@@ -31,7 +31,7 @@ def process_jsonl_folder(folder_path, output_csv):
                 else:
                     print("warning meta file missing, value get lost if thats the case")
                     continue
-                print(sum(1 for _ in open(file_path, "r")))
+                print(betas_str, sum(1 for _ in open(file_path, "r")))
                 with open(file_path, "r") as f:
                     for line in f:
                         data = json.loads(line)

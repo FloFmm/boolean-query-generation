@@ -11,6 +11,7 @@ rsync -av --progress "$SOURCE/statistics/optuna/images" "$DEST/statistics/optuna
 rsync -av --progress --exclude='*.pkl' --exclude='*.privatelock' --exclude='*.lock' $SOURCE/statistics/optuna/best* "$DEST/statistics/optuna"
 rsync -av --progress --exclude='*.pkl' --exclude='*.privatelock' --exclude='*.lock' $SOURCE/statistics/optuna/evaluate_best_* "$DEST/statistics/optuna"
 rsync -av --progress --relative $SOURCE/./statistics/optuna/run*/*.db $DEST/
+rsync -av --progress --relative dataport1.hpc.tu-dresden.de:/data/horse/ws/flml293c-master-thesis/slurm-*.out $DEST/slurm_logs/
 
 DEST=/home/florian/Data/dev/systematic-review-datasets/data
 mkdir -p "$DEST"

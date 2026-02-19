@@ -53,6 +53,7 @@ def evaluate_rf(
     always_retrieve=False,
     ignore_pubmed_errors=False,
     sorted_scores=None,
+    skip_existing=False,
 ):
     dataset, _, end_year = review_id_to_dataset(query_id)
 
@@ -72,21 +73,26 @@ def evaluate_rf(
         with open(qg_meta_path, "w", encoding="utf-8") as f:
             json.dump(meta_data, f, indent=4)
             
+            
     # check whether query already computed
-    # with FileLock(qg_results_path.with_suffix(".privatelock")): # hold for the entire duration the lock for qg_results file
-    #     if qg_results_path.exists():
-    #         data = {}
-    #         with open(qg_results_path, "r", encoding="utf-8") as f:
-    #             for line in f:
-    #                 obj = json.loads(line)
-    #                 if obj.get("query_id") == query_id:
-    #                     data = obj
-    #                     break
+    if skip_existing: 
+        if qg_results_path.exists():
+            data = {}
+            with open(qg_results_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        obj = json.loads(line)
+                    except json.JSONDecodeError:
+                        # likely a partially written line — skip
+                        continue
+                    if obj.get("query_id") == query_id:
+                        data = obj
+                        break
 
-    #         if data:
-    #             print("results already exists")
-    #             return data
-    #     else:
+            if data:
+                print("results already exists")
+                return data
+            
     with open(qg_config_path, "w", encoding="utf-8") as f:
         json.dump(qg_params, f, indent=4)
 
