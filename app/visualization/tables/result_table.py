@@ -3,9 +3,11 @@ import csv
 import os
 import statistics
 from collections import defaultdict
+from app.config.config import RESULT_TABLE_OPERATOR_METRICS_ORDERED, RESULT_TABLE_PERFORMANCE_METRICS_ORDERED, RESULT_TABLE_PERFORMANCE_METRICS, RESULT_TABLE_OPERATOR_METRICS
 from app.helper.helper import f_beta
 from app.dataset.utils import review_id_to_dataset, dataset_names
 from app.tree_learning.query_generation import query_size_value
+
 
 
 def process_jsonl_folder(folder_path, output_csv):
@@ -183,8 +185,8 @@ def generate_typst_table(
 
     # Filter metrics based on show_performance and show_operators flags
     filtered_metrics = {}
-    performance_metrics = {"Precision", "F1", "F3", "Recall"}
-    operator_metrics = {"\#Ops", "\#Rules", "\#ANDs", "\#ORs", "\#NOTs"}
+    performance_metrics = RESULT_TABLE_PERFORMANCE_METRICS_ORDERED
+    operator_metrics = RESULT_TABLE_OPERATOR_METRICS_ORDERED
     
     for name, cfg in metrics.items():
         include = True
@@ -245,8 +247,20 @@ def generate_typst_table(
                     # Check if baseline has any non-None values for filtered metrics
                     has_value = False
                     for name, cfg in metrics.items():
-                        idx = cfg.get("baseline_index")
-                        if idx is not None and len(baseline) > idx and baseline[idx] is not None:
+                        value = None
+                        
+                        # Handle new dict format: {"name": "...", "Metric": [mean, stddev], ...}
+                        if isinstance(baseline, dict):
+                            if name in baseline:
+                                metric_data = baseline[name]
+                                value = metric_data[0] if isinstance(metric_data, (list, tuple)) and len(metric_data) > 0 else metric_data
+                        # Handle old tuple format
+                        else:
+                            idx = cfg.get("baseline_index")
+                            if idx is not None and len(baseline) > idx:
+                                value = baseline[idx]
+                        
+                        if value is not None:
                             has_value = True
                             break
                     if has_value:
@@ -316,15 +330,24 @@ def generate_typst_table(
                     if idx is None:
                         continue
                     for baseline in baseline_dict[dataset]:
-                        if len(baseline) <= idx:
-                            continue
-                        val = baseline[idx]
-                        if val is None:
+                        value = None
+                        
+                        # Handle new dict format
+                        if isinstance(baseline, dict):
+                            if name in baseline:
+                                metric_data = baseline[name]
+                                value = metric_data[0] if isinstance(metric_data, (list, tuple)) and len(metric_data) > 0 else metric_data
+                        # Handle old tuple format
+                        else:
+                            if len(baseline) > idx:
+                                value = baseline[idx]
+                        
+                        if value is None:
                             continue
                         if cfg.get("direction", "max") == "min":
-                            best_metrics[name] = min(best_metrics[name], float(val))
+                            best_metrics[name] = min(best_metrics[name], float(value))
                         else:
-                            best_metrics[name] = max(best_metrics[name], float(val))
+                            best_metrics[name] = max(best_metrics[name], float(value))
 
             def fmt(x, metric=None):
                 if x is None:
@@ -348,10 +371,20 @@ def generate_typst_table(
                 for baseline in baseline_dict[dataset]:
                     metric_cells = []
                     for m_name, cfg in metrics.items():
-                        idx = cfg.get("baseline_index")
                         value = None
-                        if idx is not None and len(baseline) > idx:
-                            value = baseline[idx]
+                        
+                        # Handle new dict format: {"name": "...", "Metric": [mean, stddev], ...}
+                        if isinstance(baseline, dict):
+                            if m_name in baseline:
+                                metric_data = baseline[m_name]
+                                # Extract mean (first value)
+                                value = metric_data[0] if isinstance(metric_data, (list, tuple)) and len(metric_data) > 0 else metric_data
+                        # Handle old tuple format: (name, precision, f1, f3, recall, ...)
+                        else:
+                            idx = cfg.get("baseline_index")
+                            if idx is not None and len(baseline) > idx:
+                                value = baseline[idx]
+                        
                         metric_cells.append(f"[{fmt(value, m_name)}]")
                     if not all(cell == "[]" for cell in metric_cells):
                         displayed_baseline_count += 1
@@ -361,14 +394,40 @@ def generate_typst_table(
                         f"  table.cell(rowspan: {displayed_baseline_count}, rotate(-90deg, reflow:true)[Baselines]),\n"
                     )
                     for baseline in baseline_dict[dataset]:
-                        name = baseline[0] if baseline else ""
+                        # Get baseline name
+                        if isinstance(baseline, dict):
+                            name = baseline.get("name", "")
+                        else:
+                            name = baseline[0] if baseline else ""
+                        
                         metric_cells = []
                         for m_name, cfg in metrics.items():
-                            idx = cfg.get("baseline_index")
                             value = None
-                            if idx is not None and len(baseline) > idx:
-                                value = baseline[idx]
-                            metric_cells.append(f"[{fmt(value, m_name)}]")
+                            stddev = None
+                            
+                            # Handle new dict format
+                            if isinstance(baseline, dict):
+                                if m_name in baseline:
+                                    metric_data = baseline[m_name]
+                                    if isinstance(metric_data, (list, tuple)) and len(metric_data) >= 2:
+                                        value = metric_data[0]
+                                        stddev = metric_data[1]
+                                    else:
+                                        value = metric_data
+                            # Handle old tuple format
+                            else:
+                                idx = cfg.get("baseline_index")
+                                if idx is not None and len(baseline) > idx:
+                                    value = baseline[idx]
+                            
+                            # Format as "value ± stddev" if both are present
+                            if value is not None and stddev is not None:
+                                formatted_value = fmt(value, m_name)
+                                formatted_stddev = fmt(stddev, m_name)
+                                cell = f"[{formatted_value} ± {formatted_stddev}]"
+                            else:
+                                cell = f"[{fmt(value, m_name)}]"
+                            metric_cells.append(cell)
                         
                         # Skip baseline if all metrics are empty
                         if all(cell == "[]" for cell in metric_cells):
@@ -454,135 +513,13 @@ def generate_typst_table(
 
 
 if __name__ == "__main__":
-    baseline_dict = {
-        "tar2018": [
-            (
-                "Manual",
-                0.0217,
-                0.0407,
-                0.1439,
-                0.9338,
-                77.6,
-                1.0,
-                3.3,
-                45.9,
-                0.5,
-            ),  # original, conceptional and obj all from https://bevankoopman.github.io/papers/irj2020-comparison.pdf (same as in other verions of that paper, was also chosen as source from ChatGPT paper)
-            (
-                "Conceptual",
-                0.0021,
-                0.0037,
-                0.0114,
-                0.6286,
-                None,
-            ),  # highest recall, highest f3
-            (
-                "Objective",
-                0.0002,
-                0.0005,
-                0.0022,
-                0.8780,
-                None,
-            ),  # highest recall (since highest f3 has very low recall)
-            (
-                "ChatGPT",
-                0.0752,
-                0.0642,
-                0.0847,
-                0.5035,
-                None,
-            ),  # https://arxiv.org/pdf/2302.03495, highest recall, highest F3, with example q4
-            # ("FI-BE-CONTXT", 0.0003, 0.0005, 0.0029, 0.9676 , None), # https://www.sciencedirect.com/science/article/pii/S1386505622002428 2 of the 3 above 80% recall frameworks (last of the 3 is simply bad (almost same recall as this and much lower precision)) -> simplys ay we only cosnidered above 80% recall in selection of those two values and then the best 2 of those 3
-            (
-                "Semantic",
-                0.0236,
-                0.0458,
-                0.1872,
-                0.8159,
-                None,
-            ),  # https://www.sciencedirect.com/science/article/pii/S1386505622002428 FI-BioBE-CONTXT -> most competitive in preicsion and recall from the 3 configs that have above 80% recall (only considering above 80% recall)
-        ],
-        "tar2019": [  # no value found
-            # ("Original", "≤0.012\*", "", "", ""),
-        ],
-        "sr_updates": [
-            # ("Original", "≤0.004\*", "", "", ""),
-        ],
-        "sigir2017": [
-            # ("Original", "≤0.089\*", "", "", ""),
-        ],
-    }
 
+    # laod bseline dict from file
+    with open("data/examples/baseline_values.json", "r") as f:
+        baseline_dict = json.load(f)
+    
     best_choice = "best_3"
     csv_path = f"../master-thesis-writing/writing/tables/{best_choice}/best_average.csv"
-    metrics = {
-        "Precision": {
-            "key": "pubmed_precision",
-            "direction": "max",
-            "fmt": "{:.4f}",
-            "baseline_index": 1,
-        },
-        "F1": {
-            "key": "pubmed_f1",
-            "direction": "max",
-            "fmt": "{:.4f}",
-            "baseline_index": 2,
-        },
-        "F3": {
-            "key": "pubmed_f3",
-            "direction": "max",
-            "fmt": "{:.4f}",
-            "baseline_index": 3,
-        },
-        "Recall": {
-            "key": "pubmed_recall",
-            "direction": "max",
-            "fmt": "{:.4f}",
-            "baseline_index": 4,
-        },
-        "\#Ops": {
-            "key": "logical_operators",
-            "direction": "min",
-            "fmt": "{:.1f}",
-            "baseline_index": 5,
-            "vline_before": True,
-        },
-        "\#Rules": {
-            "key": "query_size_paths",
-            "direction": "min",
-            "fmt": "{:.1f}",
-            "baseline_index": 6,
-            "vline_before": False,
-        },
-        "\#ANDs": {
-            "key": "query_size_ANDs",
-            "direction": "min",
-            "fmt": "{:.1f}",
-            "baseline_index": 7,
-            "vline_before": False,
-        },
-        "\#ORs": {
-            "key": "all_ORs",
-            "direction": "min",
-            "fmt": "{:.1f}",
-            "baseline_index": 8,
-            "vline_before": False,
-        },
-        "\#NOTs": {
-            "key": "query_size_NOTs",
-            "direction": "min",
-            "fmt": "{:.1f}",
-            "baseline_index": 9,
-            "vline_before": False,
-        },
-        # "\#Ops per Rule": {
-        #     "key": "query_size_avg_path_len",
-        #     "direction": "min",
-        #     "fmt": "{:.1f}",
-        #     "baseline_index": 10,
-        #     "vline_before": False,
-        # },
-    }
 
     process_jsonl_folder(
         folder_path=f"data/statistics/optuna/{best_choice}",
@@ -593,7 +530,7 @@ if __name__ == "__main__":
         typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
         baseline_dict=baseline_dict,
         betas={"3", "15", "30", "50"},
-        metrics=metrics,
+        metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,
         text_size=10.3,
         min_positive_buckets=["\>\=50"],
         used_datasets=["tar2018"],
@@ -606,7 +543,7 @@ if __name__ == "__main__":
         typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
         baseline_dict=baseline_dict,
         betas={"3", "15", "30", "50"},
-        metrics=metrics,
+        metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,
         text_size=10.3,
         min_positive_buckets=["\>\=50", "\<50"],
         used_datasets=["tar2018", "tar2019", "sigir2017", "sr_updates"],
@@ -619,7 +556,7 @@ if __name__ == "__main__":
         typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
         baseline_dict=baseline_dict,
         betas={"3", "15", "30", "50"},
-        metrics=metrics,
+        metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,
         text_size=10.3,
         min_positive_buckets=["\>\=50"],
         used_datasets=["tar2018"],

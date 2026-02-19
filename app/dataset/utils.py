@@ -18,6 +18,7 @@ from app.config.config import (
     FIXED_TOP_K,
     COSINE_PCT_THRESHOLD,
 )
+from app.helper.helper import f_beta
 
 ABBREVIATIONS = {
     "total_docs": "d",
@@ -878,3 +879,42 @@ def get_paper_query_examples(paper=None, query_id=None):
                 if example["query_id"] == query_id:
                     return example
 
+def calc_missing_columns_in_result_df(df):
+    df = df[
+        df["query_id"]
+        .apply(lambda qid: review_id_to_dataset(qid)[0])
+        .isin(["tar2017", "tar2018"])
+    ].copy()
+    df["pubmed_f1"] = df.apply(
+        lambda row: f_beta(
+            precision=row["pubmed_precision"], recall=row["pubmed_recall"], beta=1
+        ),
+        axis=1,
+    )
+    df["pubmed_f3"] = df.apply(
+        lambda row: f_beta(
+            precision=row["pubmed_precision"], recall=row["pubmed_recall"], beta=3
+        ),
+        axis=1,
+    )
+    for k in ["paths", "ANDs", "NOTs", "added_ORs", "synonym_ORs"]:
+        df[f"query_size_{k}"] = df["query_size"].apply(lambda x: x[k])
+    df["all_ORs"] = df["pubmed_query"].apply(lambda x: x.count("OR"))
+    df["logical_operators"] = df["pubmed_query"].apply(
+        lambda x: x.count("OR") + x.count("AND") + x.count("NOT")
+    )
+    assert all(df["logical_operators"] == (
+        df["query_size_ANDs"]
+        + df["query_size_NOTs"]
+        + df["query_size_added_ORs"]
+        + df["query_size_synonym_ORs"]
+        + df["query_size_paths"]
+        - 1
+    ))
+    assert all(df["all_ORs"] == (
+        + df["query_size_added_ORs"]
+        + df["query_size_synonym_ORs"]
+        + df["query_size_paths"]
+        - 1
+    ))
+    return df

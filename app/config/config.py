@@ -754,4 +754,77 @@ def apply_matplotlib_style():
 
 
 CURRENT_BEST_RUN_FOLDER = "data/statistics/optuna/best_3"
-CURRENT_N_TRIALS_FOLDER = "data/statistics/optuna/evaluate_best_50_times"
+CURRENT_N_TRIALS_FOLDER = "data/statistics/optuna/evaluate_best_100_times" #final (do not recompute)
+
+RESULT_TABLE_OPERATOR_METRICS_ORDERED = ["\#Ops", "\#Rules", "\#ANDs", "\#ORs", "\#NOTs"]
+RESULT_TABLE_PERFORMANCE_METRICS_ORDERED = ["Precision", "F1", "F3", "Recall"]
+RESULT_TABLE_PERFORMANCE_METRICS = {
+    "Precision": {
+        "key": "pubmed_precision",
+        "direction": "max",
+        "fmt": "{:.4f}",
+        "baseline_index": 1,
+    },
+    "F1": {
+        "key": "pubmed_f1",
+        "direction": "max",
+        "fmt": "{:.4f}",
+        "baseline_index": 2,
+    },
+    "F3": {
+        "key": "pubmed_f3",
+        "direction": "max",
+        "fmt": "{:.4f}",
+        "baseline_index": 3,
+    },
+    "Recall": {
+        "key": "pubmed_recall",
+        "direction": "max",
+        "fmt": "{:.4f}",
+        "baseline_index": 4,
+    }
+}
+RESULT_TABLE_OPERATOR_METRICS = {
+    "\#Ops": {
+        "key": "logical_operators",
+        "direction": "min",
+        "fmt": "{:.1f}",
+        "baseline_index": 5,
+        "vline_before": True,
+    },
+    "\#Rules": {
+        "key": "query_size_paths",
+        "direction": "min",
+        "fmt": "{:.1f}",
+        "baseline_index": 6,
+        "vline_before": False,
+    },
+    "\#ANDs": {
+        "key": "query_size_ANDs",
+        "direction": "min",
+        "fmt": "{:.1f}",
+        "baseline_index": 7,
+        "vline_before": False,
+    },
+    "\#ORs": {
+        "key": "all_ORs",
+        "direction": "min",
+        "fmt": "{:.1f}",
+        "baseline_index": 8,
+        "vline_before": False,
+    },
+    "\#NOTs": {
+        "key": "query_size_NOTs",
+        "direction": "min",
+        "fmt": "{:.1f}",
+        "baseline_index": 9,
+        "vline_before": False,
+    },
+    # "\#Ops per Rule": {
+    #     "key": "query_size_avg_path_len",
+    #     "direction": "min",
+    #     "fmt": "{:.1f}",
+    #     "baseline_index": 10,
+    #     "vline_before": False,
+    # },
+}

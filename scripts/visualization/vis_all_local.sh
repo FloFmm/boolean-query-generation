@@ -6,6 +6,8 @@ python -m app.visualization.compare_retrievers
 
 # tables
 python -m app.visualization.feature_replacement_map.py
+python -m app.statistics.baseline_values
+
 python -m app.visualization.tables.query_example_table.py
 python -m app.visualization.tables.result_table.py
 python -m app.visualization.tables.handmade_table.py

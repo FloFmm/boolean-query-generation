@@ -65,9 +65,9 @@ if __name__ == "__main__":
         positives[query_id] = set(dataset_details[query_id]["positives"])
 
     for query_id in my_query_ids:
-        rf_params = copy.deepcopy(rf_params)
-        qg_params = copy.deepcopy(qg_params)
-        rf_params["top_k_type"] = top_k_type
+        rf_p = copy.deepcopy(rf_params)
+        qg_p = copy.deepcopy(qg_params)
+        rf_p["top_k_type"] = top_k_type
         qg_results = evaluate_rf(
             run_name=run_name,
             query_id=query_id,
@@ -77,8 +77,8 @@ if __name__ == "__main__":
             sorted_ids=sorted_ids[query_id],
             sorted_scores=sorted_scores[query_id],
             ordered_pmids=ordered_pmids,
-            rf_params=rf_params,
-            qg_params=qg_params,
+            rf_params=rf_p,
+            qg_params=qg_p,
             term_expansions=term_expansions,
             meta_data=None,
             max_retrieved=1_000_000,
