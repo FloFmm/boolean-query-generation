@@ -1,3 +1,4 @@
+import os
 import re
 
 from app.config.config import CURRENT_BEST, CURRENT_BEST_RUN_FOLDER
@@ -76,6 +77,7 @@ def find_good_term_subsitutions(query1, query2, end_year, positives, output_path
 
     if output_path:
         import json
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w") as f:
             json.dump({"replacements1": replacements1, "replacements2": replacements2}, f, indent=4)
                 
@@ -144,6 +146,7 @@ def find_useless_terms(query, end_year, positives, output_path=None):
 
     if output_path:
         import json
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w") as f:
             json.dump(useless_terms, f, indent=4)
             
