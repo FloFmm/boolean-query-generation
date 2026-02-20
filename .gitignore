@@ -26,3 +26,6 @@ test3.py
 test5.py
 
 slurm-*.out
+
+
+app/statistics/chatgpt_query_example.py

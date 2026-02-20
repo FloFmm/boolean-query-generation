@@ -29,6 +29,8 @@ def load_replacement_pairs(json_path: str, k: int = 2) -> list:
     - paper_term: term from paper query (query2)
     - direction: 'improve_mine' or 'improve_paper'
     """
+    if not json_path or not os.path.exists(json_path):
+        return []
     with open(json_path) as f:
         data = json.load(f)
     pairs = []
@@ -313,7 +315,8 @@ if __name__ == "__main__":
         print(f"Paper: {data['title']}")
         for example in data["examples"]:
             review_id = example.get("query_id")
-
+            if "ignore" in review_id:
+                continue
             if (
                 not review_id
                 or "usable_for_stats" in example
