@@ -7,6 +7,7 @@ from app.config.config import (
     BOW_PARAMS,
     COLORS,
     CURRENT_BEST_RUN_FOLDER,
+    CURRENT_N_TRIALS_FOLDER,
     FIGURE_CONFIG,
     apply_matplotlib_style,
 )
@@ -372,16 +373,16 @@ def compute_avg_term_len(rules):
 
 def plot_size_impact(top_k_types, betas_key, min_points_in_bucket, out_dir, y_break=None, pi_interval=None, pi_show_f_score=True):
     dataframes = []
-    for top_k_type in top_k_types:
-        path = find_qg_results_file(
-            CURRENT_BEST_RUN_FOLDER, top_k_type=top_k_type, betas_key=betas_key
-        )
-        df = get_qg_results(path, min_positive_threshold=50)
-        dataframes.append(df)
-
-    dataframe = (
-        pd.concat(dataframes, ignore_index=True) if dataframes else pd.DataFrame()
-    )
+    # for top_k_type in top_k_types:
+    #     path = find_qg_results_file(
+    #         CURRENT_BEST_RUN_FOLDER, top_k_type=top_k_type, betas_key=betas_key
+    #     )
+    #     df = get_qg_results(path, min_positive_threshold=50)
+    #     dataframes.append(df)
+    # dataframe = (
+    #     pd.concat(dataframes, ignore_index=True) if dataframes else pd.DataFrame()
+    # )
+    dataframe = get_qg_results(CURRENT_N_TRIALS_FOLDER, min_positive_threshold=50)
 
     dataframe["avg_term_len"] = dataframe["rules"].apply(compute_avg_term_len)
     
@@ -400,7 +401,7 @@ def plot_size_impact(top_k_types, betas_key, min_points_in_bucket, out_dir, y_br
 
     # Generate grouped plots (3 next to each other)
     groups = [
-        ("group1", [("paths", None), ("avg_path_len", 0.5), ("avg_term_len", 0.5)]),
+        ("group1", [("paths", None), ("avg_path_len", 0.5), ("avg_term_len", 0.7)]),
         ("group2", [("all_ORs", 5), ("ANDs", 2), ("NOTs", None)]),
         ("group3", [("avg_df", 3000), ("duplicate_pct_exact", 7), ("duplicate_pct_substring", 7)]),
         ("group4", [("ops_count", 10), ("added_ORs", 5), ("synonym_ORs", 5)]),
@@ -432,6 +433,6 @@ if __name__ == "__main__":
         min_points_in_bucket=min_points_in_bucket,
         out_dir=out_dir,
         y_break=((0.0, 0.05), (0.5, 1.0)),
-        pi_interval=80,
+        pi_interval=90,
         pi_show_f_score=False,
     )
