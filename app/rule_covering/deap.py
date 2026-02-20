@@ -43,7 +43,7 @@ def select_rules_via_ga(
     # ensure sparse
     if not sp.issparse(
         coverage
-    ):  # TODO (currently ga algo transforms matrix himself into sparse). can we do it before that?
+    ):  
         coverage = sp.csr_matrix(coverage)
 
     # ----------------------------

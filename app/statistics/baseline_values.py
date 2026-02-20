@@ -1,5 +1,7 @@
 import json
 from app.config.config import (
+    BASE_VARIATIONS,
+    CURRENT_BEST_RUN_FOLDER,
     RESULT_TABLE_OPERATOR_METRICS_ORDERED,
     RESULT_TABLE_PERFORMANCE_METRICS_ORDERED,
     RESULT_TABLE_PERFORMANCE_METRICS,
@@ -77,24 +79,25 @@ if __name__ == "__main__":
                 data[k] = (v["avg"], v["std"])
 
     # for name, path in other_baseline_paths.items():
-    path = "data/statistics/optuna/evaluate_base_best_3"
-    base_df = get_qg_results(path, min_positive_threshold=50, query_ids=None)
+    for name, _ in BASE_VARIATIONS.items():
+        path = f"data/statistics/optuna/evaluate_base_{name}_{CURRENT_BEST_RUN_FOLDER.split('/')[-1]}"
+        base_df = get_qg_results(path, min_positive_threshold=50, query_ids=None)
 
-    base_df = calc_missing_columns_in_result_df(base_df)
+        base_df = calc_missing_columns_in_result_df(base_df)
 
-    name = "#algo-name-short\\-no\\-ORs"
-    values = {"name": name}
-    for metric in RESULT_TABLE_PERFORMANCE_METRICS_ORDERED:
-        values[metric] = (
-            base_df[RESULT_TABLE_PERFORMANCE_METRICS[metric]["key"]].mean(),
-            base_df[RESULT_TABLE_PERFORMANCE_METRICS[metric]["key"]].std()
-        )
-    for metric in RESULT_TABLE_OPERATOR_METRICS_ORDERED:
-        values[metric] = (
-            base_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]].mean(),
-            base_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]].std()
-        )
-    baseline_dict["tar2018"].append(values)
+        name = f"#algo-name-short\\-{name}"
+        values = {"name": name}
+        for metric in RESULT_TABLE_PERFORMANCE_METRICS_ORDERED:
+            values[metric] = (
+                base_df[RESULT_TABLE_PERFORMANCE_METRICS[metric]["key"]].mean(),
+                base_df[RESULT_TABLE_PERFORMANCE_METRICS[metric]["key"]].std()
+            )
+        for metric in RESULT_TABLE_OPERATOR_METRICS_ORDERED:
+            values[metric] = (
+                base_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]].mean(),
+                base_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]].std()
+            )
+        baseline_dict["tar2018"].append(values)
 
     # # store the baseline dict as json to the path data/examples/baseline_values.json
     with open("data/examples/baseline_values.json", "w") as f:

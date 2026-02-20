@@ -87,7 +87,7 @@ RF_PARAMS = {
     "top_k_type": "pos_count",  # alternatives: "fixed", "cosine"
     "dont_cares": 2.0,
     "rank_weight": 1.5,  # how much more weighted shall rank 1 be than rank k
-    "n_estimators": 50,  # TODO change back
+    "n_estimators": 50,
     "max_depth": 4,
     "min_samples_split": 3,
     "min_weight_fraction_leaf": 0.0002,
@@ -753,7 +753,7 @@ def apply_matplotlib_style():
     )
 
 
-CURRENT_BEST_RUN_FOLDER = "data/statistics/optuna/best_3"
+CURRENT_BEST_RUN_FOLDER = "data/statistics/optuna/best4"
 CURRENT_N_TRIALS_FOLDER = "data/statistics/optuna/evaluate_best_100_times" #final (do not recompute)
 
 RESULT_TABLE_OPERATOR_METRICS_ORDERED = ["\#Ops", "\#Rules", "\#ANDs", "\#ORs", "\#NOTs"]
@@ -827,4 +827,27 @@ RESULT_TABLE_OPERATOR_METRICS = {
     #     "baseline_index": 10,
     #     "vline_before": False,
     # },
+}
+
+BASE_VARIATIONS = {
+    "no_Ors": {
+        "randomize_min_impurity_decrease_range": 1.0,
+        "min_impurity_decrease_range_start": 1.0, #no OR nodes
+        "min_impurity_decrease_range_end": 1.0, #no OR nodes
+    },
+    "no_variation": {
+        "acceptance_threshold": 1000_000.0, # only pruning, no variation
+    },
+    "random_forest": {
+        # rf_params["max_features"] = "sqrt"
+        # rf_params["randomize_max_feature"] = 1_000_000.0 # set amx features as RF would choose it
+        "randomize_min_impurity_decrease_range": 1.0,
+        "min_impurity_decrease_range_start": 1.0, #no OR nodes
+        "min_impurity_decrease_range_end": 1.0, #no OR nodes
+        "acceptance_threshold": 1000_000.0, # no variation
+        "removal_threshold": 1000_000.0, # no greedy pruning
+        "prefer_pos_splits": 1.0, # do not prefer positive splits
+        "min_tree_occ": 0.0,
+        "min_rule_occ": 0.0,
+    }
 }

@@ -104,4 +104,3 @@ if __name__ == "__main__":
     # for i in result["selected_rule_indices"]:
     #     print(rules_to_pubmed_query([rules[i]])[0])
 
-# TODO write tests for random forest

@@ -3,7 +3,7 @@ from tqdm import tqdm
 from typing import List, Tuple, Literal, Dict, Optional, FrozenSet, Set, Union
 import numpy as np
 from app.helper.helper import f_beta
-from app.config.config import DEBUG  # TODO remove
+from app.config.config import DEBUG
 
 # Rule = List[Tuple[List[int], List[str], bool]]
 Rule = FrozenSet[Tuple[FrozenSet[int], bool]]
@@ -191,19 +191,6 @@ def extract_and_vectorize_rules(
             continue
         # assert history, f"rule: {rules_to_pubmed_query([rule], feature_names=feature_names)}\n {forest.estimators_[next(iter(tree_indices))].pretty_print(feature_names=feature_names, verbose=True)}"
 
-        try:
-            x = set(history)
-        except:
-            print("rule")
-            print(rule)
-            print()
-            print("history")
-            print(history)
-            print()
-            print("histories")
-            print(histories)
-            # somtimes happens (TODO fix this bug) (probably fixed)
-            assert False
         history = tuple(
             r for r in history if rule_stats[r]["precision"] >= min_rule_precision
         )

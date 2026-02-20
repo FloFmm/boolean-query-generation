@@ -104,16 +104,33 @@ def print_state_counts(study):
     for state, count in sorted(state_counts.items(), key=lambda x: x[0].name):
         print(f"{state.name:<10}: {count}")
     print(f"Total trials: {len(study.trials)}")
+    
+    return state_counts
 
 if __name__ == "__main__":
     path = "data/statistics/optuna"
+    
+    # Optional: specify beta values to filter (e.g., [0.5, 0.7, 0.9] or None for all)
+    opt_betas = None  # Set to list of values like [0.5, 0.7] to filter, or None for all files
+    
     # go thourhg all optuna.db files in the apth and its subdirectories. each time print all stats and the directory it came from (use glob)
-        
     db_files = glob.glob(f"{path}/**/optuna.db", recursive=True)
+    betas = [3.0, 15.0, 30.0, 50.0]
+    sum_state_counts = Counter()
     for db_file in sorted(db_files):
-        print(f"\n=== STUDY FROM: {os.path.dirname(db_file)} ===")
+        directory = os.path.dirname(db_file)
+        if not any(directory.endswith(f"opt_beta={beta}") for beta in betas):
+            continue
+        print(f"\n=== STUDY FROM: {directory} ===")
         study = optuna.load_study(
             study_name="rf_optimization", storage=f"sqlite:///{db_file}"
         )
         # print_stats(study)
-        print_state_counts(study)
+        state_counts = print_state_counts(study)
+        sum_state_counts.update(state_counts)
+    print("\n=== AGGREGATED TRIAL STATE COUNTS ACROSS ALL STUDIES ===")
+    for state, count in sorted(sum_state_counts.items(), key=lambda x: x[0].name):
+        print(f"{state.name:<10}: {count}")
+    print("COMPLETE + PRUNED:", sum_state_counts[optuna.trial.TrialState.COMPLETE] + sum_state_counts[optuna.trial.TrialState.PRUNED])
+        
+        

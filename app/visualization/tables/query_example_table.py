@@ -323,14 +323,14 @@ if __name__ == "__main__":
                     "Skipping example due to missing query_id or marked as not usable for stats."
                 )
                 continue
-            # positives = set(dataset_details[review_id]["positives"])
-            # dataset, _, end_year = review_id_to_dataset(review_id)
-            # precision, recall, retrieved_count, TP = evaluate_query(
-            #     example["result"],
-            #     positives,
-            #     end_year=end_year,
-            # )
-            precision, recall, retrieved_count, TP = 1,1,1,1 #TODO remove
+            positives = set(dataset_details[review_id]["positives"])
+            dataset, _, end_year = review_id_to_dataset(review_id)
+            precision, recall, retrieved_count, TP = evaluate_query(
+                example["result"],
+                positives,
+                end_year=end_year,
+            )
+            # precision, recall, retrieved_count, TP = 1,1,1,1 #TODO remove
             
 
             # compare to manual

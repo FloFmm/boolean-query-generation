@@ -258,7 +258,7 @@ if __name__ == "__main__":
     results = []
     for query_id in (
         positives.keys()
-    ):  # TODO change positives.keys( to all queries but some ranking are missing)
+    ):  
         r = evaluate_rf(
             query_id=query_id,
             X=X,

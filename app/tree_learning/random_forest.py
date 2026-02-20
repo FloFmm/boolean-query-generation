@@ -68,7 +68,7 @@ class RandomForest:
         valid partition of the node samples is found, even if it requires to
         effectively inspect more than ``max_features`` features.
 
-    max_leaf_nodes : TODO int, default=None
+    max_leaf_nodes : int, default=None
         Grow trees with ``max_leaf_nodes`` in best-first fashion.
         Best nodes are defined as relative reduction in impurity.
         If None then unlimited number of leaf nodes.

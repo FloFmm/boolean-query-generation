@@ -3,7 +3,7 @@ import csv
 import os
 import statistics
 from collections import defaultdict
-from app.config.config import RESULT_TABLE_OPERATOR_METRICS_ORDERED, RESULT_TABLE_PERFORMANCE_METRICS_ORDERED, RESULT_TABLE_PERFORMANCE_METRICS, RESULT_TABLE_OPERATOR_METRICS
+from app.config.config import CURRENT_BEST_RUN_FOLDER, RESULT_TABLE_OPERATOR_METRICS_ORDERED, RESULT_TABLE_PERFORMANCE_METRICS_ORDERED, RESULT_TABLE_PERFORMANCE_METRICS, RESULT_TABLE_OPERATOR_METRICS
 from app.helper.helper import f_beta
 from app.dataset.utils import review_id_to_dataset, dataset_names
 from app.tree_learning.query_generation import query_size_value
@@ -518,7 +518,7 @@ if __name__ == "__main__":
     with open("data/examples/baseline_values.json", "r") as f:
         baseline_dict = json.load(f)
     
-    best_choice = "best_3"
+    best_choice = CURRENT_BEST_RUN_FOLDER.split('/')[-1]
     csv_path = f"../master-thesis-writing/writing/tables/{best_choice}/best_average.csv"
 
     process_jsonl_folder(

@@ -1,6 +1,7 @@
 import os
 import copy
 from app.config.config import (
+    BASE_VARIATIONS,
     BOW_PARAMS,
     CURRENT_BEST_RUN_FOLDER,
     TRAIN_REVIEWS,
@@ -16,27 +17,6 @@ from app.dataset.utils import (
     load_vectors,
     get_dataset_details,
 )
-
-base_variations = {
-    "no_Ors": {
-        "randomize_min_impurity_decrease_range": 1.0,
-        "min_impurity_decrease_range_start": 1.0, #no OR nodes
-        "min_impurity_decrease_range_end": 1.0, #no OR nodes
-    },
-    "no_variation": {
-        "acceptance_threshold": 1000_000.0, # only pruning, no variation
-    },
-    "random_forest": {
-        # rf_params["max_features"] = "sqrt"
-        # rf_params["randomize_max_feature"] = 1_000_000.0 # set amx features as RF would choose it
-        "randomize_min_impurity_decrease_range": 1.0,
-        "min_impurity_decrease_range_start": 1.0, #no OR nodes
-        "min_impurity_decrease_range_end": 1.0, #no OR nodes
-        "acceptance_threshold": 1000_000.0, # no variation
-        "removal_threshold": 1000_000.0, # no greedy pruning
-        "prefer_pos_splits": 1.0, # do not prefer positive splits
-    }
-}
 
 
 if __name__ == "__main__":
@@ -77,7 +57,7 @@ if __name__ == "__main__":
         # Ground truth
         positives[query_id] = set(dataset_details[query_id]["positives"])
 
-    for base_name, param_changes in base_variations.items():
+    for base_name, param_changes in BASE_VARIATIONS.items():
         run_name = f"evaluate_base_{base_name}_{CURRENT_BEST_RUN_FOLDER.split('/')[-1]}"
         rf_p = copy.deepcopy(rf_params)
         rf_p["top_k_type"] = top_k_type
@@ -89,7 +69,12 @@ if __name__ == "__main__":
                     for case in [True, False]:
                         qg_p["pruning_thresholds"][op][case][k] = v
             else:
-                rf_p[k] = v
+                if k in rf_p:
+                    rf_p[k] = v
+                elif k in qg_p:
+                    qg_p[k] = v
+                else:
+                    raise ValueError(f"Unknown parameter {k} in base variation {base_name}")
 
         for query_id in my_query_ids:
             qg_results = evaluate_rf(
