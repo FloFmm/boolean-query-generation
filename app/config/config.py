@@ -753,7 +753,8 @@ def apply_matplotlib_style():
     )
 
 
-CURRENT_BEST_RUN_FOLDER = "data/statistics/optuna/best4"
+CURRENT_BEST = "best4"
+CURRENT_BEST_RUN_FOLDER = f"data/statistics/optuna/{CURRENT_BEST}"
 CURRENT_N_TRIALS_FOLDER = "data/statistics/optuna/evaluate_best_100_times" #final (do not recompute)
 
 RESULT_TABLE_OPERATOR_METRICS_ORDERED = ["\#Ops", "\#Rules", "\#ANDs", "\#ORs", "\#NOTs"]
