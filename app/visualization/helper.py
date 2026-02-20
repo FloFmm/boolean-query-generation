@@ -146,11 +146,13 @@ def highlight_query_words(query_text: str, words: set, color: str, fmt: str = "h
 
         # Match term bounded by operators / parens / string boundaries on both sides
         pattern = (
-            r"((?:^|\\\(|\\\[|\\#| (?:OR|AND|NOT) ))"
+            r"((?:^|\[|\\\(|\\\[|\\#| (?:OR|AND|NOT) ))"
             + regex_term
-            + r"(?= (?:OR|AND|NOT) |\\\)|\\\]|\\#|$)"
+            + r"(?= (?:OR|AND|NOT) |\\\)|\\\]|\]|\\#|$)"
         )
+        old_query_text = query_text
         query_text = re.sub(pattern, lambda m: m.group(1) + replacement, query_text)
+        assert old_query_text != query_text, f"Failed to replace term '{term}' in query text: {query_text}"
 
     return query_text
        

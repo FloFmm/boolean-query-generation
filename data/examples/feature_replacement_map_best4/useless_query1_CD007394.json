@@ -1,0 +1,32 @@
+[
+    {
+        "term": "ifi",
+        "f_beta": 0.9702187341469964,
+        "f_beta_diff": 0.0014207126844623108
+    },
+    {
+        "term": "\"invasive pulmonary aspergillosis\"[mh]",
+        "f_beta": 0.9694913377038845,
+        "f_beta_diff": 0.0006933162413503835
+    },
+    {
+        "term": "detect",
+        "f_beta": 0.9692353554926217,
+        "f_beta_diff": 0.0004373340300876105
+    },
+    {
+        "term": "\"antigens, fungal/blood\"[mh]",
+        "f_beta": 0.9690826563112087,
+        "f_beta_diff": 0.0002846348486745809
+    },
+    {
+        "term": "\"epidemiologic research design\"[mh]",
+        "f_beta": 0.9689836339174712,
+        "f_beta_diff": 0.00018561245493708967
+    },
+    {
+        "term": "sensor",
+        "f_beta": 0.9688310140349832,
+        "f_beta_diff": 3.299257244904208e-05
+    }
+]

@@ -1,0 +1,82 @@
+[
+    {
+        "term": "Aspergillosis",
+        "f_beta": 0.9199541878798518,
+        "f_beta_diff": 0.034263242863291965
+    },
+    {
+        "term": "immuno-compromised",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "minimally-invasive",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "Patient immunosuppressed",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "detecting",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "minimally",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "detection",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "beta-d-glucan",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "immunocompromized",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "cryptococcosis",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "detections",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "1\u00b2-d-glucan",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "invasive",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "galactomannan",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "zygomycosis",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    },
+    {
+        "term": "immunocompromised",
+        "f_beta": 0.8856909450165599,
+        "f_beta_diff": 0.0
+    }
+]

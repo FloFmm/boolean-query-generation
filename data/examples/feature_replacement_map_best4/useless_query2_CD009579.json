@@ -1,0 +1,37 @@
+[
+    {
+        "term": "immunochromatographic",
+        "f_beta": 0.6977875317114701,
+        "f_beta_diff": 0.002517774600343081
+    },
+    {
+        "term": "\"malaria/diagnosis\"[mh]",
+        "f_beta": 0.6965773681339191,
+        "f_beta_diff": 0.0013076110227920879
+    },
+    {
+        "term": "hpsa",
+        "f_beta": 0.6953973072369797,
+        "f_beta_diff": 0.00012755012585263792
+    },
+    {
+        "term": "\"schistosomiasis/diagnosis\"[mh]",
+        "f_beta": 0.6953375122889384,
+        "f_beta_diff": 6.77551778113239e-05
+    },
+    {
+        "term": "gold",
+        "f_beta": 0.6953275474640007,
+        "f_beta_diff": 5.779035287367673e-05
+    },
+    {
+        "term": "sensor",
+        "f_beta": 0.6953195758096875,
+        "f_beta_diff": 4.98186985604665e-05
+    },
+    {
+        "term": "\"malaria, falciparum/diagnosis\"[mh]",
+        "f_beta": 0.695269757111127,
+        "f_beta_diff": 0.0
+    }
+]
