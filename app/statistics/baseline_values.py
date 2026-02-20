@@ -84,7 +84,7 @@ if __name__ == "__main__":
         base_df = get_qg_results(path, min_positive_threshold=50, query_ids=None)
 
         base_df = calc_missing_columns_in_result_df(base_df)
-
+        
         name = f"#algo-name-short\\-{name}"
         values = {"name": name}
         for metric in RESULT_TABLE_PERFORMANCE_METRICS_ORDERED:

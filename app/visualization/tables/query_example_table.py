@@ -327,7 +327,7 @@ if __name__ == "__main__":
                 )
                 continue
             positives = set(dataset_details[review_id]["positives"])
-            dataset, _, end_year = review_id_to_dataset(review_id)
+            _, _, end_year = review_id_to_dataset(review_id)
             precision, recall, retrieved_count, TP = evaluate_query(
                 example["result"],
                 positives,

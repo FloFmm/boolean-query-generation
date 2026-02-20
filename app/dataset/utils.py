@@ -806,6 +806,9 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None):
                 data = json.loads(line)
                 records.append(data)
     df = pd.DataFrame(records)
+    # Print sample count
+    print(f"{len(df)} samples")
+    
     if min_positive_threshold is not None:
         df = df[df["num_positive"] >= min_positive_threshold].copy()
     if query_ids is not None:

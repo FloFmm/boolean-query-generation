@@ -147,7 +147,7 @@ if __name__ == "__main__":
     
     # Extract positives and end_year
     positives = set(dataset_details[review_id]["positives"])
-    dataset, _, end_year = review_id_to_dataset(review_id)
+    _, _, end_year = review_id_to_dataset(review_id)
 
     handmade_steps = [
         {
