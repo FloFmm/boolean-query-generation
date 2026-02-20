@@ -1,6 +1,6 @@
 import re
 
-from app.config.config import CURRENT_BEST_RUN_FOLDER
+from app.config.config import CURRENT_BEST, CURRENT_BEST_RUN_FOLDER
 from app.dataset.utils import find_qg_results_file, get_dataset_details, get_paper_query_examples, get_qg_results, review_id_to_dataset
 from app.pubmed.retrieval import evaluate_query
 from app.helper.helper import f_beta
@@ -167,6 +167,7 @@ if __name__ == "__main__":
     path = find_qg_results_file(
         CURRENT_BEST_RUN_FOLDER, top_k_type="cosine", betas_key="50"
     )
+    out_path = f"data/examples/feature_replacement_map_{CURRENT_BEST}"
     dataframe = get_qg_results(path, min_positive_threshold=50)
     
     query_id1 = "CD007394"
@@ -183,17 +184,17 @@ if __name__ == "__main__":
     dataset_details = get_dataset_details()
     positives1 = set(dataset_details[query_id1]["positives"])
     positives2 = set(dataset_details[query_id2]["positives"])
-    find_good_term_subsitutions(query1, semantic_query, end_year1, positives1, output_path=f"data/examples/generated_semantic_{query_id1}.json")
-    find_good_term_subsitutions(query1, chatgpt_query, end_year1, positives1, output_path=f"data/examples/generated_chatgpt_{query_id1}.json")
-    find_good_term_subsitutions(query2, manual_query, end_year2, positives2, output_path=f"data/examples/generated_manual_{query_id2}.json")
-    find_good_term_subsitutions(query2, objective_query, end_year2, positives2, output_path=f"data/examples/generated_objective_{query_id2}.json")
+    find_good_term_subsitutions(query1, semantic_query, end_year1, positives1, output_path=f"{out_path}/generated_semantic_{query_id1}.json")
+    find_good_term_subsitutions(query1, chatgpt_query, end_year1, positives1, output_path=f"{out_path}/generated_chatgpt_{query_id1}.json")
+    find_good_term_subsitutions(query2, manual_query, end_year2, positives2, output_path=f"{out_path}/generated_manual_{query_id2}.json")
+    find_good_term_subsitutions(query2, objective_query, end_year2, positives2, output_path=f"{out_path}/generated_objective_{query_id2}.json")
     
-    find_useless_terms(semantic_query, end_year1, positives1, output_path=f"data/examples/useless_semantic_{query_id1}.json")
-    find_useless_terms(chatgpt_query, end_year1, positives1, output_path=f"data/examples/useless_chatgpt_{query_id1}.json")
-    find_useless_terms(manual_query, end_year2, positives2, output_path=f"data/examples/useless_manual_{query_id2}.json")
-    find_useless_terms(objective_query, end_year2, positives2, output_path=f"data/examples/useless_objective_{query_id2}.json")
-    find_useless_terms(query1, end_year1, positives1, output_path=f"data/examples/useless_query1_{query_id1}.json")
-    find_useless_terms(query2, end_year2, positives2, output_path=f"data/examples/useless_query2_{query_id2}.json")
+    find_useless_terms(semantic_query, end_year1, positives1, output_path=f"{out_path}/useless_semantic_{query_id1}.json")
+    find_useless_terms(chatgpt_query, end_year1, positives1, output_path=f"{out_path}/useless_chatgpt_{query_id1}.json")
+    find_useless_terms(manual_query, end_year2, positives2, output_path=f"{out_path}/useless_manual_{query_id2}.json")
+    find_useless_terms(objective_query, end_year2, positives2, output_path=f"{out_path}/useless_objective_{query_id2}.json")
+    find_useless_terms(query1, end_year1, positives1, output_path=f"{out_path}/useless_query1_{query_id1}.json")
+    find_useless_terms(query2, end_year2, positives2, output_path=f"{out_path}/useless_query2_{query_id2}.json")
     
     
     

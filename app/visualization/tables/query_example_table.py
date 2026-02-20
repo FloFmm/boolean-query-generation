@@ -9,16 +9,16 @@ from app.dataset.utils import (
     get_paper_query_examples,
     review_id_to_dataset,
 )
-from app.config.config import COLORS, CURRENT_BEST_RUN_FOLDER, HIGHLIGHT_LIGHTNESS
+from app.config.config import COLORS, CURRENT_BEST, CURRENT_BEST_RUN_FOLDER, HIGHLIGHT_LIGHTNESS
 from app.pubmed.retrieval import evaluate_query
 from app.visualization.helper import escape_typst, highlight_query_words, mark_outer_operators
 
 # Map (review_id, approach) to the replacement JSON file
 REPLACEMENT_FILES = {
-    ("CD007394", "#chatgpt-approach"): "data/examples/generated_chatgpt_CD007394.json",
-    ("CD007394", "#semantic-approach"): "data/examples/generated_semantic_CD007394.json",
-    ("CD009579", "#manual-approach"): "data/examples/generated_manual_CD009579.json",
-    ("CD009579", "#objective-approach"): "data/examples/generated_objective_CD009579.json",
+    ("CD007394", "#chatgpt-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_chatgpt_CD007394.json",
+    ("CD007394", "#semantic-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_semantic_CD007394.json",
+    ("CD009579", "#manual-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_manual_CD009579.json",
+    ("CD009579", "#objective-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_objective_CD009579.json",
 }
 
 def load_replacement_pairs(json_path: str, k: int = 2) -> list:
