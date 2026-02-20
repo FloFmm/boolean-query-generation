@@ -31,6 +31,8 @@ def plot_performance_by_query_size_multi(
         (0.7, 1.0),
     ),
     min_points_in_bucket: int = 1,
+    pi_interval: int | None = 80,
+    pi_show_f_score: bool = True,
 ) -> None:
     """
     Plot mean precision, recall, and F50 score for multiple size metrics side-by-side.
@@ -44,6 +46,8 @@ def plot_performance_by_query_size_multi(
         query_size_col: Column name containing query_size dict.
         min_positive_threshold: Optional filter on num_positive.
         min_points_in_bucket: Minimum number of points required in a bucket to include it.
+        pi_interval: Percentile interval width for error bands (e.g. 80 for 10th-90th).
+            Set to None to disable error bars.
     """
     n_plots = len(size_keys)
     if n_plots == 0:
@@ -70,6 +74,7 @@ def plot_performance_by_query_size_multi(
                 query_size_col,
                 min_positive_threshold,
                 min_points_in_bucket,
+                pi_interval,
             )
             if data is None:
                 continue
@@ -91,6 +96,12 @@ def plot_performance_by_query_size_multi(
                 color=COLORS["recall"],
             )
             ax.plot(x, grouped["f50"], marker="D", label="F50", color=COLORS["f_score"])
+
+            if pi_interval is not None:
+                ax.fill_between(x, grouped[f"{precision_col}_plo"], grouped[f"{precision_col}_phi"], alpha=0.15, color=COLORS["precision"])
+                ax.fill_between(x, grouped[f"{recall_col}_plo"], grouped[f"{recall_col}_phi"], alpha=0.15, color=COLORS["recall"])
+                if pi_show_f_score:
+                    ax.fill_between(x, grouped["f50_plo"], grouped["f50_phi"], alpha=0.15, color=COLORS["f_score"])
 
             ax.set_xlabel(pretty_print_param(size_label))
             ax.set_title(f"{pretty_print_param(size_label)}")
@@ -139,6 +150,7 @@ def plot_performance_by_query_size_multi(
                 query_size_col,
                 min_positive_threshold,
                 min_points_in_bucket,
+                pi_interval,
             )
             if data is None:
                 continue
@@ -163,6 +175,11 @@ def plot_performance_by_query_size_multi(
                 ax.plot(
                     x, grouped["f50"], marker="D", label="F50", color=COLORS["f_score"]
                 )
+                if pi_interval is not None:
+                    ax.fill_between(x, grouped[f"{precision_col}_plo"], grouped[f"{precision_col}_phi"], alpha=0.15, color=COLORS["precision"])
+                    ax.fill_between(x, grouped[f"{recall_col}_plo"], grouped[f"{recall_col}_phi"], alpha=0.15, color=COLORS["recall"])
+                    if pi_show_f_score:
+                        ax.fill_between(x, grouped["f50_plo"], grouped["f50_phi"], alpha=0.15, color=COLORS["f_score"])
                 ax.grid(True, linestyle="--", alpha=0.6)
 
             ax_high.set_ylim(high_min, high_max)
@@ -225,6 +242,7 @@ def _prepare_size_data(
     query_size_col: str,
     min_positive_threshold: int | None,
     min_points_in_bucket: int,
+    pi_interval: int | None = 80,
 ):
     """Helper to prepare data for a single size metric."""
     working = df.copy()
@@ -267,37 +285,64 @@ def _prepare_size_data(
     if working.empty:
         return None
 
+    working["f50"] = working.apply(
+        lambda row: f_beta(row[precision_col], row[recall_col], beta=50), axis=1
+    )
+
+    # Compute percentile bounds from pi_interval
+    if pi_interval is not None:
+        p_lo = (100 - pi_interval) / 2
+        p_hi = 100 - p_lo
+
     if bin_size is not None:
         max_val = working["size_value"].max()
         bins = np.arange(0, max_val + bin_size, bin_size)
         working["size_bin"] = pd.cut(
             working["size_value"], bins=bins, include_lowest=True, right=False
         )
+        agg_dict = {
+            precision_col: (precision_col, "mean"),
+            recall_col: (recall_col, "mean"),
+            "f50": ("f50", "mean"),
+            "size_value_mean": ("size_value", "mean"),
+            "count": ("size_value", "count"),
+        }
+        if pi_interval is not None:
+            agg_dict.update({
+                f"{precision_col}_plo": (precision_col, lambda x: np.percentile(x, p_lo) if len(x) > 0 else np.nan),
+                f"{precision_col}_phi": (precision_col, lambda x: np.percentile(x, p_hi) if len(x) > 0 else np.nan),
+                f"{recall_col}_plo": (recall_col, lambda x: np.percentile(x, p_lo) if len(x) > 0 else np.nan),
+                f"{recall_col}_phi": (recall_col, lambda x: np.percentile(x, p_hi) if len(x) > 0 else np.nan),
+                "f50_plo": ("f50", lambda x: np.percentile(x, p_lo) if len(x) > 0 else np.nan),
+                "f50_phi": ("f50", lambda x: np.percentile(x, p_hi) if len(x) > 0 else np.nan),
+            })
         grouped = (
             working.groupby("size_bin", observed=False)
-            .agg(
-                **{
-                    precision_col: (precision_col, "mean"),
-                    recall_col: (recall_col, "mean"),
-                    "size_value_mean": ("size_value", "mean"),
-                    "count": ("size_value", "count"),
-                }
-            )
+            .agg(**agg_dict)
             .reset_index()
             .sort_values("size_value_mean")
         )
         x = grouped["size_value_mean"].values
         counts = grouped["count"].values
     else:
+        agg_dict = {
+            precision_col: (precision_col, "mean"),
+            recall_col: (recall_col, "mean"),
+            "f50": ("f50", "mean"),
+            "count": ("size_value", "count"),
+        }
+        if pi_interval is not None:
+            agg_dict.update({
+                f"{precision_col}_plo": (precision_col, lambda x: np.percentile(x, p_lo)),
+                f"{precision_col}_phi": (precision_col, lambda x: np.percentile(x, p_hi)),
+                f"{recall_col}_plo": (recall_col, lambda x: np.percentile(x, p_lo)),
+                f"{recall_col}_phi": (recall_col, lambda x: np.percentile(x, p_hi)),
+                "f50_plo": ("f50", lambda x: np.percentile(x, p_lo)),
+                "f50_phi": ("f50", lambda x: np.percentile(x, p_hi)),
+            })
         grouped = (
             working.groupby("size_value")
-            .agg(
-                **{
-                    precision_col: (precision_col, "mean"),
-                    recall_col: (recall_col, "mean"),
-                    "count": ("size_value", "count"),
-                }
-            )
+            .agg(**agg_dict)
             .reset_index()
             .sort_values("size_value")
         )
@@ -314,10 +359,6 @@ def _prepare_size_data(
         x = grouped["size_value"].values
     counts = grouped["count"].values
 
-    grouped["f50"] = grouped.apply(
-        lambda row: f_beta(row[precision_col], row[recall_col], beta=50), axis=1
-    )
-
     return x, counts, grouped, size_label
 
 def compute_avg_term_len(rules):
@@ -329,7 +370,7 @@ def compute_avg_term_len(rules):
             term_lens.append(len(term[0]))
     return sum(term_lens) / len(term_lens)
 
-def plot_size_impact(top_k_types, betas_key, min_points_in_bucket, out_dir):
+def plot_size_impact(top_k_types, betas_key, min_points_in_bucket, out_dir, y_break=None, pi_interval=None, pi_show_f_score=True):
     dataframes = []
     for top_k_type in top_k_types:
         path = find_qg_results_file(
@@ -371,15 +412,17 @@ def plot_size_impact(top_k_types, betas_key, min_points_in_bucket, out_dir):
             size_keys=size_configs,
             out_path=os.path.join(out_dir, f"performance_{group_name}.png"),
             min_positive_threshold=50,
-            y_break=((0.0, 0.03), (0.7, 1.0)),
+            y_break=y_break,
             min_points_in_bucket=min_points_in_bucket,
+            pi_interval=pi_interval,
+            pi_show_f_score=pi_show_f_score,
         )
 
 if __name__ == "__main__":
     # size impact to performance
     # WRITINGTD: took all three (cosine, fixed, pos_count) together to have more points for size-based analysis.
     # took F50 and "wspace": 0.05d buckets with only one datapoint (min_points_in_bucket=2) to reduce noise
-    min_points_in_bucket = 2
+    min_points_in_bucket = 3
     betas_key = "50"
     top_k_types = ["cosine", "fixed", "pos_count"]
     out_dir = "../master-thesis-writing/writing/thesis/images/graphs/size_impact"
@@ -388,4 +431,7 @@ if __name__ == "__main__":
         betas_key=betas_key,
         min_points_in_bucket=min_points_in_bucket,
         out_dir=out_dir,
+        y_break=((0.0, 0.05), (0.5, 1.0)),
+        pi_interval=80,
+        pi_show_f_score=False,
     )
