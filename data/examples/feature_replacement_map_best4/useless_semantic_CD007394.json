@@ -1,82 +1,192 @@
 [
     {
+        "term": "1\u00b2-d-glucan",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 134,
+        "f_beta": 0.8856909450165599,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
         "term": "Aspergillosis",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 262,
         "f_beta": 0.9199541878798518,
-        "f_beta_diff": 0.034263242863291965
-    },
-    {
-        "term": "immuno-compromised",
-        "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
-    },
-    {
-        "term": "minimally-invasive",
-        "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
+        "f_beta_increase": 0.034263242863291965,
+        "precision_increase": 0.004767314108787785,
+        "recall_increase": 0.0
     },
     {
         "term": "Patient immunosuppressed",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 31,
         "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
-    },
-    {
-        "term": "detecting",
-        "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
-    },
-    {
-        "term": "minimally",
-        "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
-    },
-    {
-        "term": "detection",
-        "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
     },
     {
         "term": "beta-d-glucan",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 171,
         "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
-    },
-    {
-        "term": "immunocompromized",
-        "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
     },
     {
         "term": "cryptococcosis",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 13,
         "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "detecting",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 215,
+        "f_beta": 0.8856909450165599,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "detection",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "position": 188,
+        "f_beta": 0.8856909450165599,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "detection",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "position": 228,
+        "f_beta": 0.8856909450165599,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
     },
     {
         "term": "detections",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 188,
         "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
-    },
-    {
-        "term": "1\u00b2-d-glucan",
-        "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
-    },
-    {
-        "term": "invasive",
-        "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
     },
     {
         "term": "galactomannan",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 96,
         "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
     },
     {
-        "term": "zygomycosis",
+        "term": "immuno-compromised",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 149,
         "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
     },
     {
         "term": "immunocompromised",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 113,
         "f_beta": 0.8856909450165599,
-        "f_beta_diff": 0.0
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "immunocompromized",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 241,
+        "f_beta": 0.8856909450165599,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "invasive",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "position": 1,
+        "f_beta": 0.8856909450165599,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "invasive",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "position": 84,
+        "f_beta": 0.8856909450165599,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "minimally",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "position": 74,
+        "f_beta": 0.8856909450165599,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "minimally",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "position": 202,
+        "f_beta": 0.8856909450165599,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "minimally-invasive",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 74,
+        "f_beta": 0.8856909450165599,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "zygomycosis",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 59,
+        "f_beta": 0.8856909450165599,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
     }
 ]

@@ -1,0 +1,26 @@
+{
+    "kusaCSMeDBridgingDataset2023": {
+        "ratios": [
+            0.04,
+            0.023809523809523808
+        ],
+        "num_useless": [
+            1,
+            1
+        ],
+        "avg_ratio": 0.03190476190476191,
+        "avg_num_useless": 1.0
+    },
+    "my_query": {
+        "ratios": [
+            0.17647058823529413,
+            0.05263157894736842
+        ],
+        "num_useless": [
+            3,
+            1
+        ],
+        "avg_ratio": 0.11455108359133127,
+        "avg_num_useless": 2.0
+    }
+}

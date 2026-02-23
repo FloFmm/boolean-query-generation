@@ -1,32 +1,132 @@
 [
     {
-        "term": "ifi",
-        "f_beta": 0.9702187341469964,
-        "f_beta_diff": 0.0014207126844623108
-    },
-    {
-        "term": "\"invasive pulmonary aspergillosis\"[mh]",
-        "f_beta": 0.9694913377038845,
-        "f_beta_diff": 0.0006933162413503835
-    },
-    {
-        "term": "detect",
-        "f_beta": 0.9692353554926217,
-        "f_beta_diff": 0.0004373340300876105
+        "term": "\"antigens, fungal/blood\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "position": 84,
+        "f_beta": 0.9690744036720687,
+        "f_beta_increase": 0.0002763822095345203,
+        "precision_increase": 0.00025524841737189705,
+        "recall_increase": 0.0
     },
     {
         "term": "\"antigens, fungal/blood\"[mh]",
-        "f_beta": 0.9690826563112087,
-        "f_beta_diff": 0.0002846348486745809
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "position": 335,
+        "f_beta": 0.968806269394983,
+        "f_beta_increase": 8.247932448912643e-06,
+        "precision_increase": 7.5186730583085e-06,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"aspergillosis/diagnosis\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "position": 51,
+        "f_beta": 0.9718303243547919,
+        "f_beta_increase": 0.0030323028922577544,
+        "precision_increase": 0.003236572419199474,
+        "recall_increase": 0.0
     },
     {
         "term": "\"epidemiologic research design\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 175,
         "f_beta": 0.9689836339174712,
-        "f_beta_diff": 0.00018561245493708967
+        "f_beta_increase": 0.00018561245493708967,
+        "precision_increase": 0.00017066200521146171,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"invasive pulmonary aspergillosis\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 9,
+        "f_beta": 0.9694913377038845,
+        "f_beta_increase": 0.0006933162413503835,
+        "precision_increase": 0.0006536262640440618,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "aspergillosis",
+        "occurrence_index": 0,
+        "num_occurrences": 4,
+        "position": 29,
+        "f_beta": 0.9694913377038845,
+        "f_beta_increase": 0.0006933162413503835,
+        "precision_increase": 0.0006536262640440618,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "aspergillosis",
+        "occurrence_index": 3,
+        "num_occurrences": 4,
+        "position": 301,
+        "f_beta": 0.9744308816036787,
+        "f_beta_increase": 0.005632860141144613,
+        "precision_increase": 0.007048098662202684,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "detect",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 214,
+        "f_beta": 0.9692353554926217,
+        "f_beta_increase": 0.0004373340300876105,
+        "precision_increase": 0.0004070967179673514,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "diagnosi",
+        "occurrence_index": 0,
+        "num_occurrences": 3,
+        "position": 66,
+        "f_beta": 0.9718303243547919,
+        "f_beta_increase": 0.0030323028922577544,
+        "precision_increase": 0.003236572419199474,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "galactomannan",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "position": 318,
+        "f_beta": 0.9700243794326241,
+        "f_beta_increase": 0.001226357970089964,
+        "precision_increase": 0.0011877544089345209,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "ifi",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 2,
+        "f_beta": 0.9702187341469964,
+        "f_beta_increase": 0.0014207126844623108,
+        "precision_increase": 0.001389842402686945,
+        "recall_increase": 0.0
     },
     {
         "term": "sensor",
-        "f_beta": 0.9688310140349832,
-        "f_beta_diff": 3.299257244904208e-05
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "position": 136,
+        "f_beta": 0.968806269394983,
+        "f_beta_increase": 8.247932448912643e-06,
+        "precision_increase": 7.5186730583085e-06,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "sensor",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "position": 236,
+        "f_beta": 0.968822765681204,
+        "f_beta_increase": 2.4744218669825457e-05,
+        "precision_increase": 2.2574376057269557e-05,
+        "recall_increase": 0.0
     }
 ]

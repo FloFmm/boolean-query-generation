@@ -5,6 +5,7 @@ from app.config.config import CURRENT_BEST, CURRENT_BEST_RUN_FOLDER
 from app.dataset.utils import find_qg_results_file, get_dataset_details, get_paper_query_examples, get_qg_results, review_id_to_dataset
 from app.pubmed.retrieval import evaluate_query
 from app.helper.helper import f_beta
+from app.visualization.helper import split_query_into_words
 
 def find_good_term_subsitutions(query1, query2, end_year, positives, output_path=None):
     # Split by operators and parentheses, but do not capture them.
@@ -83,75 +84,6 @@ def find_good_term_subsitutions(query1, query2, end_year, positives, output_path
                 
     return replacements1, replacements2
 
-def find_useless_terms(query, end_year, positives, output_path=None):
-    # Split by operators and parentheses, but do not capture them.
-    tokens = [t.strip() for t in re.split(r'\s+AND\s+|\s+OR\s+|\s+NOT\s+|\(|\)', query) if t.strip()]
-    tokens = set(tokens)
-    
-    useless_terms = []
-    
-    try:
-        precision, recall, retrieved_count, TP = evaluate_query(
-            query,
-            positives,
-            end_year=end_year,
-        )
-        base_f_beta = f_beta(precision, recall, beta=50.0)
-    except Exception as e:
-        print(f"Error evaluating base query: {e}")
-        return []
-
-    print(f"Base F-beta: {base_f_beta}")
-
-    for token in tokens:
-        if not token.strip(" ()"):
-            continue
-            
-        # Try removing the token. 
-        # Simple string replacement might leave invalid syntax (e.g. "AND AND", "()", etc)
-        # But evaluate_query or the underlying engine might handle it or throw an error.
-        # We try to clean up a bit.
-        new_query = query.replace(token, "")
-        assert new_query != query, f"Token '{token}' not found in query. This should not happen."
-        
-        # Basic cleanup of potentially broken syntax resulting from simple deletion
-        # This is a heuristic and might not be perfect.
-        # e.g. "term1 AND AND term3" -> "term1 AND term3"
-        # "()" -> ""
-        # "( OR term2)" -> "(term2)"
-        
-        # Check if performance decreases
-        try:
-            precision, recall, retrieved_count, TP = evaluate_query(
-                new_query,
-                positives,
-                end_year=end_year,
-            )
-            current_f_beta = f_beta(precision, recall, beta=50.0)
-            
-            # If performance is same or better, it's useless (or harmful)
-            if current_f_beta >= base_f_beta:
-                print(f"Found useless term: '{token}' (New F-beta: {current_f_beta})")
-                useless_terms.append({
-                    "term": token,
-                    "f_beta": current_f_beta,
-                    "f_beta_diff": current_f_beta - base_f_beta
-                })
-        except Exception as e:
-           # If the query becomes invalid, we ignore this removal
-           # print(f"Error evaluating query without '{token}': {e}")
-           pass
-
-    useless_terms.sort(key=lambda x: x["f_beta"], reverse=True)
-
-    if output_path:
-        import json
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        with open(output_path, "w") as f:
-            json.dump(useless_terms, f, indent=4)
-            
-    return useless_terms
-
 if __name__ == "__main__":
     # review_id = "CD007394"
     # query1 = "((invasive OR \"immunoenzyme techniques\"[mh] OR detect) AND (galactomannan OR \"aspergillosis/diagnosis\"[mh] OR \"antigens, fungal/blood\"[mh]) AND (sensor OR \"mannans/blood\"[mh] OR \"epidemiologic research design\"[mh] OR diagnosi)) OR ((sensor OR \"aspergillosis/diagnosis\"[mh]) AND (\"mannans\"[mh] OR detect OR assay) AND (aspergillosis OR galactomannan))"
@@ -192,12 +124,7 @@ if __name__ == "__main__":
     find_good_term_subsitutions(query2, manual_query, end_year2, positives2, output_path=f"{out_path}/generated_manual_{query_id2}.json")
     find_good_term_subsitutions(query2, objective_query, end_year2, positives2, output_path=f"{out_path}/generated_objective_{query_id2}.json")
     
-    find_useless_terms(semantic_query, end_year1, positives1, output_path=f"{out_path}/useless_semantic_{query_id1}.json")
-    find_useless_terms(chatgpt_query, end_year1, positives1, output_path=f"{out_path}/useless_chatgpt_{query_id1}.json")
-    find_useless_terms(manual_query, end_year2, positives2, output_path=f"{out_path}/useless_manual_{query_id2}.json")
-    find_useless_terms(objective_query, end_year2, positives2, output_path=f"{out_path}/useless_objective_{query_id2}.json")
-    find_useless_terms(query1, end_year1, positives1, output_path=f"{out_path}/useless_query1_{query_id1}.json")
-    find_useless_terms(query2, end_year2, positives2, output_path=f"{out_path}/useless_query2_{query_id2}.json")
+
     
     
     

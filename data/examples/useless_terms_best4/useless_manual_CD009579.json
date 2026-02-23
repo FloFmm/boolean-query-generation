@@ -1,0 +1,12 @@
+[
+    {
+        "term": "dipstick",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 398,
+        "f_beta": 0.9818473539125908,
+        "f_beta_increase": 3.3516726112292616e-05,
+        "precision_increase": 3.889552766962387e-05,
+        "recall_increase": 0.0
+    }
+]

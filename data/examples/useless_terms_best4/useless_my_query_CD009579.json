@@ -1,0 +1,12 @@
+[
+    {
+        "term": "\"malaria, falciparum/diagnosis\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "position": 309,
+        "f_beta": 0.695269757111127,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    }
+]
