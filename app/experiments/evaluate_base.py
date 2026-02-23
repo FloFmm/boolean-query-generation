@@ -1,9 +1,10 @@
 import os
 import copy
+
+from itertools import product
 from app.config.config import (
     BASE_VARIATIONS,
     BOW_PARAMS,
-    CURRENT_BEST_RUN_FOLDER,
     TRAIN_REVIEWS,
     RF_PARAMS,
     QG_PARAMS,
@@ -11,7 +12,6 @@ from app.config.config import (
 from app.experiments.evaluate_rf import evaluate_rf
 from app.parameter_tuning.optuna import load_initial_solutions, params_from_opt_params
 from app.dataset.utils import (
-    get_rf_and_qg_params,
     get_sorted_ids,
     load_synonym_map,
     load_vectors,
@@ -20,28 +20,40 @@ from app.dataset.utils import (
 
 
 if __name__ == "__main__":
+    base_run_name = "best5"
+    n_trials = 10
+    betas = {50}
     top_k_type = "cosine"
-    rf_params, qg_params = get_rf_and_qg_params(
-        CURRENT_BEST_RUN_FOLDER, top_k_type=top_k_type, betas_key="50"
-    )
     
     sorted_ids = {}
     sorted_scores = {}
     positives = {}
     ret_config = {"model": "pubmedbert", "query_type": "title_abstract"}
     dataset_details = get_dataset_details()
+    all_query_ids = sorted(dataset_details.keys() - set(TRAIN_REVIEWS))
     X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
     term_expansions = load_synonym_map(**BOW_PARAMS)
-    all_query_ids = sorted(dataset_details.keys() - set(TRAIN_REVIEWS))
+    initial_solutions = load_initial_solutions(betas)
+    assert len(initial_solutions) == 1, "Expected exactly one best solution"
+    best_params = initial_solutions[0]["params"]
+    best_params = {
+        "rf_params": params_from_opt_params(best_params, RF_PARAMS), 
+        "qg_params": params_from_opt_params(best_params, QG_PARAMS)
+        }
+    
+    
 
     # worker distribution
     proc_id = int(os.environ.get("SLURM_PROCID", 0))
     n_tasks = int(os.environ.get("SLURM_NTASKS", 1))
-    # Split initial solutions evenly across tasks
-    chunk_size = (len(all_query_ids) + n_tasks - 1) // n_tasks  # ceil division
-    my_query_ids = all_query_ids[proc_id * chunk_size : (proc_id + 1) * chunk_size]
-
-    for query_id in my_query_ids:
+    # Create all combinations of query_ids and trials
+    trial_ids = list(range(n_trials))
+    all_combinations = list(product(all_query_ids, trial_ids))
+    # Distribute combinations: each worker gets combinations where (combo_index % n_tasks) == proc_id
+    my_combinations = [combo for i, combo in enumerate(all_combinations) if i % n_tasks == proc_id]
+    print(f"Worker {proc_id}/{n_tasks} processing {len(my_combinations)} combinations", flush=True)
+    
+    for query_id in all_query_ids:
         s_ids, scores = get_sorted_ids(
             retriever_name=ret_config["model"],
             query_type=ret_config["query_type"],
@@ -49,7 +61,7 @@ if __name__ == "__main__":
             query_id=query_id,
         )
         if s_ids is None:
-            print(f"Skipping {query_id},ranking file does not exist", flush=True)
+            print(f"Skipping {query_id}, ranking file does not exist", flush=True)
             continue
         sorted_ids[query_id] = s_ids
         sorted_scores[query_id] = scores
@@ -58,10 +70,10 @@ if __name__ == "__main__":
         positives[query_id] = set(dataset_details[query_id]["positives"])
 
     for base_name, param_changes in BASE_VARIATIONS.items():
-        run_name = f"evaluate_base_{base_name}_{CURRENT_BEST_RUN_FOLDER.split('/')[-1]}"
-        rf_p = copy.deepcopy(rf_params)
+        rf_p = copy.deepcopy(best_params["rf_params"])
+        qg_p = copy.deepcopy(best_params["qg_params"])
+        run_name = f"evaluate_base_{base_name}_{base_run_name}"
         rf_p["top_k_type"] = top_k_type
-        qg_p = copy.deepcopy(qg_params)
         
         for k, v in param_changes.items():
             if k == "acceptance_threshold" or k=="removal_threshold":
@@ -76,9 +88,9 @@ if __name__ == "__main__":
                 else:
                     raise ValueError(f"Unknown parameter {k} in base variation {base_name}")
 
-        for query_id in my_query_ids:
+        for query_id, trial_n in my_combinations:
             qg_results = evaluate_rf(
-                run_name=run_name,
+                run_name=run_name + f"/n{trial_n}",
                 query_id=query_id,
                 X=X,
                 positives=positives[query_id],

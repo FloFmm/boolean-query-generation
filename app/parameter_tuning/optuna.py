@@ -26,7 +26,7 @@ def params_from_opt_params(opt_params, default):
     return params
     
 
-def best_trials_by_fbeta(study, beta_min=1, beta_max=50):
+def best_trials_by_fbeta(study, betas):
     """
     Returns a dict:
     beta -> {
@@ -40,7 +40,7 @@ def best_trials_by_fbeta(study, beta_min=1, beta_max=50):
     """
     results = {}
 
-    for beta in range(beta_min, beta_max + 1):
+    for beta in betas:
         best_avg_f = -1.0
         best_trial = None
         best_p = 0.0
@@ -120,7 +120,7 @@ def best_trials_by_fbeta(study, beta_min=1, beta_max=50):
 
 #     return global_best_solutions
 
-def load_initial_solutions(beta_min=1, beta_max=50):
+def load_initial_solutions(betas=list(range(1, 51))):
     """
     Returns:
     - solutions: list of unique parameter sets with provenance
@@ -137,7 +137,7 @@ def load_initial_solutions(beta_min=1, beta_max=50):
             storage=db_path,
         )
 
-        results = best_trials_by_fbeta(study, beta_min, beta_max)
+        results = best_trials_by_fbeta(study, betas)
 
         for beta, info in results.items():
             if (

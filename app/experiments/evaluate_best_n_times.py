@@ -14,7 +14,7 @@ from app.dataset.utils import (
 
 if __name__ == "__main__":
     n_trials = 100
-    # n_query_ids = 10
+    betas = {50}
     run_name = f"evaluate_best_{n_trials}_times"
     top_k_type = "cosine"
     os.makedirs(f"data/statistics/optuna/{run_name}", exist_ok=True)
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     all_query_ids = TEST_REVIEWS_SUBSET
     X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
     term_expansions = load_synonym_map(**BOW_PARAMS)
-    initial_solutions = load_initial_solutions(beta_min=50, beta_max=50)
+    initial_solutions = load_initial_solutions(betas)
     assert len(initial_solutions) == 1, "Expected exactly one best solution"
     best_params = initial_solutions[0]["params"]
     best_params = {
@@ -37,20 +37,15 @@ if __name__ == "__main__":
         "qg_params": params_from_opt_params(best_params, QG_PARAMS)
         }
     
-    
-            
-    # worker distribution: distribute 250 combinations (5 query_ids × 50 trials) across workers
+    # worker distribution:
     proc_id = int(os.environ.get("SLURM_PROCID", 0))
     n_tasks = int(os.environ.get("SLURM_NTASKS", 1))
-    
     # Create all combinations of query_ids and trials
     trial_ids = list(range(n_trials))
     all_combinations = list(product(all_query_ids, trial_ids))
-    
     # Distribute combinations: each worker gets combinations where (combo_index % n_tasks) == proc_id
     my_combinations = [combo for i, combo in enumerate(all_combinations) if i % n_tasks == proc_id]
     print(f"Worker {proc_id}/{n_tasks} processing {len(my_combinations)} combinations", flush=True)
-    
     
     for query_id in all_query_ids:
         s_ids, scores = get_sorted_ids(
