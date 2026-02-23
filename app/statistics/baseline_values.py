@@ -51,6 +51,13 @@ if __name__ == "__main__":
                 None,
             ),  # https://arxiv.org/pdf/2302.03495, highest recall, highest F3, with example q4
             # ("FI-BE-CONTXT", 0.0003, 0.0005, 0.0029, 0.9676 , None), # https://www.sciencedirect.com/science/article/pii/S1386505622002428 2 of the 3 above 80% recall frameworks (last of the 3 is simply bad (almost same recall as this and much lower precision)) -> simplys ay we only cosnidered above 80% recall in selection of those two values and then the best 2 of those 3
+            {
+                "name": "Fine-Tuned LLM",
+                "Precision": (0.0499, None),
+                "F1": None,
+                "F3": (0.2401, None),
+                "Recall": (0.8387, None),
+            }, # highest recall (for clef TAR 2017+2018) from https://arxiv.org/pdf/2602.00005 (Autobool)
             (
                 "Semantic",
                 0.0236,

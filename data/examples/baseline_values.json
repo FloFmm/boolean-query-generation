@@ -63,6 +63,22 @@
             0.5035,
             null
         ],
+        {
+            "name": "Fine-Tuned LLM",
+            "Precision": [
+                0.0499,
+                null
+            ],
+            "F1": null,
+            "F3": [
+                0.2401,
+                null
+            ],
+            "Recall": [
+                0.8387,
+                null
+            ]
+        },
         [
             "Semantic",
             0.0236,
