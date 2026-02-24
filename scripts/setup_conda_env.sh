@@ -5,6 +5,7 @@
 #SBATCH --time=2:00:00
 #SBATCH --mail-type=end
 #SBATCH --mail-user=florian_maurus.mueller@mailbox.tu-dresden.de
+#SBATCH --mem=188130
 
 # Load Anaconda / Python module
 ml release/23.04
