@@ -88,7 +88,7 @@
             null
         ],
         {
-            "name": "#algo-name-short\\-no_Ors",
+            "name": "DNF",
             "Precision": [
                 0.01684829776206469,
                 0.01738499570947933
@@ -127,7 +127,7 @@
             ]
         },
         {
-            "name": "#algo-name-short\\-no_variation",
+            "name": "No Rule Variations",
             "Precision": [
                 0.014165475268702574,
                 0.013176154585511983
@@ -166,7 +166,7 @@
             ]
         },
         {
-            "name": "#algo-name-short\\-random_forest",
+            "name": "Random Forest",
             "Precision": [
                 0.01842602347223579,
                 0.01920941277466335

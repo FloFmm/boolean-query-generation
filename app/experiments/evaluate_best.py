@@ -3,7 +3,7 @@ import os
 import copy
 from app.config.config import BOW_PARAMS, TRAIN_REVIEWS, RF_PARAMS, QG_PARAMS
 from app.experiments.evaluate_rf import evaluate_rf
-from app.parameter_tuning.optuna import load_initial_solutions, params_from_opt_params
+from app.parameter_tuning.get_best_params import get_best_params
 from app.dataset.utils import (
     get_sorted_ids,
     load_synonym_map,
@@ -20,16 +20,7 @@ if __name__ == "__main__":
     sorted_scores = {}
     positives = {}
     ret_config = {"model": "pubmedbert", "query_type": "title_abstract"}
-    initial_solutions = load_initial_solutions(betas)
-    best_params = [s["params"] for s in initial_solutions]
-    print(f"[LOADED] {len(best_params)} parameter configs")
-    best_params = [
-        {
-            "rf_params": params_from_opt_params(opt_p, RF_PARAMS),
-            "qg_params": params_from_opt_params(opt_p, QG_PARAMS),
-        }
-        for opt_p in best_params
-    ]
+    best_params, initial_solutions = get_best_params(betas=betas, term_expansion=False)
     dataset_details = get_dataset_details()
     X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
     term_expansions = load_synonym_map(**BOW_PARAMS)

@@ -26,7 +26,7 @@ def params_from_opt_params(opt_params, default):
     return params
     
 
-def best_trials_by_fbeta(study, betas):
+def best_trials_by_fbeta(study, betas, term_expansion=True):
     """
     Returns a dict:
     beta -> {
@@ -50,6 +50,8 @@ def best_trials_by_fbeta(study, betas):
         for trial in study.trials:
             if "results_list" not in trial.user_attrs:
                 continue
+            if not term_expansion and trial.user_attrs["qg_params"]["term_expansions"]:                                     
+                continue   
 
             f_scores = []
             p_scores = []
@@ -120,7 +122,7 @@ def best_trials_by_fbeta(study, betas):
 
 #     return global_best_solutions
 
-def load_initial_solutions(betas=list(range(1, 51))):
+def load_initial_solutions(betas=list(range(1, 51)), term_expansion=True):
     """
     Returns:
     - solutions: list of unique parameter sets with provenance
@@ -131,13 +133,16 @@ def load_initial_solutions(betas=list(range(1, 51))):
     best_per_beta = {}  # beta -> info dict
 
     for path in PREVIOUS_RUNS:
+        # if path does not exist throw error
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Optuna database not found at {path}")
         db_path = f"sqlite:///{path}"
         study = optuna.load_study(
             study_name="rf_optimization",
             storage=db_path,
         )
 
-        results = best_trials_by_fbeta(study, betas)
+        results = best_trials_by_fbeta(study, betas, term_expansion)
 
         for beta, info in results.items():
             if (

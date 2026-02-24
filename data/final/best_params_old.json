@@ -1,0 +1,126 @@
+[
+    {
+        "params": {
+            "max_depth": 4,
+            "min_weight_fraction_leaf": 0.0002,
+            "top_k": 1.5,
+            "dont_cares": 2.0,
+            "rank_weight": 1.5,
+            "max_features": 0.5,
+            "min_impurity_decrease_range_start": 0.001,
+            "min_impurity_decrease_range_end": 0.001,
+            "class_weight": 0.2,
+            "top_k_or_candidates": 500,
+            "randomize_max_feature": 0.9,
+            "randomize_min_impurity_decrease_range": 0.9,
+            "min_tree_occ": 0.12,
+            "min_rule_occ": 0.01,
+            "cover_beta": 1.8,
+            "pruning_beta": 0.6000000000000001,
+            "term_expansions": false,
+            "mh_noexp": false,
+            "tiab": false
+        },
+        "avg_precision": 0.005930784314551545,
+        "avg_recall": 0.9606118133264292,
+        "num_queries": 10,
+        "betas": {
+            "50": {
+                "avg_fbeta": 0.8474764848080237
+            }
+        }
+    },
+    {
+        "params": {
+            "max_depth": 9,
+            "min_weight_fraction_leaf": 0.0006000000000000001,
+            "top_k": 0.6,
+            "dont_cares": 0.25,
+            "rank_weight": 2.5,
+            "max_features": 0.24000000000000002,
+            "min_impurity_decrease_range_start": 0.029,
+            "min_impurity_decrease_range_end": 0.015,
+            "class_weight": 0.4,
+            "top_k_or_candidates": 2000,
+            "randomize_max_feature": 0.0,
+            "randomize_min_impurity_decrease_range": 0.0,
+            "min_tree_occ": 0.0,
+            "min_rule_occ": 0.02,
+            "cover_beta": 1.0,
+            "pruning_beta": 0.7500000000000001,
+            "term_expansions": false,
+            "mh_noexp": false,
+            "tiab": true
+        },
+        "avg_precision": 0.06097641889324375,
+        "avg_recall": 0.525946199029005,
+        "num_queries": 10,
+        "betas": {
+            "3": {
+                "avg_fbeta": 0.273690271715956
+            }
+        }
+    },
+    {
+        "params": {
+            "max_depth": 4,
+            "min_weight_fraction_leaf": 0.0002,
+            "top_k": 1.5,
+            "dont_cares": 2.0,
+            "rank_weight": 1.5,
+            "max_features": 0.5,
+            "min_impurity_decrease_range_start": 0.001,
+            "min_impurity_decrease_range_end": 0.001,
+            "class_weight": 0.2,
+            "top_k_or_candidates": 500,
+            "randomize_max_feature": 0.9,
+            "randomize_min_impurity_decrease_range": 0.9,
+            "min_tree_occ": 0.01,
+            "min_rule_occ": 0.0,
+            "cover_beta": 1.0,
+            "pruning_beta": 0.35000000000000003,
+            "term_expansions": false,
+            "mh_noexp": false,
+            "tiab": false
+        },
+        "avg_precision": 0.01290962588736746,
+        "avg_recall": 0.8470646711935613,
+        "num_queries": 10,
+        "betas": {
+            "30": {
+                "avg_fbeta": 0.7251843928649785
+            }
+        }
+    },
+    {
+        "params": {
+            "max_depth": 4,
+            "min_weight_fraction_leaf": 0.0,
+            "top_k": 1.6,
+            "dont_cares": 3.75,
+            "rank_weight": 7.0,
+            "max_features": 0.2,
+            "min_impurity_decrease_range_start": 0.0045000000000000005,
+            "min_impurity_decrease_range_end": 0.0045000000000000005,
+            "class_weight": 0.1,
+            "top_k_or_candidates": 500,
+            "randomize_max_feature": 0.6,
+            "randomize_min_impurity_decrease_range": 0.6,
+            "min_tree_occ": 0.1,
+            "min_rule_occ": 0.0,
+            "cover_beta": 0.6,
+            "pruning_beta": 0.8500000000000001,
+            "term_expansions": false,
+            "mh_noexp": false,
+            "tiab": true
+        },
+        "avg_precision": 0.03371007661608152,
+        "avg_recall": 0.7029276984729489,
+        "num_queries": 10,
+        "betas": {
+            "15": {
+                "avg_fbeta": 0.5894725396556548
+            }
+        }
+    }
+]

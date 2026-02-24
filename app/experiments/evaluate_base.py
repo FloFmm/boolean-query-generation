@@ -10,6 +10,7 @@ from app.config.config import (
     QG_PARAMS,
 )
 from app.experiments.evaluate_rf import evaluate_rf
+from app.parameter_tuning.get_best_params import get_best_params
 from app.parameter_tuning.optuna import load_initial_solutions, params_from_opt_params
 from app.dataset.utils import (
     get_sorted_ids,
@@ -33,15 +34,10 @@ if __name__ == "__main__":
     all_query_ids = sorted(dataset_details.keys() - set(TRAIN_REVIEWS))
     X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
     term_expansions = load_synonym_map(**BOW_PARAMS)
-    initial_solutions = load_initial_solutions(betas)
+    
+    best_params, initial_solutions = get_best_params(betas=betas, term_expansion=False)
+    best_params = best_params[0]
     assert len(initial_solutions) == 1, "Expected exactly one best solution"
-    best_params = initial_solutions[0]["params"]
-    best_params = {
-        "rf_params": params_from_opt_params(best_params, RF_PARAMS), 
-        "qg_params": params_from_opt_params(best_params, QG_PARAMS)
-        }
-    
-    
 
     # worker distribution
     proc_id = int(os.environ.get("SLURM_PROCID", 0))

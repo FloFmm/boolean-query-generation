@@ -3,11 +3,16 @@ import csv
 import os
 import statistics
 from collections import defaultdict
-from app.config.config import CURRENT_BEST_RUN_FOLDER, RESULT_TABLE_OPERATOR_METRICS_ORDERED, RESULT_TABLE_PERFORMANCE_METRICS_ORDERED, RESULT_TABLE_PERFORMANCE_METRICS, RESULT_TABLE_OPERATOR_METRICS
+from app.config.config import (
+    CURRENT_BEST_RUN_FOLDER,
+    RESULT_TABLE_OPERATOR_METRICS_ORDERED,
+    RESULT_TABLE_PERFORMANCE_METRICS_ORDERED,
+    RESULT_TABLE_PERFORMANCE_METRICS,
+    RESULT_TABLE_OPERATOR_METRICS,
+)
 from app.helper.helper import f_beta
 from app.dataset.utils import review_id_to_dataset, dataset_names
 from app.tree_learning.query_generation import query_size_value
-
 
 
 def process_jsonl_folder(folder_path, output_csv):
@@ -149,6 +154,10 @@ def generate_typst_table(
     show_performance=True,
     show_operators=True,
     table_name="result_table",
+    baseline_names=None,
+    top_k_types=None,
+    baseline_name="Baselines",
+    show_baselines_first=True,
 ):
     """
     Generates a Typst table from a CSV containing metrics and a baseline dictionary.
@@ -158,6 +167,10 @@ def generate_typst_table(
         typst_file (str): Path where the Typst table will be written.
         baseline_dict (dict): Dictionary of baselines for each dataset.
                               Format: {dataset: [(name, p, f1, f3, r, ops), ...]}
+        baseline_names (list[str] | None): Optional list of baseline names to show,
+                                           in display order.
+        top_k_types (list[str] | None): List of top_k_types to display (e.g., ["cosine", "#pos", "fixed"]).
+                                        Defaults to all types if None.
         metrics (dict | None): Ordered mapping of display name to metric config.
                                 Each config supports:
                                   - key (str): CSV field name
@@ -166,6 +179,9 @@ def generate_typst_table(
                                   - baseline_index (int | None): index in baseline tuple
                                   - vline_before (bool, optional): add vline before column
     """
+    if top_k_types is None:
+        top_k_types = ["cosine", "\#pos", "fixed"]
+
     typst_file = os.path.join(typst_file, f"{table_name}.typ")
     # Read CSV into nested dict: stats[dataset][bucket] = row_dict
     stats = {}
@@ -187,7 +203,7 @@ def generate_typst_table(
     filtered_metrics = {}
     performance_metrics = RESULT_TABLE_PERFORMANCE_METRICS_ORDERED
     operator_metrics = RESULT_TABLE_OPERATOR_METRICS_ORDERED
-    
+
     for name, cfg in metrics.items():
         include = True
         if name in performance_metrics and not show_performance:
@@ -196,8 +212,34 @@ def generate_typst_table(
             include = False
         if include:
             filtered_metrics[name] = cfg
-    
+
     metrics = filtered_metrics
+
+    def baseline_name_of(baseline):
+        if isinstance(baseline, dict):
+            return baseline.get("name", "")
+        return baseline[0] if baseline else ""
+
+    def select_baselines(baselines):
+        if baseline_names is None:
+            return list(baselines)
+        baseline_by_name = {baseline_name_of(b): b for b in baselines}
+        return [
+            baseline_by_name[name]
+            for name in baseline_names
+            if name in baseline_by_name
+        ]
+
+    def get_ktype(row):
+        """Extract display ktype from row's source_file"""
+        source_file = row["source_file"]
+        if "ktype=cosine" in source_file:
+            return "cosine"
+        elif "ktype=pos_count" in source_file:
+            return "\#pos"
+        elif "ktype=fixed" in source_file:
+            return "fixed"
+        return None
 
     def config_name(row, betas):
         parts = row["selection_betas"].split(",")
@@ -234,42 +276,50 @@ def generate_typst_table(
             header_cells.append(f"[{name}]")
         f.write(f"  table.header({', '.join(header_cells)}),\n")
         seperator = f"  table.cell(colspan: {3 + len(metrics)}, inset: (top: 1pt, bottom: 1pt))[],\n"
-        for i, dataset in enumerate(
-            used_datasets
-        ):  # enumerate(stats.items())]
+        for i, dataset in enumerate(used_datasets):  # enumerate(stats.items())]
             buckets = stats.get(dataset, {})
-            baseline_count = len(baseline_dict.get(dataset, []))
-            
+            selected_baselines = select_baselines(baseline_dict.get(dataset, []))
+            baseline_count = len(selected_baselines)
+
             # Pre-count displayed rows to calculate correct total_rows
             displayed_baseline_count = 0
             if baseline_count > 0:
-                for baseline in baseline_dict[dataset]:
+                for baseline in selected_baselines:
                     # Check if baseline has any non-None values for filtered metrics
                     has_value = False
                     for name, cfg in metrics.items():
                         value = None
-                        
+
                         # Handle new dict format: {"name": "...", "Metric": [mean, stddev], ...}
                         if isinstance(baseline, dict):
                             if name in baseline:
                                 metric_data = baseline[name]
-                                value = metric_data[0] if isinstance(metric_data, (list, tuple)) and len(metric_data) > 0 else metric_data
+                                value = (
+                                    metric_data[0]
+                                    if isinstance(metric_data, (list, tuple))
+                                    and len(metric_data) > 0
+                                    else metric_data
+                                )
                         # Handle old tuple format
                         else:
                             idx = cfg.get("baseline_index")
                             if idx is not None and len(baseline) > idx:
                                 value = baseline[idx]
-                        
+
                         if value is not None:
                             has_value = True
                             break
                     if has_value:
                         displayed_baseline_count += 1
-            
+
             displayed_config_count = 0
             for bucket_name in min_positive_buckets:
                 if bucket_name in buckets:
                     for row in buckets[bucket_name]:
+                        # Check if row's ktype is in allowed top_k_types
+                        ktype = get_ktype(row)
+                        if ktype not in top_k_types:
+                            continue
                         # Check if row has any non-empty values for filtered metrics
                         has_value = False
                         for name, cfg in metrics.items():
@@ -281,13 +331,13 @@ def generate_typst_table(
                                     break
                         if has_value:
                             displayed_config_count += 1
-            
+
             total_rows = displayed_baseline_count + displayed_config_count
-            
+
             # Skip dataset if there are no rows to display
             if total_rows == 0:
                 continue
-            
+
             if i != 0:
                 f.write(seperator)
 
@@ -329,19 +379,24 @@ def generate_typst_table(
                     idx = cfg.get("baseline_index")
                     if idx is None:
                         continue
-                    for baseline in baseline_dict[dataset]:
+                    for baseline in selected_baselines:
                         value = None
-                        
+
                         # Handle new dict format
                         if isinstance(baseline, dict):
                             if name in baseline:
                                 metric_data = baseline[name]
-                                value = metric_data[0] if isinstance(metric_data, (list, tuple)) and len(metric_data) > 0 else metric_data
+                                value = (
+                                    metric_data[0]
+                                    if isinstance(metric_data, (list, tuple))
+                                    and len(metric_data) > 0
+                                    else metric_data
+                                )
                         # Handle old tuple format
                         else:
                             if len(baseline) > idx:
                                 value = baseline[idx]
-                        
+
                         if value is None:
                             continue
                         if cfg.get("direction", "max") == "min":
@@ -363,53 +418,59 @@ def generate_typst_table(
                 if metric is not None and abs(x - best_val) < 1e-6:
                     return f"*{formatted}*"
                 return formatted
-            
-            # Baselines
+
+            # Prepare baseline rows
+            baseline_lines = []
             if baseline_count > 0:
                 # Count baselines that will actually be displayed
                 displayed_baseline_count = 0
-                for baseline in baseline_dict[dataset]:
+                for baseline in selected_baselines:
                     metric_cells = []
                     for m_name, cfg in metrics.items():
                         value = None
-                        
+
                         # Handle new dict format: {"name": "...", "Metric": [mean, stddev], ...}
                         if isinstance(baseline, dict):
                             if m_name in baseline:
                                 metric_data = baseline[m_name]
                                 # Extract mean (first value)
-                                value = metric_data[0] if isinstance(metric_data, (list, tuple)) and len(metric_data) > 0 else metric_data
+                                value = (
+                                    metric_data[0]
+                                    if isinstance(metric_data, (list, tuple))
+                                    and len(metric_data) > 0
+                                    else metric_data
+                                )
                         # Handle old tuple format: (name, precision, f1, f3, recall, ...)
                         else:
                             idx = cfg.get("baseline_index")
                             if idx is not None and len(baseline) > idx:
                                 value = baseline[idx]
-                        
+
                         metric_cells.append(f"[{fmt(value, m_name)}]")
                     if not all(cell == "[]" for cell in metric_cells):
                         displayed_baseline_count += 1
-                
+
                 if displayed_baseline_count > 0:
-                    f.write(
-                        f"  table.cell(rowspan: {displayed_baseline_count}, rotate(-90deg, reflow:true)[Baselines]),\n"
+                    baseline_lines.append(
+                        f"  table.cell(rowspan: {displayed_baseline_count}, rotate(-90deg, reflow:true)[{baseline_name}]),\n"
                     )
-                    for baseline in baseline_dict[dataset]:
+                    for baseline in selected_baselines:
                         # Get baseline name
-                        if isinstance(baseline, dict):
-                            name = baseline.get("name", "")
-                        else:
-                            name = baseline[0] if baseline else ""
-                        
+                        name = baseline_name_of(baseline)
+
                         metric_cells = []
                         for m_name, cfg in metrics.items():
                             value = None
                             stddev = None
-                            
+
                             # Handle new dict format
                             if isinstance(baseline, dict):
                                 if m_name in baseline:
                                     metric_data = baseline[m_name]
-                                    if isinstance(metric_data, (list, tuple)) and len(metric_data) >= 2:
+                                    if (
+                                        isinstance(metric_data, (list, tuple))
+                                        and len(metric_data) >= 2
+                                    ):
                                         value = metric_data[0]
                                         stddev = metric_data[1]
                                     else:
@@ -419,7 +480,7 @@ def generate_typst_table(
                                 idx = cfg.get("baseline_index")
                                 if idx is not None and len(baseline) > idx:
                                     value = baseline[idx]
-                            
+
                             # Format as "value ± stddev" if both are present
                             if value is not None and stddev is not None:
                                 formatted_value = fmt(value, m_name)
@@ -428,12 +489,12 @@ def generate_typst_table(
                             else:
                                 cell = f"[{fmt(value, m_name)}]"
                             metric_cells.append(cell)
-                        
+
                         # Skip baseline if all metrics are empty
                         if all(cell == "[]" for cell in metric_cells):
                             continue
-                        
-                        f.write(f"    [{name}], {', '.join(metric_cells)},\n")
+
+                        baseline_lines.append(f"    [{name}], {', '.join(metric_cells)},\n")
 
             def config_type_order(row):
                 source_file = row["source_file"]
@@ -456,20 +517,32 @@ def generate_typst_table(
                             config_type_order(r),
                         ),
                     )
-                    
+
                     for row in rows:
-                        algo_name, ktype = config_name(row, betas)
+                        # Filter by top_k_types
+                        ktype = get_ktype(row)
+                        if ktype not in top_k_types:
+                            continue
+                        algo_name, _ = config_name(row, betas)
                         algo_name_with_bucket = f"{algo_name}"
                         if len(min_positive_buckets) > 1:
                             algo_name_with_bucket += f"{bucket_name}"
                         if algo_name_with_bucket not in all_rows_by_algo:
                             all_rows_by_algo[algo_name_with_bucket] = []
-                        all_rows_by_algo[algo_name_with_bucket].append((row, ktype, bucket_name))
-            
+                        all_rows_by_algo[algo_name_with_bucket].append(
+                            (row, ktype, bucket_name)
+                        )
+
+            # Collect config rows
+            config_lines = []
             # Render rows grouped by algo-name-Fscore (each spans 3)
-            for algo_name in sorted(all_rows_by_algo.keys(), reverse=True, key=lambda x: int(x.split("-F")[-1].split("\\")[0])):
+            for algo_name in sorted(
+                all_rows_by_algo.keys(),
+                reverse=True,
+                key=lambda x: int(x.split("-F")[-1].split("\\")[0]),
+            ):
                 rows_with_ktype = all_rows_by_algo[algo_name]
-                
+
                 # Filter to only display rows with non-empty metrics
                 displayed_rows = []
                 for row, ktype, bucket_name in rows_with_ktype:
@@ -480,14 +553,14 @@ def generate_typst_table(
                         metric_cells.append(f"[{fmt(value, m_name)}]")
                     if not all(cell == "[]" for cell in metric_cells):
                         displayed_rows.append((row, ktype, bucket_name))
-                
+
                 if displayed_rows:
                     num_displayed = len(displayed_rows)
                     # Write algo_name with rowspan across all rows for this config
-                    f.write(
-                        f"  table.cell(rowspan: {num_displayed}, rotate(-90deg, reflow:true)[{algo_name}]),\n"
+                    config_lines.append(
+                        f"  table.cell(rowspan: {num_displayed}, rotate(-90deg, reflow:true)[{algo_name if len(top_k_types) > 1 else ''}]),\n"
                     )
-                    
+
                     for idx, (row, ktype, bucket_name) in enumerate(displayed_rows):
                         metric_cells = []
                         for m_name, cfg in metrics.items():
@@ -495,7 +568,7 @@ def generate_typst_table(
                             value = row.get(key) if key is not None else None
                             stddev_key = f"{key}_stddev" if key else None
                             stddev = row.get(stddev_key) if stddev_key else None
-                            
+
                             # Format as "value ± stddev" if both are present
                             if value is not None and stddev is not None:
                                 formatted_value = fmt(value, m_name)
@@ -504,8 +577,16 @@ def generate_typst_table(
                             else:
                                 cell = f"[{fmt(value, m_name)}]"
                             metric_cells.append(cell)
-                        
-                        f.write(f"    [{ktype}], {', '.join(metric_cells)},\n")
+                        method_column = ktype if len(top_k_types) > 1 else f"{algo_name}\-{ktype}"
+                        config_lines.append(f"    [{method_column}], {', '.join(metric_cells)},\n")
+
+            # Write baselines and configs in the right order
+            if show_baselines_first:
+                f.writelines(baseline_lines)
+                f.writelines(config_lines)
+            else:
+                f.writelines(config_lines)
+                f.writelines(baseline_lines)
 
         f.write(")]\n")
 
@@ -513,12 +594,11 @@ def generate_typst_table(
 
 
 if __name__ == "__main__":
-
     # laod bseline dict from file
     with open("data/examples/baseline_values.json", "r") as f:
         baseline_dict = json.load(f)
-    
-    best_choice = CURRENT_BEST_RUN_FOLDER.split('/')[-1]
+
+    best_choice = CURRENT_BEST_RUN_FOLDER.split("/")[-1]
     csv_path = f"../master-thesis-writing/writing/tables/{best_choice}/best_average.csv"
 
     process_jsonl_folder(
@@ -536,6 +616,15 @@ if __name__ == "__main__":
         used_datasets=["tar2018"],
         show_performance=True,
         show_operators=False,
+        baseline_names=[
+            "Manual",
+            "Conceptual",
+            "Objective",
+            "Semantic",
+            "ChatGPT",
+            "Fine-Tuned LLM",
+        ],
+        top_k_types=["cosine", "\#pos", "fixed"],
         table_name="best_table",
     )
     generate_typst_table(
@@ -549,6 +638,15 @@ if __name__ == "__main__":
         used_datasets=["tar2018", "tar2019", "sigir2017", "sr_updates"],
         show_performance=True,
         show_operators=True,
+        baseline_names=[
+            "Manual",
+            "Conceptual",
+            "Objective",
+            "Semantic",
+            "ChatGPT",
+            "Fine-Tuned LLM",
+        ],
+        top_k_types=["cosine", "\#pos", "fixed"],
         table_name="best_table_appendix",
     )
     generate_typst_table(
@@ -562,17 +660,50 @@ if __name__ == "__main__":
         used_datasets=["tar2018"],
         show_performance=False,
         show_operators=True,
+        baseline_names=[
+            "Manual",
+            "Conceptual",
+            "Objective",
+            "Semantic",
+            "ChatGPT",
+            "Fine-Tuned LLM",
+        ],
+        top_k_types=["cosine", "\#pos", "fixed"],
         table_name="best_table_operators",
     )
-    # generate_typst_table(
-    #     csv_file=csv_path,
-    #     typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
-    #     baseline_dict=baseline_dict,
-    #     metrics=metrics,
-    #     text_size=10.3,
-    #     show_performance=True,
-    #     show_operators=True,
-    #     table_name="best_all",
-    # )
+    generate_typst_table(
+        csv_file=csv_path,
+        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
+        baseline_dict=baseline_dict,
+        betas={"50"},
+        metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,
+        text_size=10.3,
+        min_positive_buckets=["\>\=50"],
+        used_datasets=["tar2018"],
+        show_performance=True,
+        show_operators=False,
+        baseline_names=["DNF", "Random Forest", "No Rule Variations"],
+        top_k_types=["cosine"],
+        table_name="base_variations_table",
+        baseline_name="Variations",
+        show_baselines_first=False,
+    )
+    generate_typst_table(
+        csv_file=csv_path,
+        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
+        baseline_dict=baseline_dict,
+        betas={"50"},
+        metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,
+        text_size=10.3,
+        min_positive_buckets=["\>\=50"],
+        used_datasets=["tar2018"],
+        show_performance=False,
+        show_operators=True,
+        baseline_names=["DNF", "Random Forest", "No Rule Variations"],
+        top_k_types=["cosine"],
+        table_name="base_variations_table_operators",
+        baseline_name="Variations",
+        show_baselines_first=False,
+    )
 
     print("done")

@@ -66,8 +66,12 @@ DEBUG = False  # TODO remove
 FORBIDDEN_FEATURES = {"nan"}  # used as empty abstract in csmed
 
 PREVIOUS_RUNS = [
+    "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=3.0/optuna.db",
     "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=6.0/optuna.db",
     "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=10.0/optuna.db",
+    "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=15.0/optuna.db",
+    "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=30.0/optuna.db",
+    "data/statistics/optuna/run_10_nodes_10tasks_1cpu_per_task_opt_beta=50.0/optuna.db",
 ]
 
 BOW_PARAMS = {
@@ -851,4 +855,10 @@ BASE_VARIATIONS = {
         "min_tree_occ": 0.0,
         "min_rule_occ": 0.0,
     }
+}
+
+BASE_VARIATIONS_NAMES = {
+    "no_ors": "DNF",
+    "no_variation": "No Rule Variations",
+    "random_forest": "Random Forest",
 }

@@ -1,6 +1,7 @@
 import json
 from app.config.config import (
     BASE_VARIATIONS,
+    BASE_VARIATIONS_NAMES,
     CURRENT_BEST_RUN_FOLDER,
     RESULT_TABLE_OPERATOR_METRICS_ORDERED,
     RESULT_TABLE_PERFORMANCE_METRICS_ORDERED,
@@ -92,7 +93,7 @@ if __name__ == "__main__":
 
         base_df = calc_missing_columns_in_result_df(base_df)
         
-        name = f"#algo-name-short\\-{name}"
+        name = BASE_VARIATIONS_NAMES[name.lower()]
         values = {"name": name}
         for metric in RESULT_TABLE_PERFORMANCE_METRICS_ORDERED:
             values[metric] = (
