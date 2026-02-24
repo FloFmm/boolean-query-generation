@@ -22,6 +22,7 @@ def find_useless_terms(query, end_year, positives, output_path=None):
             query,
             positives,
             end_year=end_year,
+            max_retrieved=1_000_000,
         )
         base_f_beta = f_beta(base_precision, base_recall, beta=50.0)
     except Exception as e:
@@ -30,7 +31,7 @@ def find_useless_terms(query, end_year, positives, output_path=None):
 
     print(f"Base F-beta: {base_f_beta}")
 
-    for token in list(tokens)[:3]:
+    for token in tokens:
         if not token.strip(" ()"):
             continue
         
@@ -54,6 +55,7 @@ def find_useless_terms(query, end_year, positives, output_path=None):
                     new_query,
                     positives,
                     end_year=end_year,
+                    max_retrieved=1_000_000,
                 )
                 current_f_beta = f_beta(precision, recall, beta=50.0)
                 
@@ -95,8 +97,6 @@ if __name__ == "__main__":
     out_path = f"data/examples/useless_terms_{CURRENT_BEST}"
     dataframe = get_qg_results(path, min_positive_threshold=50)
     dataset_details = get_dataset_details()
-    print(dataset_details.keys())
-    exit(0)
     query_ids = ["CD007394", "CD009579", "CD009579"]
     results = {paper_name: defaultdict(list) for paper_name in ["kusaCSMeDBridgingDataset2023", "my_query"]}
     for query_id in query_ids:

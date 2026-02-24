@@ -6,7 +6,7 @@ requests
 
 # neural retrieval
 transformers
-torch
+torch>=2.4 
 
 #pubmed
 biopython
@@ -32,3 +32,8 @@ pytrec_eval
 #optuna
 optuna
 plotly
+
+joblib
+scipy
+
+datasets

@@ -542,8 +542,8 @@ def classify_by_mesh(folder_path, n_docs=1_000_000_000_000):
     print(f"Failed to extract {fail_count} jsonl lines")
     return docs_by_pmid, pmids_by_mesh
 
-def evaluate_query(pubmed_query, positives, end_year):
-    retrieved = search_pubmed_dynamic(pubmed_query, end_year=end_year)
+def evaluate_query(pubmed_query, positives, end_year, max_retrieved=100000):
+    retrieved = search_pubmed_dynamic(pubmed_query, end_year=end_year, max_retrieved=max_retrieved)
     retrieved = set(str(x) for x in retrieved)  # retrieved PMIDs
     true_positives = retrieved & positives
     TP = len(true_positives)
