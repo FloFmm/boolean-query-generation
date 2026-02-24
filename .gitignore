@@ -1,6 +1,7 @@
 .venv
 .*venv
 .env
+.test_env
 .venv_imodels
 venv
 __pycache__

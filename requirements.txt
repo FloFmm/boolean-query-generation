@@ -37,3 +37,7 @@ joblib
 scipy
 
 datasets
+jsonpickle
+numba
+retriv
+ranx

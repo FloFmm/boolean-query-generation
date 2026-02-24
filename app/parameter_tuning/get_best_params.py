@@ -7,7 +7,7 @@ from app.parameter_tuning.optuna import load_initial_solutions, params_from_opt_
 def get_best_params(betas, term_expansion=False):
     with open(f"data/final/best_params_te={term_expansion}.json", "r") as f:
         initial_solutions = json.load(f)
-    initial_solutions = [s for s in initial_solutions if s["beta"] in betas]
+    initial_solutions = [s for s in initial_solutions if set(s["betas"].keys()) & {str(b) for b in betas}]
     best_params = [s["params"] for s in initial_solutions]
     print(f"[LOADED] {len(best_params)} parameter configs")
     best_params = [
