@@ -32,7 +32,14 @@ def get_autobool_query(topic):
     matches = re.findall(r'<answer>(.*?)</answer>', response, re.DOTALL)
     query = None
     if matches:
-        query = matches[-1].strip()  # Take the last match
+        # Filter matches that contain " or " or " and " (case insensitive)
+        valid_matches = [m for m in matches if re.search(r'\s(or|and)\s', m, re.IGNORECASE)]
+        if valid_matches:
+            # Take the shortest match
+            query = min(valid_matches, key=len).strip()
+        else:
+            # Fallback to last match if none contain " or " or " and "
+            query = matches[-1].strip()
         print(query)
     return query
 
