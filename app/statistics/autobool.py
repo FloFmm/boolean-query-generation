@@ -26,6 +26,8 @@ response = tokenizer.decode(outputs[0], skip_special_tokens=True)
 # Extract the query from <answer> tags
 import re
 match = re.search(r'<answer>(.*?)</answer>', response, re.DOTALL)
+print("response", response)
+print()
 if match:
     query = match.group(1).strip()
     print(query)
