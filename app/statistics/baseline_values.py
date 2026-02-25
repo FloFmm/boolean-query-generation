@@ -66,7 +66,7 @@ if __name__ == "__main__":
                 0.1872,
                 0.8159,
                 None,
-            ),  # https://www.sciencedirect.com/science/article/pii/S1386505622002428 FI-BioBE-CONTXT -> most competitive in preicsion and recall from the 3 configs that have above 80% recall (only considering above 80% recall)
+            ),  # https://www.sciencedirect.com/science/article/pii/S1386505622002428 Agglo FI-BioBE-CONTXT -> most competitive in preicsion and recall from the 3 configs that have above 80% recall (only considering above 80% recall)
         ],
         "tar2019": [  # no value found
             # ("Original", "≤0.012\*", "", "", ""),
