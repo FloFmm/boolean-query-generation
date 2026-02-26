@@ -29,7 +29,7 @@ def get_autobool_query(topic):
 
     # Extract the query from <answer> tags
     import re
-    matches = re.findall(r'<answer>(.*?)</answer>', response, re.DOTALL)
+    matches = re.findall(r'<answer>([^<]*)</answer>', response, re.DOTALL)
     query = None
     if matches:
         # Filter matches that contain " or " or " and " (case insensitive)
