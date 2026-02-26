@@ -46,11 +46,18 @@ def get_autobool_query(topic):
 if __name__ == "__main__":
     max_trials = 5
     output_file = "data/examples/autobool_results.jsonl"
-    
+    priority_query_ids = ["CD007394", "CD009579", "CD010438", "CD008170"]
     dataset_details = get_dataset_details()
     
+    # Sort review_ids so priority ones come first
+    sorted_review_ids = sorted(
+        dataset_details.keys(),
+        key=lambda x: (x not in priority_query_ids, x)
+    )
+    
     with open(output_file, "w") as f:
-        for review_id, data in dataset_details.items():
+        for review_id in sorted_review_ids:
+            data = dataset_details[review_id]
             positives = set(data["positives"])
             _, _, end_year = review_id_to_dataset(review_id)
             
