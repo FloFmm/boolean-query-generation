@@ -1,4 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
 
 import os
 import json
@@ -11,7 +12,9 @@ CUSTOM_HF_PATH = "../systematic-review-datasets/data/huggingface"
 os.environ["HF_HOME"] = CUSTOM_HF_PATH  # has to be up here
 model_name = "ielabgroup/Autobool-Qwen4b-No-reasoning"
 tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=CUSTOM_HF_PATH)
-model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=CUSTOM_HF_PATH)
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=CUSTOM_HF_PATH).to(device)
+print(f"Model loaded on {device}")
 
 def get_autobool_query(topic):
     # Define your systematic review topic
@@ -23,7 +26,7 @@ def get_autobool_query(topic):
     ]
     # Generate the query
     prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    inputs = tokenizer(prompt, return_tensors="pt")
+    inputs = tokenizer(prompt, return_tensors="pt").to(device)
     outputs = model.generate(**inputs, max_length=2048)
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
@@ -45,7 +48,7 @@ def get_autobool_query(topic):
     return query
 
 if __name__ == "__main__":
-    max_trials = 5
+    max_trials = 10
     output_file = "data/examples/autobool_results.jsonl"
     priority_query_ids = ["CD007394", "CD009579", "CD010438", "CD008170"]
     dataset_details = get_dataset_details()
