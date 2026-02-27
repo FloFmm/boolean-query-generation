@@ -1,3 +1,4 @@
+import re
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 
@@ -16,6 +17,70 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=CUSTOM_HF_PATH).to(device)
 print(f"Model loaded on {device}")
 
+def check_logic(bool_query: str) -> bool:
+    """
+    Validate the logical structure of a Boolean query.
+
+    Args:
+        bool_query: The Boolean query string to validate
+
+    Returns:
+        True if the query has valid logical structure, False otherwise
+    """
+    if not bool_query or not bool_query.strip():
+        return False
+
+    # Normalize query
+    query = bool_query.strip()
+    query = re.sub(r'\s+', ' ', query)
+    query = re.sub(r'\b(and|or|not)\b', lambda m: m.group(1).upper(), query, flags=re.IGNORECASE)
+
+    # Check balanced parentheses and detect empty ()
+    depth = 0
+    for i, char in enumerate(query):
+        if char == '(':
+            depth += 1
+            if i + 1 < len(query) and query[i + 1] == ')':
+                return False  # Empty parentheses
+        elif char == ')':
+            depth -= 1
+            if depth < 0:
+                return False  # Unbalanced
+
+    if depth != 0:
+        return False
+
+    # Tokenize and validate sequence
+    token_pattern = r'\".*?\"|\(|\)|\bAND\b|\bOR\b|\bNOT\b|[^\s()]+'
+    tokens = re.findall(token_pattern, query, flags=re.IGNORECASE)
+    tokens = [t.upper() if t.upper() in {'AND', 'OR', 'NOT'} else t for t in tokens]
+
+    if not tokens:
+        return False
+
+    # Validate token sequence
+    valid_ops = {'AND', 'OR', 'NOT'}
+    prev = None
+
+    for i, token in enumerate(tokens):
+        if token in {'AND', 'OR'}:
+            if prev is None or prev in valid_ops or prev == '(':
+                return False
+        elif token == 'NOT':
+            if i == len(tokens) - 1:
+                return False
+            if tokens[i + 1] in valid_ops or tokens[i + 1] == ')':
+                return False
+        elif token == '(':
+            if prev and prev not in valid_ops and prev != '(':
+                return False
+        elif token == ')':
+            if prev in valid_ops or prev == '(':
+                return False
+        prev = token
+
+    return tokens[-1] not in valid_ops
+
 def get_autobool_query(topic):
     # Define your systematic review topic
     # topic = "Thromboelastography (TEG) and rotational thromboelastometry (ROTEM) for trauma-induced coagulopathy"
@@ -27,7 +92,7 @@ def get_autobool_query(topic):
     # Generate the query
     prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(prompt, return_tensors="pt").to(device)
-    outputs = model.generate(**inputs, max_length=2048)
+    outputs = model.generate(**inputs, max_length=2048, do_sample=True, temperature=0.6)
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
     # Extract the query from <answer> tags
@@ -45,6 +110,9 @@ def get_autobool_query(topic):
             # Take the shortest match
             query = min(valid_matches, key=len).strip()
         print("query", query)
+    if query is None:
+        print("No valid query found in the response. Response was:")
+        print(response)
     return query
 
 if __name__ == "__main__":
@@ -86,8 +154,15 @@ if __name__ == "__main__":
             
             for trial in range(max_trials):
                 query = get_autobool_query(data["title"])
+                
                 if query is None:
                     print(f"Trial {trial + 1}/{max_trials} failed for {review_id}, query is None. Retrying...")
+                    continue
+                
+                # Validate the query logic
+                if not check_logic(query):
+                    print(f"Trial {trial + 1}/{max_trials} failed for {review_id}, query has invalid logic: {query}")
+                    query = None
                     continue
                 
                 # Try to evaluate the query
@@ -96,7 +171,8 @@ if __name__ == "__main__":
                         query,
                         positives,
                         end_year=end_year,
-                        max_retrieved=1000_000
+                        min_retrieved=1,
+                        max_retrieved=200_000
                     )
                     # If evaluation succeeds, break out of the retry loop
                     break

@@ -252,7 +252,7 @@ def generate_typst_table(
                 if bucket_name in buckets:
                     for row in buckets[bucket_name]:
                         # Check if row's ktype is in allowed top_k_types
-                        ktype = get_ktype(row)
+                        ktype = get_ktype(row["source_file"])
                         if ktype not in top_k_types:
                             continue
                         # Check if row has any non-empty values for filtered metrics

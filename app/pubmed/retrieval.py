@@ -52,7 +52,7 @@ def search_pubmed_date_range(query, mindate=None, maxdate=None, retries=50):
     )
 
 
-def search_pubmed_dynamic(query, start_year=1800, end_year=2026, target_count=9500, max_retrieved=100_000, always_retrieve=False):
+def search_pubmed_dynamic(query, start_year=1800, end_year=2026, target_count=9500, min_retrieved=0, max_retrieved=100_000, always_retrieve=False):
     """Retrieve all PMIDs using dynamic window sizing to avoid 10k limit."""
     if not query or not str(query).strip():
         print("Empty query — nothing to search.")
@@ -77,7 +77,9 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2026, target_count=95
     if total_expected > max_retrieved:
         if not always_retrieve:
             raise optuna.exceptions.TrialPruned(f"Tried to retrieve {total_expected} which is more than {max_retrieved} PubMed documents")
-
+    if total_expected < min_retrieved:
+        if not always_retrieve:
+            raise optuna.exceptions.TrialPruned(f"Tried to retrieve only {total_expected} which is less than min_retrieved={min_retrieved}")
     if DEBUG:
         print(f"Total expected PMIDs: {total_expected}")
 
@@ -542,8 +544,8 @@ def classify_by_mesh(folder_path, n_docs=1_000_000_000_000):
     print(f"Failed to extract {fail_count} jsonl lines")
     return docs_by_pmid, pmids_by_mesh
 
-def evaluate_query(pubmed_query, positives, end_year, max_retrieved=100000):
-    retrieved = search_pubmed_dynamic(pubmed_query, end_year=end_year, max_retrieved=max_retrieved)
+def evaluate_query(pubmed_query, positives, end_year, min_retrieved=0, max_retrieved=100000):
+    retrieved = search_pubmed_dynamic(pubmed_query, end_year=end_year, min_retrieved=min_retrieved, max_retrieved=max_retrieved)
     retrieved = set(str(x) for x in retrieved)  # retrieved PMIDs
     true_positives = retrieved & positives
     TP = len(true_positives)
