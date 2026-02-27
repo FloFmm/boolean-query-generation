@@ -30,6 +30,10 @@ def get_autobool_query(topic):
     # Extract the query from <answer> tags
     import re
     matches = re.findall(r'<answer>([^<]*)</answer>', response, re.DOTALL)
+    print("matches")
+    for i, m in enumerate(matches):
+        print(f"Match {i}: '{m[:15] + '...' + m[-15:] if len(m) > 30 else m}'", flush=True)
+        print()
     query = None
     if matches:
         # Filter matches that contain " or " or " and " (case insensitive)
@@ -37,10 +41,7 @@ def get_autobool_query(topic):
         if valid_matches:
             # Take the shortest match
             query = min(valid_matches, key=len).strip()
-        else:
-            # Fallback to last match if none contain " or " or " and "
-            query = matches[-1].strip()
-        print(query)
+        print("query", query)
     return query
 
 if __name__ == "__main__":

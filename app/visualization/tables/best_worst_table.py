@@ -1,7 +1,6 @@
 import pandas as pd
 from app.dataset.utils import (
     get_qg_results,
-    find_qg_results_file,
     get_dataset_details,
 )
 from app.config.config import (
@@ -231,10 +230,7 @@ def filter_to_query_with_max_precision_spread(
 
 
 if __name__ == "__main__":
-    path = find_qg_results_file(
-        CURRENT_BEST_RUN_FOLDER, top_k_type="cosine", betas_key="50"
-    )
-    dataframe = get_qg_results(path, min_positive_threshold=50)
+    dataframe = get_qg_results(CURRENT_BEST_RUN_FOLDER, min_positive_threshold=50, top_k_types=["cosine"], betas=["50"])
 
     dataset_details = get_dataset_details()
 

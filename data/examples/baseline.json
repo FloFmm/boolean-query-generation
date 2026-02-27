@@ -92,6 +92,17 @@
             }
         ]
     },
+    "wangAutoBoolReinforcementLearningTrained2025": {
+        "title": "AutoBool: An Reinforcement-Learning trained LLM for Effective Automated Boolean Query Generation for Systematic Reviews",
+        "name": "#fine-tuned-llm-approach",
+        "examples": [
+            {
+                "query_id": "CD007394",
+                "query": "Galactomannan detection for invasive aspergillosis in immunocompromised patients",
+                "result": "((Galactomannan[tx] OR galactomannan[tx] OR Galactomannan[mh]) AND (invasive aspergillosis[tx] OR Aspergillus infection[tx] OR Invasive Aspergillosis[mh])) AND ((immunocompromised[tx] OR immunocompromised host[mh] OR transplant* [tx] OR neutropenia[tx]) OR (diagnostic* [tx] OR detection [tx] OR assay [tx] OR test [tx]))"
+            }
+        ]
+    },
     "kusaCSMeDBridgingDataset2023": {
         "title": "Manual from CsMED",
         "name": "#manual-approach",

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import os
-from app.dataset.utils import calc_missing_columns_in_result_df, find_qg_results_file, get_qg_results, load_vectors
+from app.dataset.utils import get_qg_results, load_vectors
 from app.config.config import (
     BOW_PARAMS,
     COLORS,

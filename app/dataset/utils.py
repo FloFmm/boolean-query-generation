@@ -844,6 +844,8 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=N
 
 
 def find_qg_results_file(base_folder, top_k_type="cosine", betas_key="50"):
+    best_path = None
+    best_f50 = -1
     for root, dirs, files in os.walk(base_folder):
         if "qg_results.jsonl" in files and "qg_meta_data.json" in files and "qg_config.json" in files:
             meta_path = os.path.join(root, "qg_meta_data.json")
@@ -857,8 +859,32 @@ def find_qg_results_file(base_folder, top_k_type="cosine", betas_key="50"):
                 betas_key in meta_data["betas"] and 
                 config_data["top_k_type"] == top_k_type
             ):
-                return os.path.join(root, "qg_results.jsonl")
-    return None 
+                candidate = os.path.join(root, "qg_results.jsonl")
+                # Compute average F50 across all results in the file
+                precisions = []
+                recalls = []
+                with open(candidate, "r", encoding="utf-8") as rf:
+                    for line in rf:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        data = json.loads(line)
+                        if data["num_positive"] < 50:
+                            continue
+                        p = data.get("pubmed_precision", 0) or 0
+                        r = data.get("pubmed_recall", 0) or 0
+                        precisions.append(p)
+                        recalls.append(r)
+                if precisions:
+                    avg_p = sum(precisions) / len(precisions)
+                    avg_r = sum(recalls) / len(recalls)
+                    avg_f50 = f_beta(precision=avg_p, recall=avg_r, beta=50)
+                else:
+                    avg_f50 = 0
+                if avg_f50 > best_f50:
+                    best_f50 = avg_f50
+                    best_path = candidate
+    return best_path
 
 def get_rf_and_qg_params(base_folder, top_k_type="cosine", betas_key="50"):
     path = Path(find_qg_results_file(base_folder, top_k_type=top_k_type, betas_key=betas_key))
@@ -961,7 +987,7 @@ def get_ktype(source_file):
     if "ktype=cosine" in source_file:
         return "cosine"
     elif "ktype=pos_count" in source_file:
-        return "\#pos"
+        return "pos_count"
     elif "ktype=fixed" in source_file:
         return "fixed"
     raise ValueError(f"Unknown ktype in source_file: {source_file}")

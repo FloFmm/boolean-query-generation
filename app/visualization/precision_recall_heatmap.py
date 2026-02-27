@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 import json
-from app.dataset.utils import find_qg_results_file, get_qg_results
+from app.dataset.utils import get_qg_results
 from app.config.config import (
     COLORS,
     COLORMAPS,
@@ -32,7 +32,10 @@ def plot_precision_recall_heatmap(
     data = data[data["num_positive"] >= min_positive_threshold]
 
     # Determine range from data with small padding
-    precision_min, precision_max = data["pubmed_precision"].min(), data["pubmed_precision"].max()
+    precision_min, precision_max = (
+        data["pubmed_precision"].min(),
+        data["pubmed_precision"].max(),
+    )
     recall_min, recall_max = data["pubmed_recall"].min(), data["pubmed_recall"].max()
     print(f"Precision range: {precision_min:.4f} - {precision_max:.4f}")
     print(f"Recall range: {recall_min:.4f} - {recall_max:.4f}")
@@ -95,11 +98,18 @@ def plot_precision_recall_scatter(
     fig, ax = plt.subplots()  # uses default figsize from apply_matplotlib_style()
 
     ax.scatter(
-        data["pubmed_precision"], data["pubmed_recall"], alpha=alpha, s=size, c=COLORS["primary"]
+        data["pubmed_precision"],
+        data["pubmed_recall"],
+        alpha=alpha,
+        s=size,
+        c=COLORS["primary"],
     )
 
     # Determine range from data with small padding
-    precision_min, precision_max = data["pubmed_precision"].min(), data["pubmed_precision"].max()
+    precision_min, precision_max = (
+        data["pubmed_precision"].min(),
+        data["pubmed_precision"].max(),
+    )
     recall_min, recall_max = data["pubmed_recall"].min(), data["pubmed_recall"].max()
 
     padding = 0.0001
@@ -113,22 +123,6 @@ def plot_precision_recall_scatter(
     plt.savefig(out_path, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Saved scatter plot to {out_path}")
-
-
-def get_precision_recall_pairs_from_jsonl(jsonl_path):
-    precision_recall_pairs = []
-    with open(jsonl_path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            data = json.loads(line)
-            precision = data.get("pubmed_precision")
-            recall = data.get("pubmed_recall")
-            num_positive = data.get("num_positive", 0)
-            if precision is not None and recall is not None:
-                precision_recall_pairs.append((precision, recall, num_positive))
-    return precision_recall_pairs
 
 
 def plot_precision_recall_histograms(
@@ -149,7 +143,7 @@ def plot_precision_recall_histograms(
     # Split data by top_k_type
     top_k_types = data["top_k_type"].unique()
     split_data = [data[data["top_k_type"] == t] for t in sorted(top_k_types)]
-    
+
     # Color mapping for top_k_type
     color_map = {
         "cosine": COLORS["cosine_k"],
@@ -157,7 +151,7 @@ def plot_precision_recall_histograms(
         "pos_count": COLORS["pos_count_k"],
     }
     colors_split = [color_map.get(t, COLORS["primary"]) for t in sorted(top_k_types)]
-    labels_split = [f"top_k_type: {t}" for t in sorted(top_k_types)]
+    labels_split = [t for t in sorted(top_k_types)]
 
     # Count total values for debugging
     precision_count = sum(len(d["pubmed_precision"].dropna()) for d in split_data)
@@ -187,9 +181,9 @@ def plot_precision_recall_histograms(
     )
     ax.set_xlabel("Recall")
     ax.set_title("Recall Distribution")
-    ax.legend()
+    # ax.legend(title="Top-K Type")
     ax.set_yticklabels([])
-    
+
     # Sync y-axis between both plots
     y_max = max(axes[0].get_ylim()[1], axes[1].get_ylim()[1])
     axes[0].set_ylim(0, y_max)
@@ -200,22 +194,12 @@ def plot_precision_recall_histograms(
     print(f"Saved histograms to {out_path}")
 
 
-def plot_all_heatmaps(top_k_type, betas_key, out_dir):
-    dataframes = []
-    for top_k_type in ["cosine", "fixed", "pos_count"]:
-        path = find_qg_results_file(
-            CURRENT_BEST_RUN_FOLDER, top_k_type=top_k_type, betas_key=betas_key
-        )
-        df = get_qg_results(path, min_positive_threshold=50)
-        df["top_k_type"] = top_k_type
-        dataframes.append(df)
-    data = (
-        pd.concat(dataframes, ignore_index=True) if dataframes else pd.DataFrame()
+def plot_all_heatmaps(betas_key, out_dir):
+    data = get_qg_results(
+        CURRENT_BEST_RUN_FOLDER, min_positive_threshold=50, betas=[betas_key]
     )
     # Filter to only num_positive >= 50
     data = data[data["num_positive"] >= 50]
-    # p_r_pairs = get_precision_recall_pairs_from_jsonl(path)
-    # data = pd.DataFrame(p_r_pairs, columns=["Precision", "Recall", "num_positive"])
     plot_precision_recall_heatmap(
         data,
         out_path=os.path.join(out_dir, "precision_recall_heatmap.png"),
@@ -238,11 +222,9 @@ if __name__ == "__main__":
     out_dir = (
         "../master-thesis-writing/writing/thesis/images/graphs/precision_recall_heatmap"
     )
-    top_k_type = "cosine"
     betas_key = "50"
     os.makedirs(out_dir, exist_ok=True)
     plot_all_heatmaps(
         betas_key=betas_key,
         out_dir=out_dir,
-        top_k_type=top_k_type,
     )

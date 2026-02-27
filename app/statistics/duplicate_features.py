@@ -4,7 +4,7 @@
 # this is dviided by number of features in the rule set (counting duplciates)
 # rules consist of a list of rules, where each rule is a list of terms, and each term is a list of [feature_id, is_positive]
 from app.config.config import BOW_PARAMS, CURRENT_BEST_RUN_FOLDER
-from app.dataset.utils import find_qg_results_file, get_qg_results, load_vectors
+from app.dataset.utils import get_qg_results, load_vectors
 
 
 def calculate_duplicate_features_percentage(rules, feature_names, exact_match=False):
@@ -35,10 +35,8 @@ def calculate_duplicate_features_percentage(rules, feature_names, exact_match=Fa
 
 
 if __name__ == "__main__":
-    path = find_qg_results_file(
-        CURRENT_BEST_RUN_FOLDER, top_k_type="cosine", betas_key="50"
-    )
-    dataframe = get_qg_results(path, min_positive_threshold=50)
+    dataframe = get_qg_results(CURRENT_BEST_RUN_FOLDER, min_positive_threshold=50, top_k_types=["cosine"], betas=["50"])
+    print(len(dataframe), "queries in dataframe")
     X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
     print("Duplicates = extra occurrences beyond the first occurrence of a feature (under a chosen matching rule)")
     dataframe["duplicate_percentage_exact"] = dataframe["rules"].apply(

@@ -1,5 +1,5 @@
 import pandas as pd
-from app.dataset.utils import get_qg_results, find_qg_results_file
+from app.dataset.utils import get_qg_results
 from app.config.config import CURRENT_BEST_RUN_FOLDER
 
 # function which takes a dataframe removes all lines with less than min_positives (parameter) in the field num_positive and then calcualtes for n buckets of pubmed_recall the average subset_recall and pseudo recall 
@@ -32,8 +32,7 @@ if __name__ == "__main__":
     # print(compute_pseudo_recall_by_bucket(dataframe, num_buckets=20, metric="recall"))
     # print(compute_pseudo_recall_by_bucket(dataframe, num_buckets=20, metric="precision"))
     
-    path = find_qg_results_file(CURRENT_BEST_RUN_FOLDER, top_k_type="cosine", betas_key="50")
-    dataframe = get_qg_results(path, min_positive_threshold=None)
+    dataframe = get_qg_results(CURRENT_BEST_RUN_FOLDER, min_positive_threshold=None, top_k_types=["cosine"], betas=["50"])
     r_results = compute_average_mismatch(dataframe, metric="recall")
     print("average subset recall", dataframe["subset_recall"].mean())
     print("average pubmed recall", dataframe["pubmed_recall"].mean())

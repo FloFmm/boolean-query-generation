@@ -410,7 +410,7 @@ if __name__ == "__main__":
         table = table[
             (
                 table["review_id"].isin(["CD007394"])
-                & table["approach"].isin(["#chatgpt-approach", "#semantic-approach"])
+                & table["approach"].isin(["#fine-tuned-llm-approach", "#semantic-approach"])
             )
             | (
                 table["review_id"].isin(["CD009579"])
