@@ -798,12 +798,23 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None):
     else:        
         files = list(Path(path).glob("**/qg_results.jsonl"))
     for jsonl_path in files:
+        # Read meta data for betas
+        meta_path = os.path.join(os.path.dirname(jsonl_path), "qg_meta_data.json")
+        betas_str = ""
+        if os.path.exists(meta_path):
+            with open(meta_path, "r") as mf:
+                meta = json.load(mf)
+                betas = sorted(meta.get("betas", {}).keys(), key=int)
+                betas_str = ",".join(map(str, betas))
+
         with open(jsonl_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:
                     continue
                 data = json.loads(line)
+                data["file_path"] = str(jsonl_path)
+                data["selection_betas"] = betas_str
                 records.append(data)
     df = pd.DataFrame(records)
     # Print sample count
@@ -883,11 +894,23 @@ def get_paper_query_examples(paper=None, query_id=None):
                     return example
 
 def calc_missing_columns_in_result_df(df):
-    df = df[
-        df["query_id"]
-        .apply(lambda qid: review_id_to_dataset(qid)[0])
-        .isin(["tar2017", "tar2018"])
-    ].copy()
+    df = df.copy()
+
+    # Add dataset column
+    df["dataset"] = df["query_id"].apply(lambda qid: review_id_to_dataset(qid)[0])
+    # Map tar2017 to tar2018 (tar2017 is part of 2018)
+    df.loc[df["dataset"] == "tar2017", "dataset"] = "tar2018"
+
+    # Add num_positive_bucket
+    df["num_positive_bucket"] = df["num_positive"].apply(
+        lambda x: "\<50" if x < 50 else "\>\=50"
+    )
+
+    # Add source_file (last two directory names of file_path)
+    df["source_file"] = df["file_path"].apply(
+        lambda fp: str(Path(*Path(fp).parts[-3:-1]))
+    )
+
     df["pubmed_f1"] = df.apply(
         lambda row: f_beta(
             precision=row["pubmed_precision"], recall=row["pubmed_recall"], beta=1

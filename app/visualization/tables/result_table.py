@@ -1,8 +1,5 @@
 import json
-import csv
 import os
-import statistics
-from collections import defaultdict
 from app.config.config import (
     CURRENT_BEST_RUN_FOLDER,
     RESULT_TABLE_OPERATOR_METRICS_ORDERED,
@@ -10,140 +7,88 @@ from app.config.config import (
     RESULT_TABLE_PERFORMANCE_METRICS,
     RESULT_TABLE_OPERATOR_METRICS,
 )
-from app.helper.helper import f_beta
-from app.dataset.utils import review_id_to_dataset, dataset_names
-from app.tree_learning.query_generation import query_size_value
+from app.dataset.utils import (
+    calc_missing_columns_in_result_df,
+    get_qg_results,
+    dataset_names,
+)
 
 
-def process_jsonl_folder(folder_path, output_csv):
-    # Dictionary to store sum of values and counts
-    # Key is now (dataset, bucket, file)
-    stats = defaultdict(lambda: defaultdict(list))
+AGGREGATE_METRIC_COLS = [
+    "num_positive",
+    "top_k",
+    "pubmed_retrieved",
+    "pubmed_precision",
+    "pubmed_recall",
+    "subset_retrieved",
+    "subset_precision",
+    "subset_recall",
+    "pseudo_precision",
+    "pseudo_recall",
+    "optimization_score",
+    "qg_time_seconds",
+    "query_size_paths",
+    "query_size_ANDs",
+    "query_size_NOTs",
+    "query_size_added_ORs",
+    "query_size_synonym_ORs",
+    "logical_operators",
+    "all_ORs",
+    "pubmed_f1",
+    "pubmed_f3",
+]
 
-    # Walk through folder and subfolders
-    for root, _, files in os.walk(folder_path):
-        for file in files:
-            if file.endswith("qg_results.jsonl"):
-                file_path = os.path.join(root, file)
-                relative_path = os.path.relpath(file_path, folder_path)
+GROUP_COLS = ["dataset", "num_positive_bucket", "source_file", "selection_betas"]
 
-                meta_path = os.path.join(root, "qg_meta_data.json")
-                betas_str = ""
 
-                if os.path.exists(meta_path):
-                    with open(meta_path, "r") as mf:
-                        meta = json.load(mf)
-                        betas = sorted(meta.get("betas", {}).keys(), key=int)
-                        betas_str = ",".join(map(str, betas))
-                else:
-                    print("warning meta file missing, value get lost if thats the case")
-                    continue
-                print(betas_str, sum(1 for _ in open(file_path, "r")))
-                with open(file_path, "r") as f:
-                    for line in f:
-                        data = json.loads(line)
-                        dataset, _, _ = review_id_to_dataset(data["query_id"])
-                        if dataset == "tar2017":
-                            dataset = "tar2018"  # tar2017 is part of 2018
+def aggregate_results(df):
+    """
+    Group by (dataset, num_positive_bucket, source_file, selection_betas)
+    and compute mean + stddev for each metric column.
+    """
+    metric_cols = [c for c in AGGREGATE_METRIC_COLS if c in df.columns]
 
-                        num_positive_bucket = (
-                            "\<50" if data["num_positive"] < 50 else "\>\=50"
-                        )
-                        key = (
-                            dataset,
-                            num_positive_bucket,
-                            relative_path,
-                            betas_str,
-                        )  # include filename in key
+    # not necessary: Fill NaN with 0 for metric columns (match original behavior)
+    # df = df.copy()
+    # for col in metric_cols:
+    #     df[col] = df[col].fillna(0)
 
-                        # Top-level numerical values
-                        for field in [
-                            "num_positive",
-                            "top_k",
-                            "pubmed_retrieved",
-                            "pubmed_precision",
-                            "pubmed_recall",
-                            "subset_retrieved",
-                            "subset_precision",
-                            "subset_recall",
-                            "pseudo_precision",
-                            "pseudo_recall",
-                            "optimization_score",
-                            "qg_time_seconds",
-                        ]:
-                            value = data.get(field, 0)
-                            if value is None:
-                                value = 0
-                            stats[key][field].append(value)
+    # Add count to first metric to track how many samples were aggregated
+    agg_dict = {col: ["mean", "std"] for col in metric_cols}
+    if metric_cols:
+        agg_dict[metric_cols[0]].append("count")
+    
+    agg_df = df.groupby(GROUP_COLS).agg(agg_dict)
+    
+    # Flatten column names: mean -> col, std -> col_stddev, count -> num_samples
+    new_cols = []
+    count_col_name = metric_cols[0] if metric_cols else None
+    for col, stat in agg_df.columns:
+        if col == count_col_name:
+            if stat == "mean":
+                new_cols.append(col)
+            elif stat == "std":
+                new_cols.append(f"{col}_stddev")
+            elif stat == "count":
+                new_cols.append("num_samples")
+        else:
+            if stat == "mean":
+                new_cols.append(col)
+            else:
+                new_cols.append(f"{col}_stddev")
+    agg_df.columns = new_cols
+    print(agg_df[["num_samples"] + new_cols])
 
-                        # query_size values
-                        for field, value in data.get("query_size", {}).items():
-                            if value is not None:
-                                stats[key][f"query_size_{field}"].append(value)
-                        # stats[key]["logical_operators"].append(query_size_value(data["query_size"])) wrong for old data
-                        check = (
-                            sum(
-                                data["query_size"][k]
-                                for k in [
-                                    "paths",
-                                    "ANDs",
-                                    "NOTs",
-                                    "added_ORs",
-                                    "synonym_ORs",
-                                ]
-                            )
-                            - 1
-                        )
-                        count_value = (
-                            data["pubmed_query"].count("AND")
-                            + data["pubmed_query"].count("OR")
-                            + data["pubmed_query"].count("NOT")
-                        )
-                        assert check == count_value
-                        stats[key]["logical_operators"].append(count_value)
-                        stats[key]["all_ORs"].append(data["pubmed_query"].count("OR"))
-                        # Calculate F1 and F3 for pubmed
-                        p = data.get("pubmed_precision", 0) or 0
-                        r = data.get("pubmed_recall", 0) or 0
-                        stats[key]["pubmed_f1"].append(
-                            f_beta(precision=p, recall=r, beta=1)
-                        )
-                        stats[key]["pubmed_f3"].append(
-                            f_beta(precision=p, recall=r, beta=3)
-                        )
+    # Fill NaN stddev (single-row groups) with 0
+    stddev_cols = [c for c in agg_df.columns if c.endswith("_stddev")]
+    agg_df[stddev_cols] = agg_df[stddev_cols].fillna(0)
 
-    # Write CSV
-    os.makedirs(os.path.dirname(output_csv), exist_ok=True)
-    with open(output_csv, "w", newline="") as csvfile:
-        writer = csv.writer(csvfile)
-
-        # Header - include stddev columns alongside each metric
-        field_keys = list(next(iter(stats.values())).keys())
-        header = [
-            "dataset",
-            "num_positive_bucket",
-            "source_file",
-            "selection_betas",
-        ]
-        for field in field_keys:
-            header.append(field)
-            header.append(f"{field}_stddev")
-        writer.writerow(header)
-
-        for (dataset, bucket, file_path, beta_str), fields in stats.items():
-            row = [dataset, bucket, file_path, beta_str]
-            for field in field_keys:
-                values = [v for v in fields.get(field, []) if v is not None]
-                avg = sum(values) / len(values) if values else 0
-                # Calculate standard deviation if we have more than one value
-                stddev = statistics.stdev(values) if len(values) > 1 else 0
-                row.append(avg)
-                row.append(stddev)
-            writer.writerow(row)
+    agg_df = agg_df.reset_index()
+    return agg_df
 
 
 def generate_typst_table(
-    csv_file,
+    df,
     typst_file,
     baseline_dict,
     betas=None,
@@ -160,10 +105,10 @@ def generate_typst_table(
     show_baselines_first=True,
 ):
     """
-    Generates a Typst table from a CSV containing metrics and a baseline dictionary.
+    Generates a Typst table from an aggregated DataFrame and a baseline dictionary.
 
     Args:
-        csv_file (str): Path to the input CSV file.
+        df (pd.DataFrame): Aggregated DataFrame with mean and stddev columns.
         typst_file (str): Path where the Typst table will be written.
         baseline_dict (dict): Dictionary of baselines for each dataset.
                               Format: {dataset: [(name, p, f1, f3, r, ops), ...]}
@@ -173,7 +118,7 @@ def generate_typst_table(
                                         Defaults to all types if None.
         metrics (dict | None): Ordered mapping of display name to metric config.
                                 Each config supports:
-                                  - key (str): CSV field name
+                                  - key (str): DataFrame column name
                                   - direction ("max" | "min"): for best-value bolding
                                   - fmt (str): format string for values
                                   - baseline_index (int | None): index in baseline tuple
@@ -183,21 +128,21 @@ def generate_typst_table(
         top_k_types = ["cosine", "\#pos", "fixed"]
 
     typst_file = os.path.join(typst_file, f"{table_name}.typ")
-    # Read CSV into nested dict: stats[dataset][bucket] = row_dict
+
+    # Build nested dict: stats[dataset][bucket] = [row_dict, ...]
     stats = {}
-    with open(csv_file, newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            dataset = row["dataset"]
-            bucket = row["num_positive_bucket"]
+    for _, row in df.iterrows():
+        row_dict = row.to_dict()
+        dataset = row_dict["dataset"]
+        bucket = row_dict["num_positive_bucket"]
 
-            # If betas is set, skip rows that don't contain any of the selected betas
-            if betas is not None:
-                row_betas = set(row["selection_betas"].split(","))
-                if not row_betas & betas:
-                    continue  # skip this row entirely
+        # If betas is set, skip rows that don't contain any of the selected betas
+        if betas is not None:
+            row_betas = set(row_dict["selection_betas"].split(","))
+            if not row_betas & betas:
+                continue  # skip this row entirely
 
-            stats.setdefault(dataset, {}).setdefault(bucket, []).append(row)
+        stats.setdefault(dataset, {}).setdefault(bucket, []).append(row_dict)
 
     # Filter metrics based on show_performance and show_operators flags
     filtered_metrics = {}
@@ -594,20 +539,22 @@ def generate_typst_table(
 
 
 if __name__ == "__main__":
-    # laod bseline dict from file
+    # load baseline dict from file
     with open("data/examples/baseline_values.json", "r") as f:
         baseline_dict = json.load(f)
 
     best_choice = CURRENT_BEST_RUN_FOLDER.split("/")[-1]
-    csv_path = f"../master-thesis-writing/writing/tables/{best_choice}/best_average.csv"
+    folder_path = f"data/statistics/optuna/{best_choice}"
+    typst_base = f"../master-thesis-writing/writing/tables/{best_choice}/"
 
-    process_jsonl_folder(
-        folder_path=f"data/statistics/optuna/{best_choice}",
-        output_csv=csv_path,
-    )
+    # Load and prepare DataFrame once
+    base_df = get_qg_results(folder_path, min_positive_threshold=None, query_ids=None)
+    base_df = calc_missing_columns_in_result_df(base_df)
+    agg_df = aggregate_results(base_df)
+
     generate_typst_table(
-        csv_file=csv_path,
-        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
+        df=agg_df,
+        typst_file=typst_base,
         baseline_dict=baseline_dict,
         betas={"3", "15", "30", "50"},
         metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,
@@ -628,8 +575,8 @@ if __name__ == "__main__":
         table_name="best_table",
     )
     generate_typst_table(
-        csv_file=csv_path,
-        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
+        df=agg_df,
+        typst_file=typst_base,
         baseline_dict=baseline_dict,
         betas={"3", "15", "30", "50"},
         metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,
@@ -650,8 +597,8 @@ if __name__ == "__main__":
         table_name="best_table_appendix",
     )
     generate_typst_table(
-        csv_file=csv_path,
-        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
+        df=agg_df,
+        typst_file=typst_base,
         baseline_dict=baseline_dict,
         betas={"3", "15", "30", "50"},
         metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,
@@ -672,8 +619,8 @@ if __name__ == "__main__":
         table_name="best_table_operators",
     )
     generate_typst_table(
-        csv_file=csv_path,
-        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
+        df=agg_df,
+        typst_file=typst_base,
         baseline_dict=baseline_dict,
         betas={"50"},
         metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,
@@ -689,8 +636,8 @@ if __name__ == "__main__":
         show_baselines_first=False,
     )
     generate_typst_table(
-        csv_file=csv_path,
-        typst_file=f"../master-thesis-writing/writing/tables/{best_choice}/",
+        df=agg_df,
+        typst_file=typst_base,
         baseline_dict=baseline_dict,
         betas={"50"},
         metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,

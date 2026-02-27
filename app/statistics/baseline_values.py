@@ -92,6 +92,7 @@ if __name__ == "__main__":
         base_df = get_qg_results(path, min_positive_threshold=50, query_ids=None)
 
         base_df = calc_missing_columns_in_result_df(base_df)
+        base_df = base_df[base_df["dataset"].isin(["tar2017", "tar2018"])].copy()
         
         name = BASE_VARIATIONS_NAMES[name.lower()]
         values = {"name": name}
@@ -106,6 +107,7 @@ if __name__ == "__main__":
                 base_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]].std()
             )
         baseline_dict["tar2018"].append(values)
+        print(name, "samples", len(base_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]]))
 
     # # store the baseline dict as json to the path data/examples/baseline_values.json
     with open("data/examples/baseline_values.json", "w") as f:
