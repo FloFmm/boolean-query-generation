@@ -53,40 +53,62 @@ if __name__ == "__main__":
     priority_query_ids = ["CD007394", "CD009579", "CD010438", "CD008170"]
     dataset_details = get_dataset_details()
     
+    # Read existing results to skip already processed queries
+    existing_query_ids = set()
+    if os.path.exists(output_file):
+        with open(output_file, "r") as f:
+            for line in f:
+                if line.strip():
+                    result = json.loads(line)
+                    existing_query_ids.add(result["query_id"])
+        print(f"Found {len(existing_query_ids)} already processed queries, skipping them...")
+    
     # Sort review_ids so priority ones come first
     sorted_review_ids = sorted(
         dataset_details.keys(),
         key=lambda x: (x not in priority_query_ids, x)
     )
     
-    with open(output_file, "w") as f:
+    with open(output_file, "a") as f:
         for review_id in sorted_review_ids:
+            # Skip if already processed
+            if review_id in existing_query_ids:
+                print(f"Skipping {review_id} (already processed)")
+                continue
             data = dataset_details[review_id]
             positives = set(data["positives"])
             _, _, end_year = review_id_to_dataset(review_id)
             
-            # Retry logic: try up to max_trials times to get a non-None query
+            # Retry logic: try up to max_trials times to get a non-None query and successful evaluation
             query = None
+            precision = recall = retrieved_count = TP = None
             start_time = time.time()
+            
             for trial in range(max_trials):
                 query = get_autobool_query(data["title"])
-                if query is not None:
+                if query is None:
+                    print(f"Trial {trial + 1}/{max_trials} failed for {review_id}, query is None. Retrying...")
+                    continue
+                
+                # Try to evaluate the query
+                try:
+                    precision, recall, retrieved_count, TP = evaluate_query(
+                        query,
+                        positives,
+                        end_year=end_year,
+                        max_retrieved=1000_000
+                    )
+                    # If evaluation succeeds, break out of the retry loop
                     break
-                print(f"Trial {trial + 1}/{max_trials} failed for {review_id}, query is None. Retrying...")
+                except Exception as e:
+                    print(f"Trial {trial + 1}/{max_trials} failed for {review_id}, evaluation error: {e}. Retrying...")
+                    query = None  # Reset query to trigger retry
             
             qg_time_seconds = time.time() - start_time
             
             # Raise error if query is still None after all trials
-            if query is None:
-                raise ValueError(f"Failed to generate query for {review_id} after {max_trials} attempts")
-            
-            # Evaluate the query
-            precision, recall, retrieved_count, TP = evaluate_query(
-                query,
-                positives,
-                end_year=end_year,
-                max_retrieved=1000_000
-            )
+            if query is None or precision is None:
+                raise ValueError(f"Failed to generate and evaluate query for {review_id} after {max_trials} attempts")
             
             # Write result to JSONL file
             result = {
