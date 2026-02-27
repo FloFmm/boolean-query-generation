@@ -32,8 +32,6 @@ def find_good_term_subsitutions(query1, query2, end_year, positives, output_path
     
     tokens_q1 = set(tokens_q1)
     tokens_q2 = set(tokens_q2)
-    tokens_q1 = tokens_q1 - tokens_q2
-    tokens_q2 = tokens_q2 - tokens_q1
     for token1 in tokens_q1:
         for token2 in tokens_q2:
             if not token1.strip(" ()") or not token2.strip(" ()"):
@@ -49,10 +47,9 @@ def find_good_term_subsitutions(query1, query2, end_year, positives, output_path
             except Exception as e:
                 continue
             f_beta_val1 = f_beta(precision, recall, beta=50.0)
-            if f_beta_val1 > best_f1:
-                if token1 not in replacements1:
-                    replacements1[token1] = []
-                replacements1[token1].append((token2, f_beta_val1))
+            if token1 not in replacements1:
+                replacements1[token1] = []
+            replacements1[token1].append((token2, f_beta_val1-best_f1))
             
             try:
                 precision, recall, retrieved_count, TP = evaluate_query(
@@ -63,10 +60,10 @@ def find_good_term_subsitutions(query1, query2, end_year, positives, output_path
             except Exception as e:
                 continue
             f_beta_val2 = f_beta(precision, recall, beta=50.0)
+            if token2 not in replacements2:
+                replacements2[token2] = []
+            replacements2[token2].append((token1, f_beta_val2-best_f2))
             if f_beta_val2 > best_f2:
-                if token2 not in replacements2:
-                    replacements2[token2] = []
-                replacements2[token2].append((token1, f_beta_val2))
                 print("good replacement found:", token2, "->", token1, "with f_beta:", f_beta_val2)
                 
             print(token1, f_beta_val1, "<->", token2, f_beta_val2)

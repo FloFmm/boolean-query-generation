@@ -2,6 +2,8 @@ import json
 import os
 import re
 import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from app.dataset.utils import (
     get_qg_results,
     find_qg_results_file,
@@ -9,9 +11,9 @@ from app.dataset.utils import (
     get_paper_query_examples,
     review_id_to_dataset,
 )
-from app.config.config import COLORS, CURRENT_BEST, CURRENT_BEST_RUN_FOLDER, HIGHLIGHT_LIGHTNESS
+from app.config.config import COLORMAPS, COLORS, CURRENT_BEST, CURRENT_BEST_RUN_FOLDER, HIGHLIGHT_LIGHTNESS
 from app.pubmed.retrieval import evaluate_query
-from app.visualization.helper import escape_typst, highlight_query_words, mark_outer_operators
+from app.visualization.helper import escape_typst, highlight_query_words, mark_outer_operators, split_query_into_words
 
 # Map (review_id, approach) to the replacement JSON file
 REPLACEMENT_FILES = {
@@ -62,6 +64,14 @@ def load_replacement_pairs(json_path: str, k: int = 2) -> list:
 
     return pairs
 
+def load_best_replacement_stat(json_path, word, replacement_type):
+    with open(json_path) as f:
+        data = json.load(f)
+    replacements = data.get(replacement_type, {}).get(word, [])
+    sorted_replacements = sorted(replacements, key=lambda x: x[1], reverse=True)
+    if not sorted_replacements:
+        return None, None
+    return sorted_replacements[0]
 
 def load_all_replacement_data(k: int = 2) -> dict:
     """Load all replacement pairs with colors assigned.
@@ -115,7 +125,7 @@ def mark_query_terms(query_text: str, markings: list) -> str:
 
 
 def dataframe_to_typst_query_table(
-    df: pd.DataFrame, output_path: str, review_ids: list = None, replacement_data: dict = None
+    df: pd.DataFrame, output_path: str, review_ids: list = None, highlight_replacements: bool = False
 ) -> None:
     """
     Convert a dataframe with query examples to a Typst table.
@@ -137,7 +147,6 @@ def dataframe_to_typst_query_table(
     - Each cell contains query string followed by "precision: p, recall: r"
     - Baseline query cells include paper name before query string
     """
-
     # Sort by review_id to group same queries together
     df = df.sort_values("review_id").reset_index(drop=True)
 
@@ -164,7 +173,7 @@ def dataframe_to_typst_query_table(
         # Check if we need to write the buffered row(s) and start a new one
         if current_review_id is not None and review_id != current_review_id:
             # Write the buffered row(s)
-            _write_query_table_row(typst_lines, current_review_id, row_buffer, replacement_data)
+            _write_query_table_row(typst_lines, current_review_id, row_buffer, highlight_replacements)
             row_buffer = []
 
         current_review_id = review_id
@@ -174,7 +183,7 @@ def dataframe_to_typst_query_table(
     if row_buffer:
         # seperator = f"  table.cell(colspan: {2}, inset: (top: 5pt, bottom: 5pt))[],\n"
         # typst_lines.append(seperator)  # add a row separator
-        _write_query_table_row(typst_lines, current_review_id, row_buffer, replacement_data)
+        _write_query_table_row(typst_lines, current_review_id, row_buffer, highlight_replacements)
 
     typst_lines.append(")")
     typst_lines.append("]")
@@ -184,7 +193,7 @@ def dataframe_to_typst_query_table(
         f.write("\n".join(typst_lines))
 
 
-def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, replacement_data: dict = None) -> None:
+def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, highlight_replacements: bool = False) -> None:
     """
     Helper function to write a single logical row (which may span multiple physical rows
     for the baseline query column).
@@ -205,10 +214,12 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, r
     #         escaped_title = escaped_title[:i-1] + "\\" + escaped_title[i :]
     #         break
     title_cell = f"[*{escaped_title}*]"
-
+    my_query = first_row["my_query"]
     # Build my_query markings from ALL baselines (since my_query cell spans all rows)
     my_markings = []
-    if replacement_data:
+    replacement_data = None
+    if highlight_replacements:
+        replacement_data = load_all_replacement_data(k=1)
         for row_data in rows_data:
             approach = row_data["approach"]
             pairs = replacement_data.get((review_id, approach), [])
@@ -219,8 +230,25 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, r
                 else:  # improve_paper
                     # my_term is the good replacement -> highlight it
                     my_markings.append((pair["my_term"], "highlight", pair["color"]))
+    else:
+        words = split_query_into_words(my_query)
+        if review_id == "CD007394":
+            comparison_appraoch = "#chatgpt-approach"
+        else:
+            comparison_appraoch = "#manual-approach"
+            
+        json_path = REPLACEMENT_FILES.get((review_id, comparison_appraoch))
+        
+        for w in words:
+            best_replacement_word, value = load_best_replacement_stat(word=w, json_path=json_path, replacement_type="replacements1")
+            if value is None:
+                continue
+            cmap = plt.get_cmap(COLORMAPS["heatmap"])
+            color = cmap(value)
+            color = mcolors.to_hex(color)
+            my_markings.append((w, "highlight", f"rgb(\"{color}\")"))
 
-    my_query = first_row["my_query"]
+    
     # # debug
     # if review_id == "CD009579":
     #     tokens_my_query = [t.strip() for t in re.split(r'\s+AND\s+|\s+OR\s+|\s+NOT\s+|\(|\)', my_query) if t.strip()]
@@ -242,8 +270,9 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, r
         my_query_cell = f"table.cell(rowspan: {num_rows}, {my_query_cell})"
 
     # Build paper_query markings for the first baseline
+    paper_query = rows_data[0]["paper_query"]
     paper_markings_0 = []
-    if replacement_data:
+    if highlight_replacements:
         approach_0 = rows_data[0]["approach"]
         pairs_0 = replacement_data.get((review_id, approach_0), [])
         for pair in pairs_0:
@@ -253,10 +282,21 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, r
             else:  # improve_paper
                 # paper_term is replaceable -> underline it
                 paper_markings_0.append((pair["paper_term"], "underline", pair["color"]))
+    else:
+        approach_0 = rows_data[0]["approach"]
+        words = split_query_into_words(paper_query)
+        json_path = REPLACEMENT_FILES.get((review_id, approach_0))
+        for w in words:
+            best_replacement_word, value = load_best_replacement_stat(word=w, json_path=json_path, replacement_type="replacements2")
+            if value is None:
+                continue
+            cmap = plt.get_cmap(COLORMAPS["heatmap"])
+            color = cmap(value)
+            color = mcolors.to_hex(color)
+            paper_markings_0.append((w, "highlight", f"rgb(\"{color}\")"))
 
     # Add the first baseline query row
     paper = f"*{rows_data[0]['approach']}* @{rows_data[0]['paper']}"
-    paper_query = rows_data[0]["paper_query"]
     paper_p = rows_data[0]["paper_p"]
     paper_r = rows_data[0]["paper_r"]
     paper_query_marked = mark_outer_operators(mark_query_terms(paper_query, paper_markings_0), ['AND', 'NOT'])
@@ -266,9 +306,10 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, r
 
     # Add remaining baseline query rows
     for row_data in rows_data[1:]:
+        paper_query = row_data["paper_query"]
         # Build paper_query markings for this baseline
         paper_markings = []
-        if replacement_data:
+        if highlight_replacements:
             approach = row_data["approach"]
             pairs = replacement_data.get((review_id, approach), [])
             for pair in pairs:
@@ -276,18 +317,21 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, r
                     paper_markings.append((pair["paper_term"], "highlight", pair["color"]))
                 else:  # improve_paper
                     paper_markings.append((pair["paper_term"], "underline", pair["color"]))
+        else:
+            approach = row_data["approach"]
+            words = split_query_into_words(paper_query)
+            json_path = REPLACEMENT_FILES.get((review_id, approach))
+            for w in words:
+                best_replacement_word, value = load_best_replacement_stat(word=w, json_path=json_path, replacement_type="replacements2")
+                if value is None:
+                    continue
+                cmap = plt.get_cmap(COLORMAPS["heatmap"])
+                color = cmap(value)
+                color = mcolors.to_hex(color)
+                paper_markings.append((w, "highlight", f"rgb(\"{color}\")"))
+
 
         paper = f"*{row_data['approach']}* @{row_data['paper']}"
-        paper_query = row_data["paper_query"]
-        # # debug
-        # if review_id == "CD009579":
-        #     tokens_paper_query = [t.strip() for t in re.split(r'\s+AND\s+|\s+OR\s+|\s+NOT\s+|\(|\)', paper_query) if t.strip()]
-        #     with open("data/examples/generated_manual_CD009579.json") as f:
-        #         data = json.load(f)
-        #     print("paper query")
-        #     print(set(tokens_paper_query) - set(data["replacements2"].keys()))
-        #     print()
-        
         paper_p = row_data["paper_p"]
         paper_r = row_data["paper_r"]
         paper_query_marked = mark_outer_operators(mark_query_terms(paper_query, paper_markings), ['AND', 'NOT'])
@@ -298,10 +342,6 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, r
     
 
 if __name__ == "__main__":
-    replacement_data = load_all_replacement_data(k=1)
-    print(replacement_data)
-    # exit(0)
-    
     path = find_qg_results_file(
         CURRENT_BEST_RUN_FOLDER, top_k_type="cosine", betas_key="50"
     )
@@ -411,7 +451,7 @@ if __name__ == "__main__":
         table = table[
             (
                 table["review_id"].isin(["CD007394"])
-                & table["approach"].isin(["#fine-tuned-llm-approach", "#semantic-approach"])
+                & table["approach"].isin(["#chatgpt-approach", "#semantic-approach"])
             )
             | (
                 table["review_id"].isin(["CD009579"])
@@ -420,5 +460,5 @@ if __name__ == "__main__":
         ]
 
         
-        dataframe_to_typst_query_table(table, output_path, replacement_data=replacement_data)
+        dataframe_to_typst_query_table(table, output_path, highlight_replacements=True)
         print(f"\nTypst table written to: {output_path}")
