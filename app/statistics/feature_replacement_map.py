@@ -109,6 +109,7 @@ if __name__ == "__main__":
     query_id2 = "CD009579"
     semantic_query = get_paper_query_examples(paper="pourrezaSemanticdrivenBooleanQuery2023", query_id=query_id1)["result"]
     chatgpt_query = get_paper_query_examples(paper="wangCanChatGPTWrite2023", query_id=query_id1)["result"]
+    chatgpt_query = get_paper_query_examples(paper="wangAutoBoolReinforcementLearningTrained2025", query_id=query_id1)["result"]
     manual_query = get_paper_query_examples(paper="kusaCSMeDBridgingDataset2023", query_id= query_id2)["result"]
     objective_query = get_paper_query_examples(paper="scellsComputationalApproachObjectively2020", query_id= query_id2)["result"]
     
@@ -121,6 +122,7 @@ if __name__ == "__main__":
     positives2 = set(dataset_details[query_id2]["positives"])
     find_good_term_subsitutions(query1, semantic_query, end_year1, positives1, output_path=f"{out_path}/generated_semantic_{query_id1}.json")
     find_good_term_subsitutions(query1, chatgpt_query, end_year1, positives1, output_path=f"{out_path}/generated_chatgpt_{query_id1}.json")
+    find_good_term_subsitutions(query1, chatgpt_query, end_year1, positives1, output_path=f"{out_path}/generated_autobool_{query_id1}.json")
     find_good_term_subsitutions(query2, manual_query, end_year2, positives2, output_path=f"{out_path}/generated_manual_{query_id2}.json")
     find_good_term_subsitutions(query2, objective_query, end_year2, positives2, output_path=f"{out_path}/generated_objective_{query_id2}.json")
     

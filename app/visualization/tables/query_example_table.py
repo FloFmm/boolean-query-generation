@@ -15,7 +15,8 @@ from app.visualization.helper import escape_typst, highlight_query_words, mark_o
 
 # Map (review_id, approach) to the replacement JSON file
 REPLACEMENT_FILES = {
-    ("CD007394", "#chatgpt-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_chatgpt_CD007394.json",
+    # ("CD007394", "#chatgpt-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_chatgpt_CD007394.json",
+    ("CD007394", "#autobool-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_autobool_CD007394.json",
     ("CD007394", "#semantic-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_semantic_CD007394.json",
     ("CD009579", "#manual-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_manual_CD009579.json",
     ("CD009579", "#objective-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_objective_CD009579.json",
