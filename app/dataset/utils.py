@@ -789,7 +789,7 @@ def get_dataset_details() -> dict:
 
     return data
 
-def get_qg_results(path, min_positive_threshold=None, query_ids=None):
+def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=None, betas=None, top_k_types=None):
     records = []
     # if path is already a file then only take the data from that file
     files = []
@@ -815,15 +815,31 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None):
                 data = json.loads(line)
                 data["file_path"] = str(jsonl_path)
                 data["selection_betas"] = betas_str
+                data["betas"] = betas
                 records.append(data)
     df = pd.DataFrame(records)
     # Print sample count
     print(f"{len(df)} samples")
     
+    df = calc_missing_columns_in_result_df(df)
+    # FILTERS
     if min_positive_threshold is not None:
         df = df[df["num_positive"] >= min_positive_threshold].copy()
     if query_ids is not None:
         df = df[df["query_id"].isin(query_ids)].copy()
+        
+        
+    # Add dataset column
+    df["dataset"] = df["query_id"].apply(lambda qid: review_id_to_dataset(qid)[0])
+    df["top_k_type"] = df["file_path"].apply(lambda file_path: get_ktype(file_path))
+    # Map tar2017 to tar2018 (tar2017 is part of 2018)
+    df.loc[df["dataset"] == "tar2017", "dataset"] = "tar2018"
+    if datasets is not None:
+        df = df[df["dataset"].isin(datasets)].copy()
+    if betas is not None:
+        df = df[df["betas"].apply(lambda x: all(b in x for b in betas))].copy()
+    if top_k_types is not None: 
+        df = df[df["top_k_type"].isin(top_k_types)].copy()
     return df
 
 
@@ -896,11 +912,6 @@ def get_paper_query_examples(paper=None, query_id=None):
 def calc_missing_columns_in_result_df(df):
     df = df.copy()
 
-    # Add dataset column
-    df["dataset"] = df["query_id"].apply(lambda qid: review_id_to_dataset(qid)[0])
-    # Map tar2017 to tar2018 (tar2017 is part of 2018)
-    df.loc[df["dataset"] == "tar2017", "dataset"] = "tar2018"
-
     # Add num_positive_bucket
     df["num_positive_bucket"] = df["num_positive"].apply(
         lambda x: "\<50" if x < 50 else "\>\=50"
@@ -944,3 +955,13 @@ def calc_missing_columns_in_result_df(df):
         - 1
     ))
     return df
+
+def get_ktype(source_file):
+    """Extract display ktype from row's source_file"""
+    if "ktype=cosine" in source_file:
+        return "cosine"
+    elif "ktype=pos_count" in source_file:
+        return "\#pos"
+    elif "ktype=fixed" in source_file:
+        return "fixed"
+    raise ValueError(f"Unknown ktype in source_file: {source_file}")

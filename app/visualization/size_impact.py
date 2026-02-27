@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import os
-from app.dataset.utils import find_qg_results_file, get_qg_results, load_vectors
+from app.dataset.utils import calc_missing_columns_in_result_df, find_qg_results_file, get_qg_results, load_vectors
 from app.config.config import (
     BOW_PARAMS,
     COLORS,
@@ -371,19 +371,10 @@ def compute_avg_term_len(rules):
             term_lens.append(len(term[0]))
     return sum(term_lens) / len(term_lens)
 
-def plot_size_impact(top_k_types, betas_key, min_points_in_bucket, out_dir, y_break=None, pi_interval=None, pi_show_f_score=True):
-    dataframes = []
-    # for top_k_type in top_k_types:
-    #     path = find_qg_results_file(
-    #         CURRENT_BEST_RUN_FOLDER, top_k_type=top_k_type, betas_key=betas_key
-    #     )
-    #     df = get_qg_results(path, min_positive_threshold=50)
-    #     dataframes.append(df)
-    # dataframe = (
-    #     pd.concat(dataframes, ignore_index=True) if dataframes else pd.DataFrame()
-    # )
-    dataframe = get_qg_results(CURRENT_N_TRIALS_FOLDER, min_positive_threshold=50)
-
+def plot_size_impact(top_k_types, betas_key, min_points_in_bucket, out_dir, y_break=None, pi_interval=None, pi_show_f_score=True, datasets=None):
+    dataframe = get_qg_results(CURRENT_N_TRIALS_FOLDER, min_positive_threshold=50, datasets=datasets, betas=[betas_key], top_k_types=top_k_types)
+    
+    print(len(dataframe), "total samples in results dataframe")
     dataframe["avg_term_len"] = dataframe["rules"].apply(compute_avg_term_len)
     
     X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
@@ -425,7 +416,7 @@ if __name__ == "__main__":
     # took F50 and "wspace": 0.05d buckets with only one datapoint (min_points_in_bucket=2) to reduce noise
     min_points_in_bucket = 3
     betas_key = "50"
-    top_k_types = ["cosine", "fixed", "pos_count"]
+    top_k_types = ["cosine"]
     out_dir = "../master-thesis-writing/writing/thesis/images/graphs/size_impact"
     plot_size_impact(
         top_k_types=top_k_types,
@@ -435,4 +426,5 @@ if __name__ == "__main__":
         y_break=((0.0, 0.05), (0.5, 1.0)),
         pi_interval=90,
         pi_show_f_score=False,
+        datasets=None#["tar2019", "tar2018"]
     )

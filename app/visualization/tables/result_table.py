@@ -9,6 +9,7 @@ from app.config.config import (
 )
 from app.dataset.utils import (
     calc_missing_columns_in_result_df,
+    get_ktype,
     get_qg_results,
     dataset_names,
 )
@@ -174,17 +175,6 @@ def generate_typst_table(
             for name in baseline_names
             if name in baseline_by_name
         ]
-
-    def get_ktype(row):
-        """Extract display ktype from row's source_file"""
-        source_file = row["source_file"]
-        if "ktype=cosine" in source_file:
-            return "cosine"
-        elif "ktype=pos_count" in source_file:
-            return "\#pos"
-        elif "ktype=fixed" in source_file:
-            return "fixed"
-        return None
 
     def config_name(row, betas):
         parts = row["selection_betas"].split(",")
@@ -465,7 +455,7 @@ def generate_typst_table(
 
                     for row in rows:
                         # Filter by top_k_types
-                        ktype = get_ktype(row)
+                        ktype = get_ktype(row["source_file"])
                         if ktype not in top_k_types:
                             continue
                         algo_name, _ = config_name(row, betas)

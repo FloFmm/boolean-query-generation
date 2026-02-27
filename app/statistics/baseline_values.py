@@ -89,10 +89,10 @@ if __name__ == "__main__":
     # for name, path in other_baseline_paths.items():
     for name, _ in BASE_VARIATIONS.items():
         path = f"data/statistics/optuna/evaluate_base_{name}_{CURRENT_BEST_RUN_FOLDER.split('/')[-1]}"
-        base_df = get_qg_results(path, min_positive_threshold=50, query_ids=None)
+        base_df = get_qg_results(path, min_positive_threshold=50, query_ids=None, datasets=["tar2017","tar2018"])
 
         base_df = calc_missing_columns_in_result_df(base_df)
-        base_df = base_df[base_df["dataset"].isin(["tar2017", "tar2018"])].copy()
+        
         
         name = BASE_VARIATIONS_NAMES[name.lower()]
         values = {"name": name}

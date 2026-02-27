@@ -1,6 +1,5 @@
 import re
 
-
 def pretty_print_param(name: str) -> str:
     """
     Transform parameter names into pretty-printed versions.
