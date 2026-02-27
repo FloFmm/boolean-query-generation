@@ -97,12 +97,13 @@ if __name__ == "__main__":
     out_path = f"data/examples/useless_terms_{CURRENT_BEST}"
     dataframe = get_qg_results(path, min_positive_threshold=50)
     dataset_details = get_dataset_details()
-    query_ids = ["CD007394", "CD009579", "CD009579"]
-    results = {paper_name: defaultdict(list) for paper_name in ["kusaCSMeDBridgingDataset2023", "my_query"]}
+    query_ids = ["CD007394", "CD009579", "CD010438"]
+    results = {paper_name: defaultdict(list) for paper_name in ["kusaCSMeDBridgingDataset2023", "wangAutoBoolReinforcementLearningTrained2025", "my_query"]}
     for query_id in query_ids:
         _, _, end_year = review_id_to_dataset(query_id)
         positives = set(dataset_details[query_id]["positives"])
         manual_query = get_paper_query_examples(paper="kusaCSMeDBridgingDataset2023", query_id=query_id)["result"]
+        autobool_query = get_paper_query_examples(paper="wangAutoBoolReinforcementLearningTrained2025", query_id=query_id)["result"]
         my_query = dataframe[dataframe["query_id"] == query_id]["pubmed_query"].values[0]
         
         
@@ -110,6 +111,10 @@ if __name__ == "__main__":
         results["kusaCSMeDBridgingDataset2023"]["ratios"].append(ratio)
         results["kusaCSMeDBridgingDataset2023"]["num_useless"].append(num_useless)
         print("manual useless term ratio:", ratio)
+        data, num_useless, ratio = find_useless_terms(autobool_query, end_year, positives, output_path=f"{out_path}/useless_autobool_{query_id}.json")
+        results["wangAutoBoolReinforcementLearningTrained2025"]["ratios"].append(ratio)
+        results["wangAutoBoolReinforcementLearningTrained2025"]["num_useless"].append(num_useless)
+        print("autobool useless term ratio:", ratio)
         data, num_useless, ratio = find_useless_terms(my_query, end_year, positives, output_path=f"{out_path}/useless_my_query_{query_id}.json")
         results["my_query"]["ratios"].append(ratio)
         results["my_query"]["num_useless"].append(num_useless)

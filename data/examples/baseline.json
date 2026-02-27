@@ -105,6 +105,16 @@
                 "query_id": "CD007394",
                 "query": "Galactomannan detection for invasive aspergillosis in immunocompromised patients",
                 "result": "(galactomannan[tx] OR galactomannan detection[tiab] OR galactomannan test[tiab] OR galactomannan antigen[tx]) AND (invasive aspergillosis[tx] OR aspergillosis[tx] OR invasive aspergillosis[MeSH]) AND (immunocompromised[tx] OR immunosuppressed[tx] OR transplant[tx] OR neutropenia[tx] OR immunocompromised[MeSH])"
+            },
+            {
+                "query_id": "CD009579",
+                "query": "Circulating antigen tests and urine reagent strips for diagnosis of active schistosomiasis in endemic areas",
+                "result": "((circulating antigen test OR urine reagent strip OR urine dipstick OR schistosomiasis antigen test) AND (schistosomiasis[tx] OR schistosomiasis[mh] OR active schistosomiasis[tx])) AND ((diagnosis OR detection OR test OR endemic areas) OR (schistosomiasis[tx] AND (endemic area OR Africa OR endemic region)))"
+            },
+            {
+                "query_id": "CD010438",
+                "query": "Thromboelastography (TEG) and rotational thromboelastometry (ROTEM) for trauma\u2011induced coagulopathy in adult trauma patients with bleeding",
+                "result": "((Thromboelastography[tx] OR Rotational Thromboelastometry[tx] OR thromboelastography[tiab] OR rotational thromboelastometry[tiab]) AND (trauma-induced coagulopathy[tx] OR coagulopathy, trauma[tx] OR trauma coagulopathy[tx] OR trauma[mh] OR coagulopathy[tx])) AND ((trauma[tx] OR trauma[mh]) AND (adult[tx] OR adult[mh] OR bleeding[tx] OR hemorrhage[tx] OR trauma[tx]))"
             }
         ]
     },
