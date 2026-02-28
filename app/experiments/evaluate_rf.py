@@ -49,11 +49,13 @@ def evaluate_rf(
     qg_params,
     term_expansions=None,
     meta_data=None,
+    min_retrieved=0,
     max_retrieved=100_000,
     always_retrieve=False,
     ignore_pubmed_errors=False,
     sorted_scores=None,
     skip_existing=False,
+    last_run_failed=False,
 ):
     dataset, _, end_year = review_id_to_dataset(query_id)
 
@@ -111,7 +113,7 @@ def evaluate_rf(
         rf_model_path.with_suffix(".privatelock")
     ):  # hold for the time of the generation of the rf the lock to the model
         # check whether rf already exists
-        if rf_model_path.exists():
+        if rf_model_path.exists() and not last_run_failed:
             with open(rf_model_path, "rb") as f:
                 rf = pickle.load(f)
                 print("loaded existing rf model from disc", flush=True)
@@ -167,7 +169,7 @@ def evaluate_rf(
     pseudo_precision = precision_score(pseudo_labels, subset_preds)
     pseudo_recall = recall_score(pseudo_labels, subset_preds)
     try:
-        retrieved = search_pubmed_dynamic(pubmed_query_str, end_year=end_year, max_retrieved=max_retrieved, always_retrieve=always_retrieve)
+        retrieved = search_pubmed_dynamic(pubmed_query_str, end_year=end_year, min_retrieved=min_retrieved, max_retrieved=max_retrieved, always_retrieve=always_retrieve)
     except Exception as e:
         if ignore_pubmed_errors:
             print(f"Warning: Exception occurred during PubMed retrieval: {e}")

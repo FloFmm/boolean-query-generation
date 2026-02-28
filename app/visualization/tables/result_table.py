@@ -1,6 +1,7 @@
 import json
 import os
 from app.config.config import (
+    CURRENT_BEST,
     CURRENT_BEST_RUN_FOLDER,
     RESULT_TABLE_OPERATOR_METRICS_ORDERED,
     RESULT_TABLE_PERFORMANCE_METRICS_ORDERED,
@@ -37,6 +38,7 @@ AGGREGATE_METRIC_COLS = [
     "all_ORs",
     "pubmed_f1",
     "pubmed_f3",
+    "pubmed_f50",
 ]
 
 GROUP_COLS = ["dataset", "num_positive_bucket", "source_file", "selection_betas"]
@@ -533,9 +535,8 @@ if __name__ == "__main__":
     with open("data/examples/baseline_values.json", "r") as f:
         baseline_dict = json.load(f)
 
-    best_choice = CURRENT_BEST_RUN_FOLDER.split("/")[-1]
-    folder_path = f"data/statistics/optuna/{best_choice}"
-    typst_base = f"../master-thesis-writing/writing/tables/{best_choice}/"
+    folder_path = CURRENT_BEST_RUN_FOLDER
+    typst_base = f"../master-thesis-writing/writing/tables/{CURRENT_BEST}/"
 
     # Load and prepare DataFrame once
     base_df = get_qg_results(folder_path, min_positive_threshold=None, query_ids=None)

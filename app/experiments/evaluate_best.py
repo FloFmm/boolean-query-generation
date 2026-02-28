@@ -58,21 +58,29 @@ if __name__ == "__main__":
                 rf_params = copy.deepcopy(best_p["rf_params"])
                 qg_params = copy.deepcopy(best_p["qg_params"])
                 rf_params["top_k_type"] = top_k_type
-                qg_results = evaluate_rf(
-                    run_name=run_name + f"/n{trial_n}",
-                    query_id=query_id,
-                    X=X,
-                    positives=positives[query_id],
-                    feature_names=feature_names,
-                    sorted_ids=sorted_ids[query_id],
-                    sorted_scores=sorted_scores[query_id],
-                    ordered_pmids=ordered_pmids,
-                    rf_params=rf_params,
-                    qg_params=qg_params,
-                    term_expansions=term_expansions,
-                    meta_data=initial_solutions[i],
-                    max_retrieved=1_000_000,
-                    always_retrieve=True,
-                    ignore_pubmed_errors=True,
-                    skip_existing=True,
-                )
+                last_run_failed = False
+                for i in range(10):
+                    qg_results = evaluate_rf(
+                        run_name=run_name + f"/n{trial_n}",
+                        query_id=query_id,
+                        X=X,
+                        positives=positives[query_id],
+                        feature_names=feature_names,
+                        sorted_ids=sorted_ids[query_id],
+                        sorted_scores=sorted_scores[query_id],
+                        ordered_pmids=ordered_pmids,
+                        rf_params=rf_params,
+                        qg_params=qg_params,
+                        term_expansions=term_expansions,
+                        meta_data=initial_solutions[i],
+                        max_retrieved=200_000,
+                        min_retrieved=1,
+                        always_retrieve=True,
+                        ignore_pubmed_errors=True,
+                        skip_existing=True,
+                        last_run_failed=last_run_failed,
+                    )
+                    if qg_results is not None:
+                        break
+                    else:
+                        last_run_failed = True

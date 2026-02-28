@@ -196,7 +196,7 @@ def plot_precision_recall_histograms(
 
 def plot_all_heatmaps(betas_key, out_dir):
     data = get_qg_results(
-        CURRENT_BEST_RUN_FOLDER, min_positive_threshold=50, betas=[betas_key]
+        CURRENT_BEST_RUN_FOLDER, min_positive_threshold=50, restrict_betas=[betas_key]
     )
     # Filter to only num_positive >= 50
     data = data[data["num_positive"] >= 50]

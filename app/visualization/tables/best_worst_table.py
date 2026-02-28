@@ -230,7 +230,7 @@ def filter_to_query_with_max_precision_spread(
 
 
 if __name__ == "__main__":
-    dataframe = get_qg_results(CURRENT_BEST_RUN_FOLDER, min_positive_threshold=50, top_k_types=["cosine"], betas=["50"])
+    dataframe = get_qg_results(CURRENT_BEST_RUN_FOLDER, min_positive_threshold=50, top_k_types=["cosine"], restrict_betas=["50"])
 
     dataset_details = get_dataset_details()
 

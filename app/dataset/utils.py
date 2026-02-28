@@ -789,7 +789,7 @@ def get_dataset_details() -> dict:
 
     return data
 
-def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=None, betas=None, top_k_types=None):
+def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=None, restrict_betas=None, top_k_types=None):
     records = []
     # if path is already a file then only take the data from that file
     files = []
@@ -834,10 +834,11 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=N
     df["top_k_type"] = df["file_path"].apply(lambda file_path: get_ktype(file_path))
     # Map tar2017 to tar2018 (tar2017 is part of 2018)
     df.loc[df["dataset"] == "tar2017", "dataset"] = "tar2018"
+    
     if datasets is not None:
         df = df[df["dataset"].isin(datasets)].copy()
-    if betas is not None:
-        df = df[df["betas"].apply(lambda x: all(b in x for b in betas))].copy()
+    if restrict_betas is not None:
+        df = df[df["betas"].apply(lambda x: all(b in x for b in restrict_betas))].copy()
     if top_k_types is not None: 
         df = df[df["top_k_type"].isin(top_k_types)].copy()
     return df
@@ -957,6 +958,12 @@ def calc_missing_columns_in_result_df(df):
     df["pubmed_f3"] = df.apply(
         lambda row: f_beta(
             precision=row["pubmed_precision"], recall=row["pubmed_recall"], beta=3
+        ),
+        axis=1,
+    )
+    df["pubmed_f50"] = df.apply(
+        lambda row: f_beta(
+            precision=row["pubmed_precision"], recall=row["pubmed_recall"], beta=50
         ),
         axis=1,
     )

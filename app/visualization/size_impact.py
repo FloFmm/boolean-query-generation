@@ -372,7 +372,7 @@ def compute_avg_term_len(rules):
     return sum(term_lens) / len(term_lens)
 
 def plot_size_impact(top_k_types, betas_key, min_points_in_bucket, out_dir, y_break=None, pi_interval=None, pi_show_f_score=True, datasets=None):
-    dataframe = get_qg_results(CURRENT_N_TRIALS_FOLDER, min_positive_threshold=50, datasets=datasets, betas=[betas_key], top_k_types=top_k_types)
+    dataframe = get_qg_results(CURRENT_BEST_RUN_FOLDER, min_positive_threshold=50, datasets=datasets, restrict_betas=[betas_key], top_k_types=top_k_types)
     
     print(len(dataframe), "total samples in results dataframe")
     dataframe["avg_term_len"] = dataframe["rules"].apply(compute_avg_term_len)
