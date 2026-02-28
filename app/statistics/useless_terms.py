@@ -31,25 +31,15 @@ def find_useless_terms(query, end_year, positives, output_path=None):
 
     print(f"Base F-beta: {base_f_beta}")
 
+    from app.visualization.helper import replace_word_in_query
     for token in tokens:
         if not token.strip(" ()"):
             continue
-        
-        # Find all occurrences of this token
-        occurrence_index = 0
-        search_start = 0
-        
-        while True:
-            # Find the next occurrence of the token
-            pos = query.find(token, search_start)
-            if pos == -1:
-                break
-            
-            # Remove only this specific occurrence
-            new_query = query[:pos] + query[pos + len(token):]
-            search_start = pos + len(token)  # Continue searching after the current token
-            
-            # Check if performance is affected
+
+        # Use the replacement function to generate queries with each occurrence removed
+        queries = replace_word_in_query(query, token, "", replace_all=False)
+        num_occurrences = len(queries)
+        for occurrence_index, new_query in enumerate(queries):
             try:
                 precision, recall, retrieved_count, TP = evaluate_query(
                     new_query,
@@ -58,15 +48,14 @@ def find_useless_terms(query, end_year, positives, output_path=None):
                     max_retrieved=1_000_000,
                 )
                 current_f_beta = f_beta(precision, recall, beta=50.0)
-                
+
                 # If performance is same or better, it's useless (or harmful)
                 if current_f_beta >= base_f_beta:
-                    print(f"Found useless term: '{token}' at occurrence {occurrence_index + 1} (position {pos}) (New F-beta: {current_f_beta})")
+                    print(f"Found useless term: '{token}' at occurrence {occurrence_index + 1} (New F-beta: {current_f_beta})")
                     useless_terms.append({
                         "term": token,
                         "occurrence_index": occurrence_index,
-                        "num_occurrences": query.count(token),
-                        "position": pos,
+                        "num_occurrences": num_occurrences,
                         "f_beta": current_f_beta,
                         "f_beta_increase": current_f_beta - base_f_beta,
                         "precision_increase": precision - base_precision,
@@ -76,8 +65,6 @@ def find_useless_terms(query, end_year, positives, output_path=None):
             except Exception as e:
                 # If the query becomes invalid, we ignore this removal
                 pass
-            
-            occurrence_index += 1
 
     useless_terms.sort(key=lambda x: (x["term"], x["occurrence_index"]))
 

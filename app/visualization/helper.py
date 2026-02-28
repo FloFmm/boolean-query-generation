@@ -181,14 +181,33 @@ def value_to_marking(w, value, minimum_of_all_replacements, maximum_of_all_repla
         color = mcolors.to_hex(color, keep_alpha=True)
         return (w, "underline", f"rgb(\"{color}\")")
 
-def replace_word_in_query(query, old_word, new_word):
+def replace_word_in_query(query, old_word, new_word, replace_all=True):
+    
     escaped = re.escape(old_word)
     pattern = (
-            r"((?:^|\[|\\\(|\(|\\\[|\\#| (?:OR|AND|NOT) ))"
-            + escaped
-            + r"(?= (?:OR|AND|NOT) |\\\)|\)|\\\]|\]|\\#|$)"
-        )
+        r"((?:^|\[|\\\(|\(|\\\[|\\#| (?:OR|AND|NOT) ))"
+        + escaped
+        + r"(?= (?:OR|AND|NOT) |\\\)|\)|\\\]|\]|\\#|$)"
+    )
     old_query_text = query
-    query = re.sub(pattern, lambda m: m.group(1) + new_word, query)
-    assert old_query_text != query, f"Failed to replace term '{old_word}' in query text: {query}"
-    return query
+    if replace_all:
+        if old_word == new_word:
+            return query
+        query = re.sub(pattern, lambda m: m.group(1) + new_word, query)
+        assert old_query_text != query, f"Failed to replace term '{old_word}' in query text: {query}"
+        return query
+    else:
+        if old_word == new_word:
+            return [query]
+        # replace each occurrence individually and return array of modified queries
+        queries = []
+        for match in re.finditer(pattern, query):
+            # match.group(1) is the prefix, match.span() is the full match
+            start, end = match.span()
+            prefix = match.group(1)
+            # The matched word is right after the prefix, so replace only that
+            word_start = match.start(1) + len(prefix)
+            word_end = end
+            new_query = query[:word_start] + new_word + query[word_end:]
+            queries.append(new_query)
+        return queries
