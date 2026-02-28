@@ -116,7 +116,7 @@ def get_autobool_query(topic):
     return query
 
 if __name__ == "__main__":
-    max_trials = 10
+    max_trials = 100
     output_file = "data/examples/autobool_results.jsonl"
     priority_query_ids = ["CD007394", "CD009579", "CD010438", "CD008170"]
     dataset_details = get_dataset_details()
@@ -194,7 +194,8 @@ if __name__ == "__main__":
                 "pubmed_precision": precision,
                 "pubmed_recall": recall,
                 "qg_time_seconds": qg_time_seconds,
-                "pubmed_query": query
+                "pubmed_query": query,
+                "required_trials": trial + 1
             }
             f.write(json.dumps(result) + "\n")
             f.flush()  # Ensure the line is written immediately
