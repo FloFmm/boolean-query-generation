@@ -97,7 +97,7 @@
         "name": "#fine-tuned-llm-approach",
         "examples": [
             {
-                "query_id": "CD007394_old",
+                "query_id": "ignore_CD007394_old",
                 "query": "Galactomannan detection for invasive aspergillosis in immunocompromised patients",
                 "result": "((Galactomannan[tx] OR galactomannan[tx] OR Galactomannan[mh]) AND (invasive aspergillosis[tx] OR Aspergillus infection[tx] OR Invasive Aspergillosis[mh])) AND ((immunocompromised[tx] OR immunocompromised host[mh] OR transplant* [tx] OR neutropenia[tx]) OR (diagnostic* [tx] OR detection [tx] OR assay [tx] OR test [tx]))"
             },

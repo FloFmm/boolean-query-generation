@@ -1,5 +1,7 @@
 import re
 
+from app.config.config import COLORS
+
 def pretty_print_param(name: str) -> str:
     """
     Transform parameter names into pretty-printed versions.
@@ -155,3 +157,38 @@ def highlight_query_words(query_text: str, words: set, color: str, fmt: str = "h
 
     return query_text
        
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+def value_to_marking(w, value, minimum_of_all_replacements, maximum_of_all_replacements, min_alpha=0.2, min_value_pct=0.03):
+    if value < 0:
+        if abs(value) < min_value_pct * abs(minimum_of_all_replacements):
+            return None
+        color = COLORS["positive"]
+        lighting_factor = min_alpha + abs(value/minimum_of_all_replacements) * (1 - min_alpha)
+        # lighten color by vlaue
+        color = mcolors.to_rgba(color)
+        color = (color[0], color[1], color[2], lighting_factor)
+        color = mcolors.to_hex(color, keep_alpha=True)
+        return (w, "highlight", f"rgb(\"{color}\")")
+    else:
+        if abs(value) < min_value_pct * abs(maximum_of_all_replacements):
+            return None
+        color = COLORS["negative"]
+        lighting_factor = min_alpha + abs(value/maximum_of_all_replacements) * (1 - min_alpha)
+        # lighten color by vlaue
+        color = mcolors.to_rgba(color)
+        color = (color[0], color[1], color[2], lighting_factor)
+        color = mcolors.to_hex(color, keep_alpha=True)
+        return (w, "underline", f"rgb(\"{color}\")")
+
+def replace_word_in_query(query, old_word, new_word):
+    escaped = re.escape(old_word)
+    pattern = (
+            r"((?:^|\[|\\\(|\\\[|\\#| (?:OR|AND|NOT) ))"
+            + escaped
+            + r"(?= (?:OR|AND|NOT) |\\\)|\\\]|\]|\\#|$)"
+        )
+    old_query_text = query
+    query = re.sub(pattern, lambda m: m.group(1) + new_word, query)
+    assert old_query_text != query, f"Failed to replace term '{old_word}' in query text: {query}"
+    return query

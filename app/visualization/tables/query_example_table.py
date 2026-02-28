@@ -13,12 +13,12 @@ from app.dataset.utils import (
 )
 from app.config.config import COLORMAPS, COLORS, CURRENT_BEST, CURRENT_BEST_RUN_FOLDER, HIGHLIGHT_LIGHTNESS
 from app.pubmed.retrieval import evaluate_query
-from app.visualization.helper import escape_typst, highlight_query_words, mark_outer_operators, split_query_into_words
+from app.visualization.helper import escape_typst, highlight_query_words, mark_outer_operators, split_query_into_words, value_to_marking
 
 # Map (review_id, approach) to the replacement JSON file
 REPLACEMENT_FILES = {
     # ("CD007394", "#chatgpt-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_chatgpt_CD007394.json",
-    ("CD007394", "#autobool-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_autobool_CD007394.json",
+    ("CD007394", "#fine-tuned-llm-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_autobool_CD007394.json",
     ("CD007394", "#semantic-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_semantic_CD007394.json",
     ("CD009579", "#manual-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_manual_CD009579.json",
     ("CD009579", "#objective-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_objective_CD009579.json",
@@ -46,6 +46,7 @@ def load_replacement_pairs(json_path: str, k: int = 2) -> list:
     sorted_r1_cand = sorted(r1_cand, key=lambda x: x[1][1], reverse=True)  # sort by score
     pairs += [{
         "my_term": my_term,
+        "value": replacement[1],
         "paper_term": replacement[0],
         "direction": "improve_mine",
     } for my_term, replacement in sorted_r1_cand[:k]]
@@ -58,6 +59,7 @@ def load_replacement_pairs(json_path: str, k: int = 2) -> list:
     sorted_r2_cand = sorted(r2_cand, key=lambda x: x[1][1], reverse=True)  # sort by score
     pairs += [{
         "my_term": replacement[0],
+        "value": replacement[1],
         "paper_term": paper_term,
         "direction": "improve_paper",
     } for paper_term, replacement in sorted_r2_cand[:k]]
@@ -72,6 +74,23 @@ def load_best_replacement_stat(json_path, word, replacement_type):
     if not sorted_replacements:
         return None, None
     return sorted_replacements[0]
+
+def get_min_max_replacement_values():
+    values = []
+    for key, json_path in REPLACEMENT_FILES.items():
+        with open(json_path) as f:
+            data = json.load(f)
+            for r in ["replacements1", "replacements2"]:
+                for term, replacements in data.get(r, {}).items():
+                    values.append(max([r[1] for r in replacements]))  # take the best replacement score for this term
+    
+    minimum_of_all_replacements = min(values)
+    maximum_of_all_replacements = max(values)
+    if minimum_of_all_replacements == 0:
+        minimum_of_all_replacements = 1  # to avoid division by zero
+    if maximum_of_all_replacements == 0:
+        maximum_of_all_replacements = 1  # to avoid division by zero
+    return minimum_of_all_replacements, maximum_of_all_replacements
 
 def load_all_replacement_data(k: int = 2) -> dict:
     """Load all replacement pairs with colors assigned.
@@ -215,6 +234,7 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, h
     #         break
     title_cell = f"[*{escaped_title}*]"
     my_query = first_row["my_query"]
+    print("hello", my_query)
     # Build my_query markings from ALL baselines (since my_query cell spans all rows)
     my_markings = []
     replacement_data = None
@@ -231,22 +251,23 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, h
                     # my_term is the good replacement -> highlight it
                     my_markings.append((pair["my_term"], "highlight", pair["color"]))
     else:
+        minimum_of_all_replacements, maximum_of_all_replacements = get_min_max_replacement_values()
+        print(f"Minimum replacement value across all examples: {minimum_of_all_replacements}")
+        print(f"Maximum replacement value across all examples: {maximum_of_all_replacements}")
         words = split_query_into_words(my_query)
         if review_id == "CD007394":
-            comparison_appraoch = "#chatgpt-approach"
+            comparison_appraoch = "#fine-tuned-llm-approach"
         else:
             comparison_appraoch = "#manual-approach"
-            
         json_path = REPLACEMENT_FILES.get((review_id, comparison_appraoch))
-        
         for w in words:
             best_replacement_word, value = load_best_replacement_stat(word=w, json_path=json_path, replacement_type="replacements1")
             if value is None:
                 continue
-            cmap = plt.get_cmap(COLORMAPS["heatmap"])
-            color = cmap(value)
-            color = mcolors.to_hex(color)
-            my_markings.append((w, "highlight", f"rgb(\"{color}\")"))
+            marking = value_to_marking(w, value, minimum_of_all_replacements, maximum_of_all_replacements)
+            if marking is not None:
+                my_markings.append(marking)
+            
 
     
     # # debug
@@ -290,10 +311,9 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, h
             best_replacement_word, value = load_best_replacement_stat(word=w, json_path=json_path, replacement_type="replacements2")
             if value is None:
                 continue
-            cmap = plt.get_cmap(COLORMAPS["heatmap"])
-            color = cmap(value)
-            color = mcolors.to_hex(color)
-            paper_markings_0.append((w, "highlight", f"rgb(\"{color}\")"))
+            marking = value_to_marking(w, value, minimum_of_all_replacements, maximum_of_all_replacements)
+            if marking is not None:
+                paper_markings_0.append(marking)
 
     # Add the first baseline query row
     paper = f"*{rows_data[0]['approach']}* @{rows_data[0]['paper']}"
@@ -325,11 +345,9 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, h
                 best_replacement_word, value = load_best_replacement_stat(word=w, json_path=json_path, replacement_type="replacements2")
                 if value is None:
                     continue
-                cmap = plt.get_cmap(COLORMAPS["heatmap"])
-                color = cmap(value)
-                color = mcolors.to_hex(color)
-                paper_markings.append((w, "highlight", f"rgb(\"{color}\")"))
-
+                marking = value_to_marking(w, value, minimum_of_all_replacements, maximum_of_all_replacements)
+                if marking is not None:
+                    paper_markings.append(marking)
 
         paper = f"*{row_data['approach']}* @{row_data['paper']}"
         paper_p = row_data["paper_p"]
@@ -451,7 +469,7 @@ if __name__ == "__main__":
         table = table[
             (
                 table["review_id"].isin(["CD007394"])
-                & table["approach"].isin(["#chatgpt-approach", "#semantic-approach"])
+                & table["approach"].isin(["#fine-tuned-llm-approach", "#semantic-approach"])
             )
             | (
                 table["review_id"].isin(["CD009579"])
@@ -460,5 +478,5 @@ if __name__ == "__main__":
         ]
 
         
-        dataframe_to_typst_query_table(table, output_path, highlight_replacements=True)
+        dataframe_to_typst_query_table(table, output_path, highlight_replacements=False)
         print(f"\nTypst table written to: {output_path}")

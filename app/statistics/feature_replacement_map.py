@@ -5,7 +5,7 @@ from app.config.config import CURRENT_BEST, CURRENT_BEST_RUN_FOLDER
 from app.dataset.utils import find_qg_results_file, get_dataset_details, get_paper_query_examples, get_qg_results, review_id_to_dataset
 from app.pubmed.retrieval import evaluate_query
 from app.helper.helper import f_beta
-from app.visualization.helper import split_query_into_words
+from app.visualization.helper import replace_word_in_query, split_query_into_words
 
 def find_good_term_subsitutions(query1, query2, end_year, positives, output_path=None):
     # Split by operators and parentheses, but do not capture them.
@@ -36,8 +36,9 @@ def find_good_term_subsitutions(query1, query2, end_year, positives, output_path
         for token2 in tokens_q2:
             if not token1.strip(" ()") or not token2.strip(" ()"):
                 continue
-            new_query2 = query2.replace(token2, token1)
-            new_query1 = query1.replace(token1, token2)
+            
+            new_query2 = replace_word_in_query(query2, token2, token1)
+            new_query1 = replace_word_in_query(query1, token1, token2)
             try:
                 precision, recall, retrieved_count, TP = evaluate_query(
                     new_query1,
@@ -66,7 +67,7 @@ def find_good_term_subsitutions(query1, query2, end_year, positives, output_path
             if f_beta_val2 > best_f2:
                 print("good replacement found:", token2, "->", token1, "with f_beta:", f_beta_val2)
                 
-            print(token1, f_beta_val1, "<->", token2, f_beta_val2)
+            print(token1, f_beta_val1-best_f1, "<->", token2, f_beta_val2-best_f2)
             
     for token in replacements1:
         replacements1[token].sort(key=lambda x: x[1], reverse=True)
