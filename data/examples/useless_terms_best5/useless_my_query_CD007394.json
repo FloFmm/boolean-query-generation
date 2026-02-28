@@ -1,0 +1,191 @@
+[
+    {
+        "term": "\"antigens, fungal/blood\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.9621833462982378,
+        "f_beta_increase": 0.0006016593231993328,
+        "precision_increase": 0.00030828658218131147,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"antigens, fungal/blood\"[mh]",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.9615938753005099,
+        "f_beta_increase": 1.2188325471451655e-05,
+        "precision_increase": 6.113427047467132e-06,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"aspergillosis/diagnosis\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9615816869750384,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"enzyme-linked immunosorbent assay/methods\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9615816869750384,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"mannans/analysis\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.9615816869750384,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"mannans/analysis\"[mh]",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.9620369274470351,
+        "f_beta_increase": 0.00045524047199663187,
+        "precision_increase": 0.0002320199981569529,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"mannans/blood\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.9615816869750384,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"mannans/blood\"[mh]",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.9615816869750384,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "aspergillosis",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.9658400950864833,
+        "f_beta_increase": 0.004258408111444845,
+        "precision_increase": 0.01588392303903656,
+        "recall_increase": -0.010869565217391242
+    },
+    {
+        "term": "aspergillosis",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.9621670753360954,
+        "f_beta_increase": 0.0005853883610569266,
+        "precision_increase": 0.0002997710539752608,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "assay",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.9748190345654689,
+        "f_beta_increase": 0.013237347590430493,
+        "precision_increase": 0.012610181826961714,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "detect",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.9631606121136201,
+        "f_beta_increase": 0.0015789251385817105,
+        "precision_increase": 0.000839019312177159,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "detect",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.9615816869750384,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "diagnosi",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.9625195099527486,
+        "f_beta_increase": 0.0009378229777101676,
+        "precision_increase": 0.009731701467235771,
+        "recall_increase": -0.010869565217391242
+    },
+    {
+        "term": "galactomannan",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.9618742920900039,
+        "f_beta_increase": 0.0002926051149654274,
+        "precision_increase": 0.00014825337968830954,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "galactomannan",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.962020661436494,
+        "f_beta_increase": 0.00043897446145557684,
+        "precision_increase": 0.00022359747867224146,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "glucan",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9619149457739156,
+        "f_beta_increase": 0.00033325879887713405,
+        "precision_increase": 0.00016909987380281724,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "ifi",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9635357572268037,
+        "f_beta_increase": 0.0019540702517653052,
+        "precision_increase": 0.0010533541226081054,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "positive",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9621955498809892,
+        "f_beta_increase": 0.0006138629059507794,
+        "precision_increase": 0.0003146800715201556,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "sensor",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.9615979381443298,
+        "f_beta_increase": 1.6251169291381373e-05,
+        "precision_increase": 8.152456308209086e-06,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "sensor",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.9615857497158647,
+        "f_beta_increase": 4.06274082631608e-06,
+        "precision_increase": 2.037199167246803e-06,
+        "recall_increase": 0.0
+    }
+]

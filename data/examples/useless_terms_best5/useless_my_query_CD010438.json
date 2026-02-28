@@ -1,0 +1,173 @@
+[
+    {
+        "term": "\"blood coagulation disorders/therapy\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8855224390182219,
+        "f_beta_increase": 0.03810542242759063,
+        "precision_increase": 0.003194702328265097,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"health facility administration\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.847468293155194,
+        "f_beta_increase": 5.1276564562718896e-05,
+        "precision_increase": 2.4019661534146163e-06,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"health facility administration\"[mh]",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.8493389933292904,
+        "f_beta_increase": 0.0019219767386591258,
+        "precision_increase": 9.202812517301396e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"hematologic diseases\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8795277568450137,
+        "f_beta_increase": 0.03211074025438243,
+        "precision_increase": 0.002394244924034108,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"thrombelastography\"[mh]",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.8474170165906313,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "aptt",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8476324198702431,
+        "f_beta_increase": 0.00021540327961178107,
+        "precision_increase": 1.010945166334161e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "care",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8522746634861134,
+        "f_beta_increase": 0.004857646895482071,
+        "precision_increase": 0.00024097908112271672,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "correlate",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8475606066107501,
+        "f_beta_increase": 0.00014359002011876676,
+        "precision_increase": 6.7334456135387764e-06,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "ct",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8495141508861741,
+        "f_beta_increase": 0.002097134295542813,
+        "precision_increase": 0.00010062393002296206,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "patient",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8489683097737797,
+        "f_beta_increase": 0.0015512931831483945,
+        "precision_increase": 7.395411857098093e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "perioperative",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8474785492127652,
+        "f_beta_increase": 6.153262213393074e-05,
+        "precision_increase": 2.882737101222565e-06,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "predict",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8498543689320387,
+        "f_beta_increase": 0.002437352341407406,
+        "precision_increase": 0.00011742264721183128,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "provide",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8476734614825934,
+        "f_beta_increase": 0.0002564448919620821,
+        "precision_increase": 1.2041385761205926e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "rotem",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.8488859795863941,
+        "f_beta_increase": 0.0014689629957628236,
+        "precision_increase": 6.996125467437784e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "rotem",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.8480019375151369,
+        "f_beta_increase": 0.000584920924505572,
+        "precision_increase": 2.7570261844933955e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "teg",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.8496687616782741,
+        "f_beta_increase": 0.002251745087642809,
+        "precision_increase": 0.00010824118211232893,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "test",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8718516950735175,
+        "f_beta_increase": 0.024434678482886163,
+        "precision_increase": 0.001595807628697734,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "trauma",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.8477350313536548,
+        "f_beta_increase": 0.00031801476302351084,
+        "precision_increase": 1.4943096927916115e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "useful",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.857177830003917,
+        "f_beta_increase": 0.009760813413285718,
+        "precision_increase": 0.0005152398192225516,
+        "recall_increase": 0.0
+    }
+]

@@ -1,0 +1,83 @@
+[
+    {
+        "term": "\"tem international\"",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9023994226952914,
+        "f_beta_increase": 9.766932203214562e-05,
+        "precision_increase": 4.065387695697739e-06,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "ROTEM",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9079577907933587,
+        "f_beta_increase": 0.005656037420099458,
+        "precision_increase": 0.00024958264770378203,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "Thrombelastogra*",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9023017533732592,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "Thrombelastography[mh:noexp]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9023017533732592,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "Thromboelastogra*",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9023017533732592,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "haemonetics",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9077161315299185,
+        "f_beta_increase": 0.005414378156659239,
+        "precision_increase": 0.0002382960601782112,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "haemoscope",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9023126044760864,
+        "f_beta_increase": 1.0851102827169612e-05,
+        "precision_increase": 4.5126651105177953e-07,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "rotational",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9023017533732592,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "thrombelasto*",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9024536925667548,
+        "f_beta_increase": 0.00015193919349554275,
+        "precision_increase": 6.32782089735745e-06,
+        "recall_increase": 0.0
+    }
+]

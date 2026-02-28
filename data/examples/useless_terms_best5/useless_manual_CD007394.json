@@ -1,0 +1,164 @@
+[
+    {
+        "term": "\"Aspergillus\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9869644105674492,
+        "f_beta_increase": 0.00035971792200473196,
+        "precision_increase": 0.0007766183455129305,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"Mannans\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9868839802702123,
+        "f_beta_increase": 0.00027928762476781,
+        "precision_increase": 0.0005993840322198532,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"Pulmonary Aspergillosis\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9866046926454445,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"Serology\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.9866046926454445,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"Serology\"[mh]",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.9866046926454445,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "EIA[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9866173841080899,
+        "f_beta_increase": 1.2691462645375573e-05,
+        "precision_increase": 2.6710518369867098e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "EIAs[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9866046926454445,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "ELISAs[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9866046926454445,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "Platelia[tw]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.98663007589726,
+        "f_beta_increase": 2.538325181555834e-05,
+        "precision_increase": 5.347096294229525e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "fungal infection[tw]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9873455743839068,
+        "f_beta_increase": 0.0007408817384623179,
+        "precision_increase": 0.0016462410080475623,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "immuno assay[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9866046926454445,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "immuno assays[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9866089230967133,
+        "f_beta_increase": 4.230451268849578e-06,
+        "precision_increase": 8.897967394751877e-06,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "immunoassay[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9867781709016833,
+        "f_beta_increase": 0.00017347825623881263,
+        "precision_increase": 0.00036941277862655164,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "immunoassays[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9866596913418781,
+        "f_beta_increase": 5.499869643366129e-05,
+        "precision_increase": 0.00011610694575825073,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "immunosorbent[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9869644105674492,
+        "f_beta_increase": 0.00035971792200473196,
+        "precision_increase": 0.0007766183455129305,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "serodiagnosis[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9867062334899998,
+        "f_beta_increase": 0.00010154084455527013,
+        "precision_increase": 0.00021508996371525507,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "serologic[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9874430301521769,
+        "f_beta_increase": 0.0008383375067324561,
+        "precision_increase": 0.0018767989080442707,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "serology[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9872015445671994,
+        "f_beta_increase": 0.0005968519217549595,
+        "precision_increase": 0.001311734012862515,
+        "recall_increase": 0.0
+    }
+]

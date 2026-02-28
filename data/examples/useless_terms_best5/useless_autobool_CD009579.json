@@ -1,0 +1,110 @@
+[
+    {
+        "term": "Africa",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.5568931713157088,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "active schistosomiasis[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.5568931713157088,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "circulating antigen test",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.5568931713157088,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "detection",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.5568947817411547,
+        "f_beta_increase": 1.6104254458859657e-06,
+        "precision_increase": 0.00011867515373827076,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "endemic area",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.5568931713157088,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "endemic areas",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.5568931713157088,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "endemic region",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.5568931713157088,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "schistosomiasis antigen test",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.5577576968749095,
+        "f_beta_increase": 0.0008645255592006906,
+        "precision_increase": 0.18965168642587998,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "schistosomiasis[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.5568931713157088,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "schistosomiasis[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 2,
+        "f_beta": 0.5570655396746881,
+        "f_beta_increase": 0.00017236835897926905,
+        "precision_increase": 0.014623868908792068,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "schistosomiasis[tx]",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.5568931713157088,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "test",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.5570462033316845,
+        "f_beta_increase": 0.00015303201597571814,
+        "precision_increase": 0.012764672830005624,
+        "recall_increase": 0.0
+    }
+]

@@ -1,0 +1,65 @@
+[
+    {
+        "term": "galactomannan antigen[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.596731651873639,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "galactomannan detection[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.596731651873639,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "galactomannan test[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.596731651873639,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "immunocompromised[MeSH]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.596731651873639,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "immunocompromised[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.596827449159786,
+        "f_beta_increase": 9.579728614705907e-05,
+        "precision_increase": 0.008300092177927876,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "invasive aspergillosis[MeSH]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.596731651873639,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "invasive aspergillosis[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.596731651873639,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    }
+]

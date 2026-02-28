@@ -11,18 +11,43 @@ from app.dataset.utils import (
     get_paper_query_examples,
     review_id_to_dataset,
 )
-from app.config.config import COLORMAPS, COLORS, CURRENT_BEST, CURRENT_BEST_RUN_FOLDER, HIGHLIGHT_LIGHTNESS
+from app.config.config import (
+    COLORMAPS,
+    COLORS,
+    CURRENT_BEST,
+    CURRENT_BEST_RUN_FOLDER,
+    HIGHLIGHT_LIGHTNESS,
+)
 from app.pubmed.retrieval import evaluate_query
-from app.visualization.helper import escape_typst, highlight_query_words, mark_outer_operators, split_query_into_words, value_to_marking
+from app.visualization.helper import (
+    escape_typst,
+    highlight_query_words,
+    mark_outer_operators,
+    split_query_into_words,
+    value_to_marking,
+)
 
 # Map (review_id, approach) to the replacement JSON file
 REPLACEMENT_FILES = {
     # ("CD007394", "#chatgpt-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_chatgpt_CD007394.json",
-    ("CD007394", "#fine-tuned-llm-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_autobool_CD007394.json",
-    ("CD007394", "#semantic-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_semantic_CD007394.json",
-    ("CD009579", "#manual-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_manual_CD009579.json",
-    ("CD009579", "#objective-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_objective_CD009579.json",
+    (
+        "CD007394",
+        "#fine-tuned-llm-approach",
+    ): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_autobool_CD007394.json",
+    (
+        "CD007394",
+        "#semantic-approach",
+    ): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_semantic_CD007394.json",
+    (
+        "CD009579",
+        "#manual-approach",
+    ): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_manual_CD009579.json",
+    (
+        "CD009579",
+        "#objective-approach",
+    ): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_objective_CD009579.json",
 }
+
 
 def load_replacement_pairs(json_path: str, k: int = 2) -> list:
     """Load top k replacement pairs per direction from a JSON file.
@@ -43,28 +68,39 @@ def load_replacement_pairs(json_path: str, k: int = 2) -> list:
     r1_cand = []
     for my_term, replacements in data.get("replacements1", {}).items():
         r1_cand += [(my_term, r) for r in replacements]
-    sorted_r1_cand = sorted(r1_cand, key=lambda x: x[1][1], reverse=True)  # sort by score
-    pairs += [{
-        "my_term": my_term,
-        "value": replacement[1],
-        "paper_term": replacement[0],
-        "direction": "improve_mine",
-    } for my_term, replacement in sorted_r1_cand[:k]]
+    sorted_r1_cand = sorted(
+        r1_cand, key=lambda x: x[1][1], reverse=True
+    )  # sort by score
+    pairs += [
+        {
+            "my_term": my_term,
+            "value": replacement[1],
+            "paper_term": replacement[0],
+            "direction": "improve_mine",
+        }
+        for my_term, replacement in sorted_r1_cand[:k]
+    ]
 
     # replacements2: keys = paper_query terms, values = [(my_term, score), ...]
     # Replacing paper_term with my_term improves paper_query
     r2_cand = []
     for paper_term, replacements in data.get("replacements2", {}).items():
         r2_cand += [(paper_term, r) for r in replacements]
-    sorted_r2_cand = sorted(r2_cand, key=lambda x: x[1][1], reverse=True)  # sort by score
-    pairs += [{
-        "my_term": replacement[0],
-        "value": replacement[1],
-        "paper_term": paper_term,
-        "direction": "improve_paper",
-    } for paper_term, replacement in sorted_r2_cand[:k]]
+    sorted_r2_cand = sorted(
+        r2_cand, key=lambda x: x[1][1], reverse=True
+    )  # sort by score
+    pairs += [
+        {
+            "my_term": replacement[0],
+            "value": replacement[1],
+            "paper_term": paper_term,
+            "direction": "improve_paper",
+        }
+        for paper_term, replacement in sorted_r2_cand[:k]
+    ]
 
     return pairs
+
 
 def load_best_replacement_stat(json_path, word, replacement_type):
     with open(json_path) as f:
@@ -75,15 +111,22 @@ def load_best_replacement_stat(json_path, word, replacement_type):
         return None, None
     return sorted_replacements[0]
 
+
 def get_min_max_replacement_values():
     values = []
     for key, json_path in REPLACEMENT_FILES.items():
         with open(json_path) as f:
             data = json.load(f)
-            for r in ["replacements1", "replacements2"]:
+            if key[1] == "#semantic-approach" or key[1] == "#objective-approach":
+                r_vars = ["replacements2"]
+            else:
+                r_vars = ["replacements1", "replacements2"]
+            for r in r_vars:
                 for term, replacements in data.get(r, {}).items():
-                    values.append(max([r[1] for r in replacements]))  # take the best replacement score for this term
-    
+                    values.append(
+                        max([r[1] for r in replacements])
+                    )  # take the best replacement score for this term
+
     minimum_of_all_replacements = min(values)
     maximum_of_all_replacements = max(values)
     if minimum_of_all_replacements == 0:
@@ -91,6 +134,7 @@ def get_min_max_replacement_values():
     if maximum_of_all_replacements == 0:
         maximum_of_all_replacements = 1  # to avoid division by zero
     return minimum_of_all_replacements, maximum_of_all_replacements
+
 
 def load_all_replacement_data(k: int = 2) -> dict:
     """Load all replacement pairs with colors assigned.
@@ -105,12 +149,14 @@ def load_all_replacement_data(k: int = 2) -> dict:
         for pair in pairs:
             if pair["direction"] == "improve_mine":
                 target = pair["my_term"]
-            else:                
+            else:
                 target = pair["paper_term"]
             if target in target_color:
                 pair["color"] = target_color[target]
             else:
-                pair["color"] = f"rgb(\"{COLORS['category'][color_idx % len(COLORS['category'])]}\")"
+                pair["color"] = (
+                    f'rgb("{COLORS["category"][color_idx % len(COLORS["category"])]}")'
+                )
                 target_color[target] = pair["color"]
                 color_idx += 1
         replacement_data[key] = pairs
@@ -138,13 +184,18 @@ def mark_query_terms(query_text: str, markings: list) -> str:
     markings = sorted(markings, key=lambda x: len(x[0]), reverse=True)
 
     for term, fmt, color in markings:
-        query_text = highlight_query_words(query_text, {term}, color=color, fmt=fmt, lightness=HIGHLIGHT_LIGHTNESS)
+        query_text = highlight_query_words(
+            query_text, {term}, color=color, fmt=fmt, lightness=HIGHLIGHT_LIGHTNESS
+        )
 
     return query_text
 
 
 def dataframe_to_typst_query_table(
-    df: pd.DataFrame, output_path: str, review_ids: list = None, highlight_replacements: bool = False
+    df: pd.DataFrame,
+    output_path: str,
+    review_ids: list = None,
+    highlight_replacements: bool = False,
 ) -> None:
     """
     Convert a dataframe with query examples to a Typst table.
@@ -192,7 +243,9 @@ def dataframe_to_typst_query_table(
         # Check if we need to write the buffered row(s) and start a new one
         if current_review_id is not None and review_id != current_review_id:
             # Write the buffered row(s)
-            _write_query_table_row(typst_lines, current_review_id, row_buffer, highlight_replacements)
+            _write_query_table_row(
+                typst_lines, current_review_id, row_buffer, highlight_replacements
+            )
             row_buffer = []
 
         current_review_id = review_id
@@ -202,7 +255,9 @@ def dataframe_to_typst_query_table(
     if row_buffer:
         # seperator = f"  table.cell(colspan: {2}, inset: (top: 5pt, bottom: 5pt))[],\n"
         # typst_lines.append(seperator)  # add a row separator
-        _write_query_table_row(typst_lines, current_review_id, row_buffer, highlight_replacements)
+        _write_query_table_row(
+            typst_lines, current_review_id, row_buffer, highlight_replacements
+        )
 
     typst_lines.append(")")
     typst_lines.append("]")
@@ -212,7 +267,12 @@ def dataframe_to_typst_query_table(
         f.write("\n".join(typst_lines))
 
 
-def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, highlight_replacements: bool = False) -> None:
+def _write_query_table_row(
+    typst_lines: list,
+    review_id: str,
+    rows_data: list,
+    highlight_replacements: bool = False,
+) -> None:
     """
     Helper function to write a single logical row (which may span multiple physical rows
     for the baseline query column).
@@ -251,9 +311,15 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, h
                     # my_term is the good replacement -> highlight it
                     my_markings.append((pair["my_term"], "highlight", pair["color"]))
     else:
-        minimum_of_all_replacements, maximum_of_all_replacements = get_min_max_replacement_values()
-        print(f"Minimum replacement value across all examples: {minimum_of_all_replacements}")
-        print(f"Maximum replacement value across all examples: {maximum_of_all_replacements}")
+        minimum_of_all_replacements, maximum_of_all_replacements = (
+            get_min_max_replacement_values()
+        )
+        print(
+            f"Minimum replacement value across all examples: {minimum_of_all_replacements}"
+        )
+        print(
+            f"Maximum replacement value across all examples: {maximum_of_all_replacements}"
+        )
         words = split_query_into_words(my_query)
         if review_id == "CD007394":
             comparison_appraoch = "#fine-tuned-llm-approach"
@@ -261,15 +327,17 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, h
             comparison_appraoch = "#manual-approach"
         json_path = REPLACEMENT_FILES.get((review_id, comparison_appraoch))
         for w in words:
-            best_replacement_word, value = load_best_replacement_stat(word=w, json_path=json_path, replacement_type="replacements1")
+            best_replacement_word, value = load_best_replacement_stat(
+                word=w, json_path=json_path, replacement_type="replacements1"
+            )
             if value is None:
                 continue
-            marking = value_to_marking(w, value, minimum_of_all_replacements, maximum_of_all_replacements)
+            marking = value_to_marking(
+                w, value, minimum_of_all_replacements, maximum_of_all_replacements
+            )
             if marking is not None:
                 my_markings.append(marking)
-            
 
-    
     # # debug
     # if review_id == "CD009579":
     #     tokens_my_query = [t.strip() for t in re.split(r'\s+AND\s+|\s+OR\s+|\s+NOT\s+|\(|\)', my_query) if t.strip()]
@@ -278,10 +346,12 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, h
     #     print("may query")
     #     print(set(tokens_my_query) - set(data["replacements1"].keys()))
     #     print()
-    
+
     my_p = first_row["my_p"]
     my_r = first_row["my_r"]
-    my_query_marked = mark_outer_operators(mark_query_terms(my_query, my_markings), ['OR'])
+    my_query_marked = mark_outer_operators(
+        mark_query_terms(my_query, my_markings), ["OR"]
+    )
     my_query_text = f"*#algo-name-short\-F50\-cosine*\\ *Precision:* {my_p:.4f} *Recall:* {my_r:.4f}\\ {my_query_marked}"
     my_query_cell = f"[{my_query_text}]"
 
@@ -299,19 +369,27 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, h
         for pair in pairs_0:
             if pair["direction"] == "improve_mine":
                 # paper_term is the good replacement -> highlight it
-                paper_markings_0.append((pair["paper_term"], "highlight", pair["color"]))
+                paper_markings_0.append(
+                    (pair["paper_term"], "highlight", pair["color"])
+                )
             else:  # improve_paper
                 # paper_term is replaceable -> underline it
-                paper_markings_0.append((pair["paper_term"], "underline", pair["color"]))
+                paper_markings_0.append(
+                    (pair["paper_term"], "underline", pair["color"])
+                )
     else:
         approach_0 = rows_data[0]["approach"]
         words = split_query_into_words(paper_query)
         json_path = REPLACEMENT_FILES.get((review_id, approach_0))
         for w in words:
-            best_replacement_word, value = load_best_replacement_stat(word=w, json_path=json_path, replacement_type="replacements2")
+            best_replacement_word, value = load_best_replacement_stat(
+                word=w, json_path=json_path, replacement_type="replacements2"
+            )
             if value is None:
                 continue
-            marking = value_to_marking(w, value, minimum_of_all_replacements, maximum_of_all_replacements)
+            marking = value_to_marking(
+                w, value, minimum_of_all_replacements, maximum_of_all_replacements
+            )
             if marking is not None:
                 paper_markings_0.append(marking)
 
@@ -319,7 +397,9 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, h
     paper = f"*{rows_data[0]['approach']}* @{rows_data[0]['paper']}"
     paper_p = rows_data[0]["paper_p"]
     paper_r = rows_data[0]["paper_r"]
-    paper_query_marked = mark_outer_operators(mark_query_terms(paper_query, paper_markings_0), ['AND', 'NOT'])
+    paper_query_marked = mark_outer_operators(
+        mark_query_terms(paper_query, paper_markings_0), ["AND", "NOT"]
+    )
     paper_query_text = f"{paper}\\ *Precision:* {paper_p:.4f} *Recall:* {paper_r:.4f}\\ {paper_query_marked}"
     paper_query_cell = f"[{paper_query_text}]"
     typst_lines.append(f"{title_cell}, {my_query_cell}, {paper_query_cell},")
@@ -334,57 +414,76 @@ def _write_query_table_row(typst_lines: list, review_id: str, rows_data: list, h
             pairs = replacement_data.get((review_id, approach), [])
             for pair in pairs:
                 if pair["direction"] == "improve_mine":
-                    paper_markings.append((pair["paper_term"], "highlight", pair["color"]))
+                    paper_markings.append(
+                        (pair["paper_term"], "highlight", pair["color"])
+                    )
                 else:  # improve_paper
-                    paper_markings.append((pair["paper_term"], "underline", pair["color"]))
+                    paper_markings.append(
+                        (pair["paper_term"], "underline", pair["color"])
+                    )
         else:
             approach = row_data["approach"]
             words = split_query_into_words(paper_query)
             json_path = REPLACEMENT_FILES.get((review_id, approach))
             for w in words:
-                best_replacement_word, value = load_best_replacement_stat(word=w, json_path=json_path, replacement_type="replacements2")
+                best_replacement_word, value = load_best_replacement_stat(
+                    word=w, json_path=json_path, replacement_type="replacements2"
+                )
                 if value is None:
                     continue
-                marking = value_to_marking(w, value, minimum_of_all_replacements, maximum_of_all_replacements)
+                marking = value_to_marking(
+                    w, value, minimum_of_all_replacements, maximum_of_all_replacements
+                )
                 if marking is not None:
                     paper_markings.append(marking)
 
         paper = f"*{row_data['approach']}* @{row_data['paper']}"
         paper_p = row_data["paper_p"]
         paper_r = row_data["paper_r"]
-        paper_query_marked = mark_outer_operators(mark_query_terms(paper_query, paper_markings), ['AND', 'NOT'])
+        paper_query_marked = mark_outer_operators(
+            mark_query_terms(paper_query, paper_markings), ["AND", "NOT"]
+        )
         paper_query_text = f"{paper}\\ *Precision:* {paper_p:.4f} *Recall:* {paper_r:.4f}\\ {paper_query_marked}"
         paper_query_cell = f"[{paper_query_text}]"
 
         typst_lines.append(f"{paper_query_cell},")
-    
+
 
 if __name__ == "__main__":
-    path = find_qg_results_file(
-        CURRENT_BEST_RUN_FOLDER, top_k_type="cosine", betas_key="50"
-    )
-    dataframe = get_qg_results(path, min_positive_threshold=None)
+    # path = find_qg_results_file(
+    #     CURRENT_BEST_RUN_FOLDER, top_k_type="cosine", betas_key="50"
+    # )
+    # dataframe = get_qg_results(path, min_positive_threshold=None)
 
     dataset_details = get_dataset_details()
 
     paper_query_examples = get_paper_query_examples()
 
     rows = []
+    relevant_papers = [paper for query_id, paper in REPLACEMENT_FILES.keys()]
+    relevant_query_ids = [query_id for query_id, paper in REPLACEMENT_FILES.keys()]
+
+    my_query_performance = {}
+    for query_id in relevant_query_ids:
+        positives = set(dataset_details[query_id]["positives"])
+        _, _, end_year = review_id_to_dataset(query_id)
+        my_query = get_paper_query_examples(paper="MyExampleQueries", query_id=query_id)["result"]
+        precision, recall, retrieved_count, TP = evaluate_query(
+            my_query,
+            positives,
+            end_year=end_year,
+        )
+        my_query_performance[query_id] = (my_query, precision, recall)
+
     for paper, data in paper_query_examples.items():
         print(f"Paper: {data['title']}")
+        if data["name"] not in relevant_papers:
+            continue
         for example in data["examples"]:
             review_id = example.get("query_id")
-            if "ignore" in review_id:
+            if review_id not in relevant_query_ids:
                 continue
-            if (
-                not review_id
-                or "usable_for_stats" in example
-                and not example["usable_for_stats"]
-            ):
-                print(
-                    "Skipping example due to missing query_id or marked as not usable for stats."
-                )
-                continue
+
             positives = set(dataset_details[review_id]["positives"])
             _, _, end_year = review_id_to_dataset(review_id)
             precision, recall, retrieved_count, TP = evaluate_query(
@@ -393,27 +492,11 @@ if __name__ == "__main__":
                 end_year=end_year,
             )
             # precision, recall, retrieved_count, TP = 1,1,1,1 #TODO remove
-            
 
-            # compare to manual
-            # manual_example = None
-            # for me in paper_query_examples["Manual"]["examples"]:
-            #     if me["query_id"] == example["query_id"]:
-            #         manual_example = me
-            #         break
-            # manual_precision, manual_recall, manual_retrieved_count, TP = None, None, None, None
-            # if manual_example is not None:
-            #     manual_precision, manual_recall, manual_retrieved_count, TP = evaluate_query(
-            #         manual_example["result"],
-            #         positives,
-            #         end_year=end_year,
-            #     )
-
-            # comapre to mine
-            row = dataframe[dataframe["query_id"] == example["query_id"]]
-            pubmed_precision = row["pubmed_precision"].values[0]
-            pubmed_recall = row["pubmed_recall"].values[0]
-            pubmed_query = row["pubmed_query"].values[0]
+            # compare to mine
+            pubmed_query, pubmed_precision, pubmed_recall = my_query_performance[
+                query_id
+            ]
 
             assert dataset_details[review_id]["title"] == example["query"]
             rows.append(
@@ -428,13 +511,10 @@ if __name__ == "__main__":
                     "paper_stated_manual_r": example.get("manual_recall"),
                     "my_p": pubmed_precision,
                     "my_r": pubmed_recall,
-                    # "manual_p": manual_precision,
-                    # "manual_r": manual_recall,
                     "title": dataset_details[review_id]["title"],
                     "review_id": example["query_id"],
                     "paper_query": example["result"],
                     "my_query": pubmed_query,
-                    # "manual_query": manual_example["result"] if manual_example is not None else None,
                 }
             )
 
@@ -443,17 +523,12 @@ if __name__ == "__main__":
         display_cols = [
             "paper",
             "review_id",
-            # "title",
             "paper_p",
             "paper_r",
             "paper_stated_p",
             "paper_stated_r",
             "my_p",
             "my_r",
-            # "manual_p",
-            # "manual_r",
-            # "paper_stated_manual_p",
-            # "paper_stated_manual_r",
         ]
         print("\nSummary table (queries omitted):")
 
@@ -469,7 +544,9 @@ if __name__ == "__main__":
         table = table[
             (
                 table["review_id"].isin(["CD007394"])
-                & table["approach"].isin(["#fine-tuned-llm-approach", "#semantic-approach"])
+                & table["approach"].isin(
+                    ["#fine-tuned-llm-approach", "#semantic-approach"]
+                )
             )
             | (
                 table["review_id"].isin(["CD009579"])
@@ -477,6 +554,5 @@ if __name__ == "__main__":
             )
         ]
 
-        
         dataframe_to_typst_query_table(table, output_path, highlight_replacements=False)
         print(f"\nTypst table written to: {output_path}")

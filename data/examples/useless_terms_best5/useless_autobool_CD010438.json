@@ -1,0 +1,119 @@
+[
+    {
+        "term": "Rotational Thromboelastometry[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8271815632110918,
+        "f_beta_increase": 2.1886005112214946e-05,
+        "precision_increase": 0.00014412544678888556,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "adult[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8271596772059796,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "adult[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8271596772059796,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "bleeding[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8271596772059796,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "coagulopathy, trauma[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8271596772059796,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "coagulopathy[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8271596772059796,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "hemorrhage[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8271596772059796,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "rotational thromboelastometry[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8271596772059796,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "thromboelastography[tiab]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8271596772059796,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "trauma coagulopathy[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8271596772059796,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "trauma-induced coagulopathy[tx]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.8271596772059796,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "trauma[mh]",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.8271596772059796,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "trauma[tx]",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.8272800645682002,
+        "f_beta_increase": 0.00012038736222064195,
+        "precision_increase": 0.0008050115628933582,
+        "recall_increase": 0.0
+    }
+]

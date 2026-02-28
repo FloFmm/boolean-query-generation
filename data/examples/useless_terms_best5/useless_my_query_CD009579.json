@@ -1,0 +1,164 @@
+[
+    {
+        "term": "\"antigens, helminth/blood\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7277680140597539,
+        "f_beta_increase": 0.00015931965995674702,
+        "precision_increase": 0.0016956266263745481,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"antigens, protozoan\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7276128861287461,
+        "f_beta_increase": 4.191728948943485e-06,
+        "precision_increase": 4.309587081820915e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"enzyme-linked immunosorbent assay/methods\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.9366914089533606,
+        "f_beta_increase": 0.20908271455356342,
+        "precision_increase": -0.04074863271539172,
+        "recall_increase": 0.2681159420289855
+    },
+    {
+        "term": "\"helicobacter infections/diagnosis\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7276086943997971,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"malaria, falciparum/diagnosis\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7282736868204897,
+        "f_beta_increase": 0.0006649924206925117,
+        "precision_increase": 0.007994388921265617,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"malaria/diagnosis\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7276128861287461,
+        "f_beta_increase": 4.191728948943485e-06,
+        "precision_increase": 4.309587081820915e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"schistosomiasis haematobia/diagnosis\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7276086943997971,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"schistosomiasis japonica/diagnosis\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7279903396122012,
+        "f_beta_increase": 0.0003816452124040248,
+        "precision_increase": 0.004277525839216041,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "\"schistosomiasis mansoni/diagnosis\"[mh]",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7276086943997971,
+        "f_beta_increase": 0.0,
+        "precision_increase": 0.0,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "dipstick",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7277868854820632,
+        "f_beta_increase": 0.00017819108226602154,
+        "precision_increase": 0.0019046262561991864,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "endemic",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7287232968396153,
+        "f_beta_increase": 0.001114602439818202,
+        "precision_increase": 0.015143968080510307,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "haematobium",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7276191738127267,
+        "f_beta_increase": 1.0479412929531584e-05,
+        "precision_increase": 0.00010788924624086094,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "ict",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7278518945396918,
+        "f_beta_increase": 0.0002432001398946504,
+        "precision_increase": 0.00263856045762674,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "immunochromatographic",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.728349283331363,
+        "f_beta_increase": 0.000740588931565811,
+        "precision_increase": 0.009079037769184187,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "microscopy",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7276170779059921,
+        "f_beta_increase": 8.38350619492001e-06,
+        "precision_increase": 8.627147497743126e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "miss",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7276170779059921,
+        "f_beta_increase": 8.38350619492001e-06,
+        "precision_increase": 8.627147497743126e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "sensor",
+        "occurrence_index": 1,
+        "num_occurrences": 2,
+        "f_beta": 0.7276170779059921,
+        "f_beta_increase": 8.38350619492001e-06,
+        "precision_increase": 8.627147497743126e-05,
+        "recall_increase": 0.0
+    },
+    {
+        "term": "stool",
+        "occurrence_index": 0,
+        "num_occurrences": 1,
+        "f_beta": 0.7276107902582346,
+        "f_beta_increase": 2.0958584374675127e-06,
+        "precision_increase": 2.1537982552104207e-05,
+        "recall_increase": 0.0
+    }
+]

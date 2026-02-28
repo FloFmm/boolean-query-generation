@@ -1,0 +1,44 @@
+{
+    "kusaCSMeDBridgingDataset2023": {
+        "ratios": [
+            0.72,
+            0.5952380952380952,
+            0.5
+        ],
+        "num_useless": [
+            18,
+            25,
+            9
+        ],
+        "avg_ratio": 0.605079365079365,
+        "avg_num_useless": 17.333333333333332
+    },
+    "wangAutoBoolReinforcementLearningTrained2025": {
+        "ratios": [
+            0.5833333333333334,
+            0.8,
+            0.8125
+        ],
+        "num_useless": [
+            7,
+            12,
+            13
+        ],
+        "avg_ratio": 0.7319444444444444,
+        "avg_num_useless": 10.666666666666666
+    },
+    "my_query": {
+        "ratios": [
+            0.84,
+            0.6,
+            0.7037037037037037
+        ],
+        "num_useless": [
+            21,
+            18,
+            19
+        ],
+        "avg_ratio": 0.7145679012345679,
+        "avg_num_useless": 19.333333333333332
+    }
+}

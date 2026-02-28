@@ -159,7 +159,7 @@ def highlight_query_words(query_text: str, words: set, color: str, fmt: str = "h
        
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-def value_to_marking(w, value, minimum_of_all_replacements, maximum_of_all_replacements, min_alpha=0.2, min_value_pct=0.03):
+def value_to_marking(w, value, minimum_of_all_replacements, maximum_of_all_replacements, min_alpha=0.0, min_value_pct=0.01):
     if value < 0:
         if abs(value) < min_value_pct * abs(minimum_of_all_replacements):
             return None

@@ -1,12 +1,11 @@
 #!/bin/bash
+set -e
 
 DEST=/home/florian/Data/dev/boolean-query-generation/data
 mkdir -p "$DEST/statistics"
 mkdir -p "$DEST/statistics/optuna"
 SOURCE=dataport1.hpc.tu-dresden.de:/data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/
 rsync -av --progress "$SOURCE/reports" "$DEST"
-rsync -av --progress "$SOURCE/statistics/final" "$DEST/statistics"
-rsync -av --progress "$SOURCE/statistics/images" "$DEST/statistics"
 rsync -av --progress "$SOURCE/statistics/optuna/images" "$DEST/statistics/optuna"
 rsync -av --progress "$SOURCE/examples/feature_replacement_map_*" "$DEST/examples"
 rsync -av --progress "$SOURCE/examples/useless_terms_*" "$DEST/examples"
