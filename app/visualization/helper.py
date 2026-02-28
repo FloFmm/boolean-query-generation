@@ -184,9 +184,9 @@ def value_to_marking(w, value, minimum_of_all_replacements, maximum_of_all_repla
 def replace_word_in_query(query, old_word, new_word):
     escaped = re.escape(old_word)
     pattern = (
-            r"((?:^|\[|\\\(|\\\[|\\#| (?:OR|AND|NOT) ))"
+            r"((?:^|\[|\\\(|\(|\\\[|\\#| (?:OR|AND|NOT) ))"
             + escaped
-            + r"(?= (?:OR|AND|NOT) |\\\)|\\\]|\]|\\#|$)"
+            + r"(?= (?:OR|AND|NOT) |\\\)|\)|\\\]|\]|\\#|$)"
         )
     old_query_text = query
     query = re.sub(pattern, lambda m: m.group(1) + new_word, query)
