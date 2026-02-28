@@ -95,7 +95,8 @@ if __name__ == "__main__":
         CURRENT_BEST_RUN_FOLDER, top_k_type="cosine", betas_key="50"
     )
     out_path = f"data/examples/useless_terms_{CURRENT_BEST}"
-    dataframe = get_qg_results(path, min_positive_threshold=50)
+    os.makedirs(out_path, exist_ok=True)
+    dataframe = get_qg_results(path)
     dataset_details = get_dataset_details()
     query_ids = ["CD007394", "CD009579", "CD010438"]
     results = {paper_name: defaultdict(list) for paper_name in ["kusaCSMeDBridgingDataset2023", "wangAutoBoolReinforcementLearningTrained2025", "my_query"]}
