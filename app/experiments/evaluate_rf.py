@@ -34,7 +34,7 @@ sys.path.append(
         )
     )
 )
-from csmed.experiments.csmed_cochrane_retrieval import load_dataset
+# from csmed.experiments.csmed_cochrane_retrieval import load_dataset
 
 
 def evaluate_rf(
@@ -74,7 +74,7 @@ def evaluate_rf(
         qg_meta_path = Path(os.path.join(qg_base_path, f"qg_meta_data.json"))
         with open(qg_meta_path, "w", encoding="utf-8") as f:
             json.dump(meta_data, f, indent=4)
-            
+    return True
             
     # check whether query already computed
     if skip_existing: 
