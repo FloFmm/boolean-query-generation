@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import re
 import numpy as np
 import math
 import pandas as pd
@@ -803,7 +804,8 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=N
         betas_str = ""
         if os.path.exists(meta_path):
             with open(meta_path, "r") as mf:
-                meta = json.load(mf)
+                content = mf.read().rstrip('\x00\n')
+                meta = json.loads(content)
                 betas = sorted(meta.get("betas", {}).keys(), key=int)
                 betas_str = ",".join(map(str, betas))
 
@@ -814,6 +816,8 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=N
                     continue
                 data = json.loads(line)
                 data["file_path"] = str(jsonl_path)
+                match = re.search(r"\/n(\d+)\/", str(jsonl_path))
+                data["trial"] = int(match.group(1)) if match else None
                 data["selection_betas"] = betas_str
                 data["betas"] = betas
                 records.append(data)
