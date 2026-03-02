@@ -128,7 +128,7 @@ def generate_typst_table(
                                   - vline_before (bool, optional): add vline before column
     """
     if top_k_types is None:
-        top_k_types = ["cosine", "\#pos", "fixed"]
+        top_k_types = ["cosine", "pos_count", "fixed"]
 
     typst_file = os.path.join(typst_file, f"{table_name}.typ")
 
@@ -181,12 +181,7 @@ def generate_typst_table(
     def config_name(row, betas):
         parts = row["selection_betas"].split(",")
         source_file = row["source_file"]
-        if "ktype=cosine" in source_file:
-            ktype = "cosine"
-        elif "ktype=pos_count" in source_file:
-            ktype = "\#pos"
-        elif "ktype=fixed" in source_file:
-            ktype = "fixed"
+        ktype = get_ktype(source_file=source_file)
         algo_name = "#algo-name-short\-F"
         if betas is not None:
             algo_name += ", ".join(sorted(set(parts) & betas))
@@ -563,7 +558,7 @@ if __name__ == "__main__":
             "Fine-Tuned LLM",
             "Fine-Tuned LLM (self-evaluation)",
         ],
-        top_k_types=["cosine", "\#pos", "fixed"],
+        top_k_types=["cosine", "pos_count", "fixed"],
         table_name="best_table",
     )
     generate_typst_table(
@@ -586,7 +581,7 @@ if __name__ == "__main__":
             "Fine-Tuned LLM",
             "Fine-Tuned LLM (self-evaluation)",
         ],
-        top_k_types=["cosine", "\#pos", "fixed"],
+        top_k_types=["cosine", "pos_count", "fixed"],
         table_name="best_table_appendix",
     )
     generate_typst_table(
@@ -609,7 +604,7 @@ if __name__ == "__main__":
             "Fine-Tuned LLM",
             "Fine-Tuned LLM (self-evaluation)",
         ],
-        top_k_types=["cosine", "\#pos", "fixed"],
+        top_k_types=["cosine", "pos_count", "fixed"],
         table_name="best_table_operators",
     )
     generate_typst_table(
