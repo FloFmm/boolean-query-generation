@@ -73,13 +73,12 @@ if __name__ == "__main__":
     )
     print(f"Total combinations: {len(all_combinations)}")
 
-    existing_pairs = set()
-    # load_existing_pairs(
-    #     run_name=run_name,
-    #     best_params=best_params,
-    #     top_k_type_list=top_k_type_list,
-    #     n_trials=n_trials,
-    # )
+    existing_pairs = load_existing_pairs(
+        run_name=run_name,
+        best_params=best_params,
+        top_k_type_list=top_k_type_list,
+        n_trials=n_trials,
+    )
     all_combinations = list(all_combinations - existing_pairs)
     print(f"Remaining combinations: {len(all_combinations)}")
     print(f"Existing combinations: {len(existing_pairs)}")
