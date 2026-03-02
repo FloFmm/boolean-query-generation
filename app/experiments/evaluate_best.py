@@ -116,12 +116,12 @@ if __name__ == "__main__":
         positives[query_id] = set(dataset_details[query_id]["positives"])
 
     for query_id, best_params_index, trial, top_k_type in my_combinations:
-        best_p = best_params[best_params_index]
-        rf_params = copy.deepcopy(best_p["rf_params"])
-        qg_params = copy.deepcopy(best_p["qg_params"])
-        rf_params["top_k_type"] = top_k_type
         last_run_failed = False
         for i in range(10):
+            best_p = best_params[best_params_index]
+            rf_params = copy.deepcopy(best_p["rf_params"])
+            qg_params = copy.deepcopy(best_p["qg_params"])
+            rf_params["top_k_type"] = top_k_type
             qg_results = evaluate_rf(
                 run_name=run_name + f"/n{trial}",
                 query_id=query_id,
