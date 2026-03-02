@@ -790,11 +790,11 @@ def get_dataset_details() -> dict:
 
     return data
 
-def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=None, restrict_betas=None, top_k_types=None):
+def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=None, restrict_betas=None, top_k_types=None, recompute_query_Size=False, include_top_k_type=True):
     records = []
     # if path is already a file then only take the data from that file
     files = []
-    if os.path.isfile(path) and path.endswith("qg_results.jsonl"):
+    if os.path.isfile(path) and (path.endswith("qg_results.jsonl") or path.endswith("autobool_results.jsonl")):
         files = [path]
     else:        
         files = list(Path(path).glob("**/qg_results.jsonl"))
@@ -802,6 +802,7 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=N
         # Read meta data for betas
         meta_path = os.path.join(os.path.dirname(jsonl_path), "qg_meta_data.json")
         betas_str = ""
+        betas=None
         if os.path.exists(meta_path):
             with open(meta_path, "r") as mf:
                 content = mf.read().rstrip('\x00\n')
@@ -825,7 +826,7 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=N
     # Print sample count
     print(f"{len(df)} samples")
     
-    df = calc_missing_columns_in_result_df(df)
+    df = calc_missing_columns_in_result_df(df, recompute_query_Size=recompute_query_Size)
     # FILTERS
     if min_positive_threshold is not None:
         df = df[df["num_positive"] >= min_positive_threshold].copy()
@@ -835,7 +836,8 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=N
         
     # Add dataset column
     df["dataset"] = df["query_id"].apply(lambda qid: review_id_to_dataset(qid)[0])
-    df["top_k_type"] = df["file_path"].apply(lambda file_path: get_ktype(file_path))
+    if include_top_k_type:
+        df["top_k_type"] = df["file_path"].apply(lambda file_path: get_ktype(file_path))
     # Map tar2017 to tar2018 (tar2017 is part of 2018)
     df.loc[df["dataset"] == "tar2017", "dataset"] = "tar2018"
     
@@ -940,7 +942,7 @@ def get_paper_query_examples(paper=None, query_id=None):
                 if example["query_id"] == query_id:
                     return example
 
-def calc_missing_columns_in_result_df(df):
+def calc_missing_columns_in_result_df(df, recompute_query_Size=False):
     df = df.copy()
 
     # Add num_positive_bucket
@@ -971,8 +973,15 @@ def calc_missing_columns_in_result_df(df):
         ),
         axis=1,
     )
-    for k in ["paths", "ANDs", "NOTs", "added_ORs", "synonym_ORs"]:
-        df[f"query_size_{k}"] = df["query_size"].apply(lambda x: x[k])
+    if recompute_query_Size:
+        df["query_size_ANDs"] = df["pubmed_query"].apply(lambda x: x.count("AND"))
+        df["query_size_NOTs"] = df["pubmed_query"].apply(lambda x: x.count("NOT"))
+        df["query_size_added_ORs"] = 0
+        df["query_size_synonym_ORs"] = df["all_ORs"] = df["pubmed_query"].apply(lambda x: x.count("OR"))
+        df["query_size_paths"] = 1
+    else:
+        for k in ["paths", "ANDs", "NOTs", "added_ORs", "synonym_ORs"]:
+            df[f"query_size_{k}"] = df["query_size"].apply(lambda x: x[k])
     df["all_ORs"] = df["pubmed_query"].apply(lambda x: x.count("OR"))
     df["logical_operators"] = df["pubmed_query"].apply(
         lambda x: x.count("OR") + x.count("AND") + x.count("NOT")

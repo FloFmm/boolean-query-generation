@@ -7,8 +7,9 @@ from app.config.config import (
     RESULT_TABLE_PERFORMANCE_METRICS_ORDERED,
     RESULT_TABLE_PERFORMANCE_METRICS,
     RESULT_TABLE_OPERATOR_METRICS,
+    TRAIN_REVIEWS,
 )
-from app.dataset.utils import calc_missing_columns_in_result_df, get_qg_results
+from app.dataset.utils import calc_missing_columns_in_result_df, get_dataset_details, get_qg_results
 from app.statistics.query_size import calc_manual_query_size
 
 
@@ -58,7 +59,7 @@ if __name__ == "__main__":
                 "F1": None,
                 "F3": (0.2401, None),
                 "Recall": (0.8387, None),
-            }, # highest recall (for clef TAR 2017+2018) from https://arxiv.org/pdf/2602.00005 (Autobool)
+            },  # highest recall (for clef TAR 2017+2018) from https://arxiv.org/pdf/2602.00005 (Autobool)
             (
                 "Semantic",
                 0.0236,
@@ -86,33 +87,59 @@ if __name__ == "__main__":
             for k, v in manual_counts.items():
                 data[k] = (v["avg"], v["std"])
 
+    # autobool
+    dataset_details = get_dataset_details()
+    autobool_df = get_qg_results(
+        "data/examples/autobool_results.jsonl",
+        min_positive_threshold=50,
+        recompute_query_Size=True,
+        include_top_k_type=False,
+        datasets=["tar2018"],
+        query_ids=dataset_details.keys()-TRAIN_REVIEWS,
+    )
+    name = "Fine-Tuned LLM (self-evaluation)"
+    values = {"name": name}
+    for metric in RESULT_TABLE_PERFORMANCE_METRICS_ORDERED:
+        values[metric] = (
+            autobool_df[RESULT_TABLE_PERFORMANCE_METRICS[metric]["key"]].mean(),
+            autobool_df[RESULT_TABLE_PERFORMANCE_METRICS[metric]["key"]].std(),
+        )
+    for metric in RESULT_TABLE_OPERATOR_METRICS_ORDERED:
+        values[metric] = (
+            autobool_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]].mean(),
+            autobool_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]].std(),
+        )
+    baseline_dict["tar2018"].append(values)
+    print(
+        name, "samples", len(autobool_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]])
+    )
+
     # for name, path in other_baseline_paths.items():
     for name, _ in BASE_VARIATIONS.items():
         path = f"data/statistics/optuna/evaluate_base_{name}_{CURRENT_BEST_RUN_FOLDER.split('/')[-1]}"
-        base_df = get_qg_results(path, min_positive_threshold=50, query_ids=None, datasets=["tar2017","tar2018"])
+        base_df = get_qg_results(
+            path, min_positive_threshold=50, datasets=["tar2017", "tar2018"]
+        )
 
         base_df = calc_missing_columns_in_result_df(base_df)
-        
-        
+
         name = BASE_VARIATIONS_NAMES[name.lower()]
         values = {"name": name}
         for metric in RESULT_TABLE_PERFORMANCE_METRICS_ORDERED:
             values[metric] = (
                 base_df[RESULT_TABLE_PERFORMANCE_METRICS[metric]["key"]].mean(),
-                base_df[RESULT_TABLE_PERFORMANCE_METRICS[metric]["key"]].std()
+                base_df[RESULT_TABLE_PERFORMANCE_METRICS[metric]["key"]].std(),
             )
         for metric in RESULT_TABLE_OPERATOR_METRICS_ORDERED:
             values[metric] = (
                 base_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]].mean(),
-                base_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]].std()
+                base_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]].std(),
             )
         baseline_dict["tar2018"].append(values)
-        print(name, "samples", len(base_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]]))
+        print(
+            name, "samples", len(base_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]])
+        )
 
     # # store the baseline dict as json to the path data/examples/baseline_values.json
     with open("data/examples/baseline_values.json", "w") as f:
         json.dump(baseline_dict, f, indent=4)
-        
-        
-    
-    
