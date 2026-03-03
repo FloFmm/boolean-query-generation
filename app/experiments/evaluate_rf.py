@@ -124,6 +124,8 @@ def evaluate_rf(
             #             rf_time_seconds = obj["time_seconds"]
             #             break
         else:
+            if last_run_failed:
+                print("regenerating rf because last_run_failed")
             with open(rf_config_path, "w", encoding="utf-8") as f:
                 json.dump(rf_params, f, indent=4)
             rf = RandomForest(**rf_params)

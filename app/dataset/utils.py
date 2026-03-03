@@ -14,6 +14,7 @@ from app.config.config import (
     TAR2017_TEST,
     TAR2018_TEST,
     CSMED_COCHRANE_REVIEWS,
+    TAR2018_TRAIN,
     TOP_K,
     BOW_PARAMS,
     FIXED_TOP_K,
@@ -733,13 +734,13 @@ def review_id_to_dataset(review_id):
     # -> we have to check first whether review_id is in review_id in CSMED_COCHRANE_REVIEWS["tar2019"]
     review_id = str(review_id)
     if review_id in CSMED_COCHRANE_REVIEWS["tar2019"]:
-        if review_id in review_id in TAR2017_TRAIN:
+        if review_id in TAR2017_TRAIN:
             return "tar2017", "TRAIN", 2017
-        if review_id in review_id in TAR2017_TEST:
+        if review_id in TAR2017_TEST:
             return "tar2017", "TEST", 2017
-        if review_id in review_id in TAR2018_TEST:
-            return "tar2018", "TEST", 2018
-        if review_id in review_id in TAR2018_TEST:
+        if review_id in TAR2018_TRAIN:
+            return "tar2018", "TRAIN", 2018
+        if review_id in TAR2018_TEST:
             return "tar2018", "TEST", 2018
         return "tar2019", None, 2019
     if review_id in CSMED_COCHRANE_REVIEWS["sigir2017"]:
@@ -791,6 +792,7 @@ def get_dataset_details() -> dict:
     return data
 
 def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=None, restrict_betas=None, top_k_types=None, recompute_query_Size=False, include_top_k_type=True):
+    duplicates = 0
     records = []
     # if path is already a file then only take the data from that file
     files = []
@@ -811,20 +813,27 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=N
                 betas_str = ",".join(map(str, betas))
 
         with open(jsonl_path, "r", encoding="utf-8") as f:
+            query_ids_in_file = set()
             for line in f:
                 line = line.strip()
                 if not line:
                     continue
                 data = json.loads(line)
+                if data["query_id"] in query_ids_in_file:
+                    duplicates+=1
+                    continue
                 data["file_path"] = str(jsonl_path)
                 match = re.search(r"\/n(\d+)\/", str(jsonl_path))
                 data["trial"] = int(match.group(1)) if match else None
                 data["selection_betas"] = betas_str
                 data["betas"] = betas
+                query_ids_in_file.add(data["query_id"])
                 records.append(data)
     df = pd.DataFrame(records)
     # Print sample count
     print(f"{len(df)} samples")
+    if duplicates > 0:
+        print(f"warning {duplicates} duplicate query_ids found and skipped")
     
     df = calc_missing_columns_in_result_df(df, recompute_query_Size=recompute_query_Size)
     # FILTERS

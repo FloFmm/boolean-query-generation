@@ -122,7 +122,7 @@ def compute_dataset_statistics():
         for review_name, review_data in reviews.items():
             # review_data has keys []'review_name', 'dataset_details', 'data']
             # review_data["dataset_details"] has keys ['title', 'abstract', 'review_type', 'doi', 'review_id', 'criteria', 'search_strategy']
-            dataset_name, split, year = review_id_to_dataset(review_name)
+            dataset_name, _, year = review_id_to_dataset(review_name)
             count_dict[dataset_name] += 1
 
             pos = set()

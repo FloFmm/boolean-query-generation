@@ -80,6 +80,7 @@ if __name__ == "__main__":
         n_trials=n_trials,
     )
     all_combinations = list(all_combinations - existing_pairs)
+    all_combinations.sort()
     print(f"Remaining combinations: {len(all_combinations)}")
     print(f"Existing combinations: {len(existing_pairs)}")
 
