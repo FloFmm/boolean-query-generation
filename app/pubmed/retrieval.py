@@ -69,10 +69,6 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2026, target_count=95
         maxdate=end_date.strftime("%Y/%m/%d"),
     )
     total_expected = int(record["Count"])
-    if total_expected < target_count:
-        if DEBUG:
-            print("Total below target — fetching in one go")
-        return list(record["IdList"])
 
     if total_expected > max_retrieved:
         if not always_retrieve:
@@ -80,6 +76,10 @@ def search_pubmed_dynamic(query, start_year=1800, end_year=2026, target_count=95
     if total_expected < min_retrieved:
         if not always_retrieve:
             raise optuna.exceptions.TrialPruned(f"Tried to retrieve only {total_expected} which is less than min_retrieved={min_retrieved}")
+    if total_expected < target_count:
+        if DEBUG:
+            print("Total below target — fetching in one go")
+        return list(record["IdList"])
     if DEBUG:
         print(f"Total expected PMIDs: {total_expected}")
 
