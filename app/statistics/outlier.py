@@ -13,12 +13,19 @@ def filter_jsonl_outliers(folder_path, outlier_save_path):
             if file.endswith('.jsonl'):
                 file_path = os.path.join(root, file)
                 filtered_lines = []
+                seen_query_ids = set()
                 with open(file_path, 'r', encoding='utf-8') as f:
                     for line in f:
                         try:
                             data = json.loads(line)
                         except Exception:
                             continue
+                        # Remove duplicates based on query_id
+                        query_id = data.get('query_id')
+                        if query_id is not None and query_id in seen_query_ids:
+                            continue
+                        if query_id is not None:
+                            seen_query_ids.add(query_id)
                         pubmed_retrieved = data.get('pubmed_retrieved')
                         if pubmed_retrieved == 0 or (isinstance(pubmed_retrieved, (int, float)) and pubmed_retrieved > 200_000):
                             data['__source_path'] = file_path
@@ -39,7 +46,7 @@ def filter_jsonl_outliers(folder_path, outlier_save_path):
 if __name__ == "__main__":
     folder_path = CURRENT_BEST_RUN_FOLDER
     # Remove outlier lines from all jsonl files and collect them
-    filter_jsonl_outliers(folder_path, "data/examples/outlier.jsonl")
+    filter_jsonl_outliers(folder_path, "data/examples/outlier2.jsonl")
     # Load and prepare DataFrame once
     base_df = get_qg_results(folder_path, query_ids=None)
     base_df = calc_missing_columns_in_result_df(base_df)

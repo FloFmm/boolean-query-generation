@@ -539,6 +539,14 @@ if __name__ == "__main__":
     # Load and prepare DataFrame once
     base_df = get_qg_results(folder_path, min_positive_threshold=None, query_ids=None)
     base_df = calc_missing_columns_in_result_df(base_df)
+    
+    outliers = len(base_df[["dataset", "num_positive_bucket", "pubmed_retrieved"]]
+        [
+            (base_df["pubmed_retrieved"] == 0) |
+            (base_df["pubmed_retrieved"] > 200_000)
+        ]
+    )
+    print("warning, found", outliers, "rows with 0 or >200k pubmed_retrieved")
     agg_df = aggregate_results(base_df)
     
     def expected_num_samples(row, dataset_details):

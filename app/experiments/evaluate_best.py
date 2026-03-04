@@ -138,7 +138,7 @@ if __name__ == "__main__":
                 meta_data=initial_solutions[best_params_index],
                 max_retrieved=200_000,
                 min_retrieved=1,
-                always_retrieve=True,
+                always_retrieve=False,
                 ignore_pubmed_errors=True,
                 skip_existing=True,
                 last_run_failed=last_run_failed,
