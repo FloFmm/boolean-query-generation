@@ -136,7 +136,7 @@ if __name__ == "__main__":
                 qg_params=qg_params,
                 term_expansions=term_expansions,
                 meta_data=initial_solutions[best_params_index],
-                max_retrieved=200_000,
+                max_retrieved=1_000_000,
                 min_retrieved=1,
                 always_retrieve=False,
                 ignore_pubmed_errors=True,

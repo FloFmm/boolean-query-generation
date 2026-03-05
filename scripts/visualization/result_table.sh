@@ -11,4 +11,6 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
 
 cd boolean-query-generation
-$CSMED_PY -m app.visualization.result_table
+$CSMED_PY -m app.visualization.tables.result_table
+
+# /data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python -m app.visualization.tables.result_table
