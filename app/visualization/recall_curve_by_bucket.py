@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 from pathlib import Path
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from app.parameter_tuning.compute_top_k import (
     compute_weighted_metric_curve,
     compute_top_ks,
@@ -10,7 +11,14 @@ from app.parameter_tuning.compute_top_k import (
 )
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
-from app.config.config import apply_matplotlib_style, COLORS, COLORMAPS
+from app.config.config import (
+    TOP_K,
+    apply_matplotlib_style,
+    COLORS,
+    COLORMAPS,
+    FIGURE_CONFIG,
+)
+from app.parameter_tuning.compute_top_k import BUCKETS
 
 apply_matplotlib_style()
 
@@ -30,7 +38,12 @@ def plot_metric_curve_by_bucket(
     cmap = cm.get_cmap(COLORMAPS["spectrum"])
     norm = mcolors.Normalize(vmin=0, vmax=num_buckets - 1)
 
-    plt.figure()
+    plt.figure(
+        figsize=(
+            FIGURE_CONFIG["half_width"],
+            FIGURE_CONFIG["half_width"]# * FIGURE_CONFIG["aspect_ratio"],
+        )
+    )
 
     for idx, ((start, end), raw_label) in enumerate(zip(buckets, bucket_labels)):
         label = f"{start}-{end}"
@@ -39,7 +52,6 @@ def plot_metric_curve_by_bucket(
         plt.plot(
             ks,
             bucket_vals[raw_label],
-            marker="o",
             label=label,
             color=color,
         )
@@ -47,11 +59,20 @@ def plot_metric_curve_by_bucket(
     plt.xlabel("k")
     plt.ylabel(f"{metric}@k")
     plt.xscale("log")
-    plt.grid(True, which="both", linestyle="--", alpha=0.6)
-    plt.legend(title="Positives bucket")
+    plt.grid(True, which="major", linestyle="--", alpha=0.4)
+    ticks = TOP_K[0.7][0]  # [(x[1]+x[0])/2 for x in BUCKETS]
+    sm = cm.ScalarMappable(cmap=cmap, norm=mcolors.Normalize(vmin=1, vmax=max(ticks)))
+    sm.set_array([])
+    ax = plt.gca()
+    cax = inset_axes(ax, width="50%", height="5%", loc="upper left", borderpad=0.5)
+    cbar = plt.colorbar(sm, cax=cax, orientation="horizontal")
+    cbar.set_label("#Relevant Docs", labelpad=1)
+    cbar.set_ticks(ticks)
+    cbar.set_ticklabels([str(round(t)) if t == 1 or t >= 200 else "" for t in ticks])
+    # cbar.ax.tick_params(labelsize=7)
 
     if title:
-        plt.title(title)
+        ax.set_title(title)
 
     plt.tight_layout()
     out_img = Path(out_folder) / f"{metric}_at_k_curve.jpg"
@@ -90,15 +111,20 @@ def plot_k_at_recall_thresholds_buckets(
     # Prepare plot
     plt.figure()
     bucket_labels = [f"{lo}-{hi}" for lo, hi in buckets]
-    
+
     num_ps = len(ps)
     cmap = cm.get_cmap(COLORMAPS["spectrum"])
     norm = mcolors.Normalize(vmin=0, vmax=num_ps - 1)
 
     for i, (p, ks_dict) in enumerate(k_at_ps.items()):
         ys = [ks_dict.get((lo, hi), float("nan")) for lo, hi in buckets]
-        plt.plot(bucket_labels, ys, marker="o", label=f"k@{int(p * 100)}% recall", 
-                 color=cmap(norm(i)))
+        plt.plot(
+            bucket_labels,
+            ys,
+            marker="o",
+            label=f"k@{int(p * 100)}% recall",
+            color=cmap(norm(i)),
+        )
 
     plt.xlabel("Number of positives (bucket)")
     plt.ylabel("k")
