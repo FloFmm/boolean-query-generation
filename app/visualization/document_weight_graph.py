@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from app.config.config import apply_matplotlib_style, COLORS
 apply_matplotlib_style()
+import matplotlib as mpl
+# mpl.rcParams['mathtext.fontset'] = 'cm'  # Use Computer Modern for math mode (serif)
 
 def plot_custom_rank_graph(w_rank1=2, k=1, n=3, inf=8, save_path=None):
     # Define points
@@ -18,7 +20,7 @@ def plot_custom_rank_graph(w_rank1=2, k=1, n=3, inf=8, save_path=None):
     ]
     x, y = zip(*points)
 
-    fig, ax = plt.subplots(figsize=(12, 3))
+    fig, ax = plt.subplots(figsize=(7, 1.75))
     ax.plot(x, y, color=COLORS['primary'], linewidth=2)
 
     # Remove box (spines)
@@ -43,21 +45,21 @@ def plot_custom_rank_graph(w_rank1=2, k=1, n=3, inf=8, save_path=None):
     ax.set_xlabel('rank')
     ax.set_ylabel('weight')
 
-    # Draw real lines for ranges at same height
-    range_y = w_rank1 + 0.3
+    # Draw real lines for ranges at same height, moved up by 0.15
+    range_y = w_rank1 + 0.3 + 0.15
     # pseudo relevant: 0 to k (with arrow)
     ax.annotate('', xy=(k, range_y), xytext=(0, range_y), arrowprops=dict(arrowstyle='<->', lw=2, color=COLORS['positive']))
-    ax.text((0+k)/2, range_y+0.05, 'pseudo relevant', ha='center', va='bottom', fontsize=10, color=COLORS['positive'])
+    ax.text((0+k)/2, range_y+0.1, 'pseudo relevant', ha='center', va='bottom', color=COLORS['positive'])
     # Add length label below green arrow
-    ax.text((0+k)/2, range_y-0.08, r'$k$', ha='center', va='top', fontsize=11, color=COLORS['positive'])
+    ax.text((0+k)/2, range_y-0.08, r'$k$', ha='center', va='top', color=COLORS['positive'])
     # don't cares: k to (n+1)k (with arrow)
     ax.annotate('', xy=(k*(n+1), range_y), xytext=(k, range_y), arrowprops=dict(arrowstyle='<->', lw=2, color=COLORS['neutral']))
-    ax.text((k+k*(n+1))/2, range_y+0.05, "don't cares", ha='center', va='bottom', fontsize=10, color=COLORS['neutral'])
+    ax.text((k+k*(n+1))/2, range_y+0.1, "don't cares", ha='center', va='bottom', color=COLORS['neutral'])
     # Add length label below orange arrow
-    ax.text((k+k*(n+1))/2, range_y-0.08, r"$f_{\text{don't-cares}} \cdot k$", ha='center', va='top', fontsize=11, color=COLORS['neutral'])
+    ax.text((k+k*(n+1))/2, range_y-0.08, r"$f_{\text{don't-cares}} \cdot k$", ha='center', va='top', color=COLORS['neutral'])
     # pseudo non-relevant: (n+1)k to inf (with arrow)
     ax.annotate('', xy=(inf, range_y), xytext=(k*(n+1), range_y), arrowprops=dict(arrowstyle='<->', lw=2, color=COLORS['negative']))
-    ax.text((k*(n+1)+inf)/2, range_y+0.05, 'pseudo non-relevant', ha='center', va='bottom', fontsize=10, color=COLORS['negative'])
+    ax.text((k*(n+1)+inf)/2, range_y+0.1, 'pseudo non-relevant', ha='center', va='bottom', color=COLORS['negative'])
 
     # Draw horizontal lines for y labels
     for y_val in [0, 1, w_rank1]:

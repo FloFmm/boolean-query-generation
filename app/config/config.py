@@ -755,6 +755,8 @@ def apply_matplotlib_style():
             # Legend
             "legend.frameon": True,
             "legend.framealpha": 0.9,
+            # Math mode font
+            "mathtext.fontset": "cm",
         }
     )
 
