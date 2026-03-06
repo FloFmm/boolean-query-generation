@@ -662,13 +662,15 @@ COLORS = {
     "secondary": "#1B998B",  # Teal/green
     "secondary_light": "#7DD3C0",  # Light teal
     # Semantic colors
-    "positive": "#2E86AB",  # Blue for positive/high values
-    "positive_light": "#A3D5FF",
+    "positive": "#1B993D",  # Green for positive/high values
+    "positive_light": "#7DD3C0",
+    # "positive": "#2E86AB",  # Blue for positive/high values
+    # "positive_light": "#A3D5FF",
     "negative": "#E94F37",  # Red for negative/low values
     "negative_light": "#F5A69A",
     # Neutral colors
-    "neutral": "#6C757D",  # Gray
-    "neutral_light": "#ADB5BD",
+    "neutral": "#F4A261",  # Orange
+    "neutral_light": "#FDB87C",
     # Category colors (for multiple groups/lines in plots)
     "category": [
         "#2E86AB",  # Blue
