@@ -35,12 +35,15 @@ def plot_metric_score_curve_by_bucket(
 
     ks = np.arange(1, MAX_K + 1)#np.arange(1, MAX_K + 1)
 
-    plt.figure(
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, sharex=True,
+        gridspec_kw={"height_ratios": [10, 1]},
         figsize=(
             FIGURE_CONFIG["half_width"],
-            FIGURE_CONFIG["half_width"]# * FIGURE_CONFIG["aspect_ratio"],
+            FIGURE_CONFIG["half_width"],
         )
     )
+    fig.subplots_adjust(hspace=0.05)
 
     def bucket_key(bucket_str: str):
         start, end = bucket_str.split("-")
@@ -52,56 +55,53 @@ def plot_metric_score_curve_by_bucket(
     norm = mcolors.Normalize(vmin=0, vmax=num_buckets - 1)
 
     for idx, (bucket, mean_scores) in enumerate(sorted_buckets):
-        plt.plot(
-            ks[:5000],
-            mean_scores[:5000],
-            label=bucket,
-            color=cmap(norm(idx)),
-        )
+        for ax in (ax1, ax2):
+            ax.plot(
+                ks[:5000],
+                mean_scores[:5000],
+                label=bucket,
+                color=cmap(norm(idx)),
+            )
 
-    # DEBUG: print k where each bucket reaches certain score thresholds
-    # DEBUG: for each score threshold, print list of ks ordered by bucket
-    # debug_scores = [0.98, 0.97, 0.96, 0.955, 0.95]
+    ax1.set_ylim(0.93, 1.003)
+    ax2.set_ylim(0, 0.05)
 
-    # sorted_buckets = sorted(bucket_mean_scores.keys(), key=bucket_key)
+    ax1.spines.bottom.set_visible(False)
+    ax2.spines.top.set_visible(False)
+    ax2.set_yticks([])
 
-    # print("\n=== DEBUG: ks per score threshold (bucket-ordered) ===")
-    # print(f"Buckets: {sorted_buckets}\n")
+    ax1.set_xscale("log")
+    ax2.set_xscale("log")
 
-    # for s in debug_scores:
-    #     ks_for_score = []
-    #     for bucket in sorted_buckets:
-    #         mean_scores = bucket_mean_scores[bucket]
-    #         idx = np.where(mean_scores <= s)[0]
-    #         if len(idx) > 0:
-    #             ks_for_score.append(idx[0] + 1)  # k is 1-based
-    #         else:
-    #             ks_for_score.append(None)
-    #     print(f"score <= {s}: {ks_for_score}")
+    # must be after set_xscale to avoid log scale resetting tick visibility
+    ax1.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
+    ax2.xaxis.tick_bottom()
 
-    plt.xscale("log")
-    plt.xlabel("Rank")
-    plt.ylabel("Cosine Similarity")
-    plt.title("Cosine Similarity at Rank")
-    plt.grid(True, which="major", linestyle="--", alpha=0.4)
+    d = 0.5
+    kwargs = dict(marker=[(-1, -d), (1, d)], markersize=12,
+                  linestyle="none", color="k", mec="k", mew=1, clip_on=False)
+    ax1.plot([0, 1], [0, 0], transform=ax1.transAxes, **kwargs)
+    ax2.plot([0, 1], [1, 1], transform=ax2.transAxes, **kwargs)
+    ax2.set_xlabel("Rank")
+    ax1.set_ylabel("Cosine Similarity")
+    ax1.set_title("Cosine Similarity at Rank")
+    ax1.grid(True, which="major", linestyle="--", alpha=0.4)
+    ax2.grid(True, which="major", linestyle="--", alpha=0.4)
     
     # legend
     ticks = TOP_K[0.7][0]
     sm = cm.ScalarMappable(cmap=cmap, norm=mcolors.Normalize(vmin=1, vmax=max(ticks)))
     sm.set_array([])
-    ax = plt.gca()
-    # Using bbox_to_anchor to set different x and y padding (borderpad uses a single padding value)
     cax = inset_axes(
-        ax, width="50%", height="5%", loc="lower left",
+        ax1, width="50%", height="5%", loc="lower left",
         bbox_to_anchor=(0.06, 0.12, 1, 1), 
-        bbox_transform=ax.transAxes
+        bbox_transform=ax1.transAxes
     )
     cbar = plt.colorbar(sm, cax=cax, orientation="horizontal")
     cbar.set_label("#Relevant Doc.", labelpad=4)
     cbar.ax.xaxis.set_label_position('top')
     cbar.set_ticks(ticks)
     cbar.set_ticklabels([str(round(t)) if t == 1 or t >= 200 else "" for t in ticks])
-    # cbar.ax.tick_params(labelsize=7)
     
     plt.tight_layout()
     plt.savefig(os.path.join(SAVE_DIR, "metric_score_curve_by_bucket.png"))
@@ -173,7 +173,7 @@ def plot_positive_score_stats_by_bucket(bucket_scores: dict):
     ax2.set_xticks(x)
     ax2.set_xticklabels(buckets_sorted, rotation=45, ha="right")
     ax2.set_xlabel("Number of Relevant Documents (Buckets)")
-    fig.supylabel("Cosine Similarity")
+    ax1.set_ylabel("Cosine Similarity")
     # plt.title("Positive score statistics by bucket")
     ax1.grid(True, linestyle="--", alpha=0.6)
     ax2.grid(True, linestyle="--", alpha=0.6)
