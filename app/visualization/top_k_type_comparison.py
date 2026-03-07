@@ -11,6 +11,7 @@ from app.dataset.utils import ranking_file_path, get_dataset_details, select_k_p
 from app.parameter_tuning.compute_top_k import BUCKETS
 from app.helper.helper import f_beta
 from app.config.config import FIGURE_CONFIG, TOP_K, apply_matplotlib_style, COLORS, COLORMAPS
+from app.visualization.helper import pretty_print_param
 
 apply_matplotlib_style()
 
@@ -96,14 +97,14 @@ def plot_metric_score_curve_by_bucket(
         bbox_transform=ax.transAxes
     )
     cbar = plt.colorbar(sm, cax=cax, orientation="horizontal")
-    cbar.set_label("#Relevant Docs", labelpad=4)
+    cbar.set_label("#Relevant Doc.", labelpad=4)
     cbar.ax.xaxis.set_label_position('top')
     cbar.set_ticks(ticks)
     cbar.set_ticklabels([str(round(t)) if t == 1 or t >= 200 else "" for t in ticks])
     # cbar.ax.tick_params(labelsize=7)
     
     plt.tight_layout()
-    plt.savefig(os.path.join(SAVE_DIR, "metric_score_curve_by_bucket.png"), dpi=300)
+    plt.savefig(os.path.join(SAVE_DIR, "metric_score_curve_by_bucket.png"))
     plt.close()
 
 def plot_positive_score_stats_by_bucket(bucket_scores: dict):
@@ -120,7 +121,7 @@ def plot_positive_score_stats_by_bucket(bucket_scores: dict):
     min_scores = []
     max_scores = []
     mean_scores = []
-    median_scores = []
+    # median_scores = []
 
     for bucket in buckets_sorted:
         arrays = [arr for arr in bucket_scores[bucket] if arr.size > 0]
@@ -129,7 +130,7 @@ def plot_positive_score_stats_by_bucket(bucket_scores: dict):
             min_scores.append(np.nan)
             max_scores.append(np.nan)
             mean_scores.append(np.nan)
-            median_scores.append(np.nan)
+            # median_scores.append(np.nan)
             continue
 
         positives = np.concatenate(arrays)
@@ -138,25 +139,47 @@ def plot_positive_score_stats_by_bucket(bucket_scores: dict):
         min_scores.append(np.min(positives))
         max_scores.append(np.max(positives))
         mean_scores.append(np.mean(positives))
-        median_scores.append(np.median(positives))
+        # median_scores.append(np.median(positives))
 
     x = np.arange(len(buckets_sorted))
 
-    plt.figure()
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, sharex=True,
+        gridspec_kw={"height_ratios": [10, 1]},
+    )
+    fig.subplots_adjust(hspace=0.05)
 
-    plt.plot(x, min_scores, marker="o", label="Min", color=COLORS["category"][0])
-    plt.plot(x, max_scores, marker="o", label="Max", color=COLORS["category"][1])
-    plt.plot(x, mean_scores, marker="o", label="Mean", color=COLORS["category"][2])
-    plt.plot(x, median_scores, marker="o", label="Median", color=COLORS["category"][3])
+    for ax in (ax1, ax2):
+        ax.plot(x, min_scores, marker="v", label="Min", color=COLORS["category"][0])
+        ax.plot(x, max_scores, marker="^", label="Max", color=COLORS["category"][1])
+        ax.plot(x, mean_scores, marker="o", label="Mean", color=COLORS["category"][2])
+        # ax.plot(x, median_scores, marker="s", label="Median", color=COLORS["category"][3])
 
-    plt.xticks(x, buckets_sorted, rotation=45)
-    plt.xlabel("Bucket (number of positives)")
-    plt.ylabel("Positive retrieval score")
-    plt.title("Positive score statistics by bucket")
-    plt.grid(True, linestyle="--", alpha=0.6)
-    plt.legend()
+    ax1.set_ylim(0.89, 1.0)
+    ax2.set_ylim(0, 0.05)
+
+    ax1.spines.bottom.set_visible(False)
+    ax2.spines.top.set_visible(False)
+    ax1.tick_params(bottom=False)
+    ax2.xaxis.tick_bottom()
+    ax2.set_yticks([])
+
+    d = 0.5
+    kwargs = dict(marker=[(-1, -d), (1, d)], markersize=12,
+                  linestyle="none", color="k", mec="k", mew=1, clip_on=False)
+    ax1.plot([0, 1], [0, 0], transform=ax1.transAxes, **kwargs)
+    ax2.plot([0, 1], [1, 1], transform=ax2.transAxes, **kwargs)
+
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(buckets_sorted, rotation=45, ha="right")
+    ax2.set_xlabel("Number of Relevant Documents (Buckets)")
+    fig.supylabel("Cosine Similarity")
+    # plt.title("Positive score statistics by bucket")
+    ax1.grid(True, linestyle="--", alpha=0.6)
+    ax2.grid(True, linestyle="--", alpha=0.6)
+    ax1.legend(loc="lower right")
     plt.tight_layout()
-    plt.savefig(os.path.join(SAVE_DIR, "positive_score_stats_by_bucket.png"), dpi=300)
+    plt.savefig(os.path.join(SAVE_DIR, "positive_score_stats_by_bucket.png"))
     plt.close()
 
 def compute_precision_recall_at_k(
@@ -199,18 +222,24 @@ def plot_precision_recall_by_bucket(
     buckets_sorted = sorted(bucket_rankings.keys(), key=bucket_key)
 
     methods = {
-        f"Fixed k={fixed_k}": lambda npos, scores: fixed_k,
-        "Positive-dependent k": lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
-        f"Cosine-threshold ({cosine_percentage_threshold*100:.2f}%) k": lambda npos, scores: select_k_cosine_threshold(
+        pretty_print_param(f"fixed_k={fixed_k}"): lambda npos, scores: fixed_k,
+        pretty_print_param("pos_count_k"): lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
+        pretty_print_param(f"cosine_k ({cosine_percentage_threshold*100:.2f}%)"): lambda npos, scores: select_k_cosine_threshold(
             scores, cosine_percentage_threshold
         ),
     }
 
     # base colors per strategy using centralized config
     colors = {
-        f"Fixed k={fixed_k}": COLORS["fixed_k"],
-        "Positive-dependent k": COLORS["pos_count_k"],
-        f"Cosine-threshold ({cosine_percentage_threshold*100:.2f}%) k": COLORS["cosine_k"],
+        pretty_print_param(f"fixed_k={fixed_k}"): COLORS["fixed_k"],
+        pretty_print_param("pos_count_k"): COLORS["pos_count_k"],
+        pretty_print_param(f"cosine_k ({cosine_percentage_threshold*100:.2f}%)"): COLORS["cosine_k"],
+    }
+
+    markers = {
+        pretty_print_param(f"fixed_k={fixed_k}"): "o",
+        pretty_print_param("pos_count_k"): "s",
+        pretty_print_param(f"cosine_k ({cosine_percentage_threshold*100:.2f}%)"): "^",
     }
 
     precision_means = {name: [] for name in methods}
@@ -264,7 +293,7 @@ def plot_precision_recall_by_bucket(
         plt.plot(
             x,
             precision_means[name],
-            marker="o",
+            marker=markers[name],
             linestyle="-",
             color=colors[name],
             label=f"{name} – Precision",
@@ -272,7 +301,7 @@ def plot_precision_recall_by_bucket(
         plt.plot(
             x,
             recall_means[name],
-            marker="o",
+            marker=markers[name],
             linestyle="--",
             color=colors[name],
             alpha=0.6,
@@ -280,13 +309,13 @@ def plot_precision_recall_by_bucket(
         )
 
     plt.xticks(x, buckets_sorted, rotation=45)
-    plt.xlabel("Bucket (number of positives)")
-    plt.ylabel("Score")
-    plt.title("Precision and Recall by bucket for different top-k selection strategies")
+    plt.xlabel("Number of Relevant Documents (Buckets)")
+    plt.ylabel("Precision / Recall")
+    # plt.title("Precision and Recall by bucket for different top-k selection strategies")
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(SAVE_DIR, "precision_recall_by_bucket.png"), dpi=300)
+    plt.savefig(os.path.join(SAVE_DIR, "precision_recall_by_bucket.png"))
     plt.close()
 
 def collect_samples_with_min_positives(
@@ -400,18 +429,24 @@ def plot_actual_topk_by_bucket(bucket_rankings: dict, cosine_percentage_threshol
     buckets_sorted = sorted(bucket_rankings.keys(), key=bucket_key)
 
     methods = {
-        f"Fixed k={fixed_k}": lambda npos, scores: fixed_k,
-        "Positive-dependent k": lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
-        f"Cosine-threshold ({cosine_percentage_threshold*100:.2f}%) k": lambda npos, scores: select_k_cosine_threshold(
+        pretty_print_param(f"fixed_k={fixed_k}"): lambda npos, scores: fixed_k,
+        pretty_print_param("pos_count_k"): lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
+        pretty_print_param(f"cosine_k ({cosine_percentage_threshold*100:.2f}%)"): lambda npos, scores: select_k_cosine_threshold(
             scores, cosine_percentage_threshold
         ),
     }
 
     # base colors per strategy using centralized config
     colors = {
-        f"Fixed k={fixed_k}": COLORS["fixed_k"],
-        "Positive-dependent k": COLORS["pos_count_k"],
-        f"Cosine-threshold ({cosine_percentage_threshold*100:.2f}%) k": COLORS["cosine_k"],
+        pretty_print_param(f"fixed_k={fixed_k}"): COLORS["fixed_k"],
+        pretty_print_param("pos_count_k"): COLORS["pos_count_k"],
+        pretty_print_param(f"cosine_k ({cosine_percentage_threshold*100:.2f}%)"): COLORS["cosine_k"],
+    }
+
+    markers = {
+        pretty_print_param(f"fixed_k={fixed_k}"): "o",
+        pretty_print_param("pos_count_k"): "s",
+        pretty_print_param(f"cosine_k ({cosine_percentage_threshold*100:.2f}%)"): "^",
     }
 
     avg_ks = {name: [] for name in methods}
@@ -433,20 +468,20 @@ def plot_actual_topk_by_bucket(bucket_rankings: dict, cosine_percentage_threshol
         plt.plot(
             x,
             avg_ks[name],
-            marker="o",
+            marker=markers[name],
             linestyle="-",
             color=colors[name],
             label=name,
         )
 
     plt.xticks(x, buckets_sorted, rotation=45)
-    plt.xlabel("Bucket (number of positives)")
-    plt.ylabel("Average top-k used")
-    plt.title("Average top-k per bucket for different selection strategies")
+    plt.xlabel("Number of Relevant Documents (Buckets)")
+    plt.ylabel(pretty_print_param("Cutoff Point top_k"))
+    # plt.title("Average top-k per bucket for different selection strategies")
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(SAVE_DIR, "actual_topk_by_bucket.png"), dpi=300)
+    plt.savefig(os.path.join(SAVE_DIR, "actual_topk_by_bucket.png"))
     plt.close()
 
 SAVE_DIR = "../master-thesis-writing/writing/thesis/images/graphs"

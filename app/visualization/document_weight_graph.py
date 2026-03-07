@@ -42,8 +42,8 @@ def plot_custom_rank_graph(w_rank1=2, k=1, n=3, inf=8, save_path=None):
     # Remove x ticks and labels
     ax.set_xticks([])
     # Set x label closer to axis
-    ax.set_xlabel('rank')
-    ax.set_ylabel('weight')
+    ax.set_xlabel('Rank')
+    ax.set_ylabel('Weight')
 
     # Draw real lines for ranges at same height, moved up by 0.15
     range_y = w_rank1 + 0.3 + 0.15

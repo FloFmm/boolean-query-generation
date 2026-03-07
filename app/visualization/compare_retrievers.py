@@ -46,7 +46,7 @@ def pretty_file_name(file_name):
     return file_name
 
 
-def compare_dense_retrievers(folder_path, metrics, save_path):
+def compare_dense_retrievers(folder_path, metrics, save_path, models=None):
     """
     Compare dense retrievers from JSON files in a folder.
     """
@@ -57,6 +57,8 @@ def compare_dense_retrievers(folder_path, metrics, save_path):
     file_names = []
 
     for file_path in folder_path.glob("*.json"):
+        if models and not any(model in file_path.stem for model in models):
+            continue
         try:
             with open(file_path, "r") as f:
                 data = json.load(f)
@@ -96,12 +98,25 @@ def compare_dense_retrievers(folder_path, metrics, save_path):
     # Ensure numeric
     df = df.apply(pd.to_numeric, errors="coerce")
 
+    # Insert NaN spacer rows between model groups for visual separation
+    model_of = lambda name: name.split("(")[0].strip()
+    new_rows, new_index, prev_model = [], [], None
+    for name in df.index:
+        model = model_of(name)
+        if prev_model is not None and model != prev_model:
+            new_rows.append([float("nan")] * len(df.columns))
+            new_index.append("")
+        new_rows.append(df.loc[name].tolist())
+        new_index.append(name)
+        prev_model = model
+    df = pd.DataFrame(new_rows, index=new_index, columns=df.columns)
+
     # Define colors per metric using centralized config
     colors = {
-        "precision@10": COLORS["precision"],
-        "precision@100": COLORS["precision_light"],
-        "recall@10": COLORS["recall"],
-        "recall@100": COLORS["recall_light"],
+        "precision@100": COLORS["precision"],
+        "precision@1000": COLORS["precision_light"],
+        "recall@100": COLORS["recall"],
+        "recall@1000": COLORS["recall_light"],
         "map": COLORS["map"],
         "mrr@100": COLORS["mrr"],
     }
@@ -112,12 +127,23 @@ def compare_dense_retrievers(folder_path, metrics, save_path):
     # Create figure with explicit settings, then use pandas plot on the axes
     fig, ax = plt.subplots(figsize=(max(10, len(df) * 0.6), 6))
     
-    df.plot(kind="bar", ax=ax, color=metric_colors)
+    df.plot(kind="bar", ax=ax, color=metric_colors, width=0.9)
     ax.set_title("Dense Retriever Comparison")
     ax.set_ylabel("Metric Value")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=25, ha="right")
     ax.set_ylim(0, 1)
-    ax.legend(title="Metrics")
+    # Update legend labels to readable names
+    legend_label_map = {
+        "map": "MAP",
+        "mrr@100": "MRR@100",
+        "precision@100": "Precision@100",
+        "precision@1000": "Precision@1000",
+        "recall@100": "Recall@100",
+        "recall@1000": "Recall@1000",
+    }
+    handles, labels = ax.get_legend_handles_labels()
+    new_labels = [legend_label_map.get(label, label) for label in labels]
+    ax.legend(handles, new_labels, ncol=len(new_labels)+1)
     ax.grid(True, linestyle="--", alpha=0.6)
     plt.tight_layout()
 
@@ -133,14 +159,17 @@ if __name__ == "__main__":
     metrics_to_compare = [
         "map",
         "mrr@100",
-        "recall@10",
+        # "recall@10",
         "recall@100",
-        "precision@10",
+        "recall@1000",
+        # "precision@10",
         "precision@100",
+        "precision@1000",
     ]
     # save_folder = Path("data/statistics/images/retriever_comparison")
     save_folder = Path("../master-thesis-writing/writing/thesis/images/graphs")
     save_folder.mkdir(parents=True, exist_ok=True)
     save_file = save_folder / "retriever_comparison.png"
-
-    compare_dense_retrievers(data_folder, metrics_to_compare, save_file)
+    # models = ["biobert-nli", "biolinkbert", "MiniLM-512", "pubmedbert", "roberta", "MedCPT", "bm25"]
+    models = ["bm25", "MedCPT", "MiniLM-512", "pubmedbert"]
+    compare_dense_retrievers(data_folder, metrics_to_compare, save_file, models=models)

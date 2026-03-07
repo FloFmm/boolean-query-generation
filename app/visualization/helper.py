@@ -7,7 +7,7 @@ def pretty_print_param(name: str) -> str:
     Transform parameter names into pretty-printed versions.
     E.g., 'max_depth' -> 'max depth', 'n_estimators' -> 'n estimators'
     """
-    mapping = {
+    replacements = {
         "min_impurity_decrease_range_end": "min imp. decr. leaf",
         "min_impurity_decrease_range_start": "min imp. decr. root",
         "randomize_min_impurity_decrease_range": "randomize min imp. decr.",
@@ -25,16 +25,20 @@ def pretty_print_param(name: str) -> str:
         "avg_df": "Median DF",
         "duplicate_pct_exact": "Exact Duplicates %",
         "duplicate_pct_substring": "Substr. Duplicates %",
-    }
-    replacements = {
+        "fixed_k": r"fixed-$k$",
+        "cosine_k": r"cosine-$k$",
+        "pos_count_k": r"pos-count-$k$",
+        "top_k": r"$k$",
+    # }
+    # replacements = {
         "randomize": "rand.",
         "impurity": "imp.",
         "decrease": "decr.",
     }
-    name = mapping.get(name, name)
+    # name = mapping.get(name, name)
     for old, new in replacements.items():
         name = name.replace(old, new)
-    return name.replace("_", " ")
+    return name
 
 
 def prettify_axes(ax):
