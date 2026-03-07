@@ -3,13 +3,14 @@ import os
 import sys
 import math
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 from collections import defaultdict
 from app.dataset.utils import ranking_file_path, get_dataset_details, select_k_positive_dependent, select_k_cosine_threshold
 from app.parameter_tuning.compute_top_k import BUCKETS
 from app.helper.helper import f_beta
-from app.config.config import apply_matplotlib_style, COLORS, COLORMAPS
+from app.config.config import FIGURE_CONFIG, TOP_K, apply_matplotlib_style, COLORS, COLORMAPS
 
 apply_matplotlib_style()
 
@@ -31,9 +32,14 @@ def plot_metric_score_curve_by_bucket(
         stacked = np.vstack(score_lists)  # shape: (num_queries, K)
         bucket_mean_scores[bucket] = np.nanmean(stacked, axis=0)
 
-    ks = np.arange(1, MAX_K + 1)
+    ks = np.arange(1, MAX_K + 1)#np.arange(1, MAX_K + 1)
 
-    plt.figure()
+    plt.figure(
+        figsize=(
+            FIGURE_CONFIG["half_width"],
+            FIGURE_CONFIG["half_width"]# * FIGURE_CONFIG["aspect_ratio"],
+        )
+    )
 
     def bucket_key(bucket_str: str):
         start, end = bucket_str.split("-")
@@ -46,8 +52,8 @@ def plot_metric_score_curve_by_bucket(
 
     for idx, (bucket, mean_scores) in enumerate(sorted_buckets):
         plt.plot(
-            ks,
-            mean_scores,
+            ks[:5000],
+            mean_scores[:5000],
             label=bucket,
             color=cmap(norm(idx)),
         )
@@ -73,11 +79,29 @@ def plot_metric_score_curve_by_bucket(
     #     print(f"score <= {s}: {ks_for_score}")
 
     plt.xscale("log")
-    plt.xlabel("Rank position (k)")
-    plt.ylabel("Average retrieval score")
-    plt.title("Average ranking score vs rank (grouped by positives)")
-    plt.grid(True, which="both", linestyle="--", alpha=0.6)
-    plt.legend(title="Number of positives")
+    plt.xlabel("Rank")
+    plt.ylabel("Cosine Similarity")
+    plt.title("Cosine Similarity at Rank")
+    plt.grid(True, which="major", linestyle="--", alpha=0.4)
+    
+    # legend
+    ticks = TOP_K[0.7][0]
+    sm = cm.ScalarMappable(cmap=cmap, norm=mcolors.Normalize(vmin=1, vmax=max(ticks)))
+    sm.set_array([])
+    ax = plt.gca()
+    # Using bbox_to_anchor to set different x and y padding (borderpad uses a single padding value)
+    cax = inset_axes(
+        ax, width="50%", height="5%", loc="lower left",
+        bbox_to_anchor=(0.06, 0.12, 1, 1), 
+        bbox_transform=ax.transAxes
+    )
+    cbar = plt.colorbar(sm, cax=cax, orientation="horizontal")
+    cbar.set_label("#Relevant Docs", labelpad=4)
+    cbar.ax.xaxis.set_label_position('top')
+    cbar.set_ticks(ticks)
+    cbar.set_ticklabels([str(round(t)) if t == 1 or t >= 200 else "" for t in ticks])
+    # cbar.ax.tick_params(labelsize=7)
+    
     plt.tight_layout()
     plt.savefig(os.path.join(SAVE_DIR, "metric_score_curve_by_bucket.png"), dpi=300)
     plt.close()

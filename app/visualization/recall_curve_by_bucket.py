@@ -29,6 +29,7 @@ def plot_metric_curve_by_bucket(
     buckets: list[tuple],
     metric: str = "recall",
     title: str | None = None,
+    show_legend: bool = True,
 ):
     ks, bucket_labels, bucket_vals, bucket_avg_positives = (
         compute_weighted_metric_curve(csv_path, buckets, metric)
@@ -55,28 +56,28 @@ def plot_metric_curve_by_bucket(
             label=label,
             color=color,
         )
-
-    plt.xlabel("k")
-    plt.ylabel(f"{metric}@k")
     plt.xscale("log")
+    plt.xlabel("Rank")
+    plt.ylabel(f"{metric.capitalize()}")
+    plt.title(title)
     plt.grid(True, which="major", linestyle="--", alpha=0.4)
-    ticks = TOP_K[0.7][0]  # [(x[1]+x[0])/2 for x in BUCKETS]
-    sm = cm.ScalarMappable(cmap=cmap, norm=mcolors.Normalize(vmin=1, vmax=max(ticks)))
-    sm.set_array([])
-    ax = plt.gca()
-    cax = inset_axes(ax, width="50%", height="5%", loc="upper left", borderpad=0.5)
-    cbar = plt.colorbar(sm, cax=cax, orientation="horizontal")
-    cbar.set_label("#Relevant Docs", labelpad=1)
-    cbar.set_ticks(ticks)
-    cbar.set_ticklabels([str(round(t)) if t == 1 or t >= 200 else "" for t in ticks])
-    # cbar.ax.tick_params(labelsize=7)
-
-    if title:
-        ax.set_title(title)
+    
+    # legend
+    if show_legend:
+        ticks = TOP_K[0.7][0]  # [(x[1]+x[0])/2 for x in BUCKETS]
+        sm = cm.ScalarMappable(cmap=cmap, norm=mcolors.Normalize(vmin=1, vmax=max(ticks)))
+        sm.set_array([])
+        ax = plt.gca()
+        cax = inset_axes(ax, width="50%", height="5%", loc="upper right", borderpad=1.0)
+        cbar = plt.colorbar(sm, cax=cax, orientation="horizontal")
+        cbar.set_label("#Relevant Docs", labelpad=1)
+        cbar.set_ticks(ticks)
+        cbar.set_ticklabels([str(round(t)) if t == 1 or t >= 200 else "" for t in ticks])
+        cbar.ax.tick_params(labelsize=7)
 
     plt.tight_layout()
     out_img = Path(out_folder) / f"{metric}_at_k_curve.jpg"
-    plt.savefig(out_img, dpi=300, bbox_inches="tight")
+    plt.savefig(out_img)#, dpi=300, bbox_inches="tight")
     plt.close()
 
     print(f"✓ Saved {metric}@k curve plot to: {out_img}")
@@ -145,14 +146,15 @@ def plot_k_at_recall_thresholds_buckets(
 if __name__ == "__main__":
     plot_metric_curve_by_bucket(
         csv_path=CSV_PATH,
-        title="Recall by Number of Positives",
+        title="Recall at Rank",
         metric="recall",
         buckets=BUCKETS,
+        show_legend=False,
         out_folder="../master-thesis-writing/writing/thesis/images/graphs",
     )
     plot_metric_curve_by_bucket(
         csv_path=CSV_PATH,
-        title="Precision by Number of Positives",
+        title="Precision at Rank",
         metric="precision",
         buckets=BUCKETS,
         out_folder="../master-thesis-writing/writing/thesis/images/graphs",
