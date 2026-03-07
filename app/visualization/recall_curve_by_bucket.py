@@ -70,7 +70,7 @@ def plot_metric_curve_by_bucket(
         ax = plt.gca()
         cax = inset_axes(ax, width="50%", height="5%", loc="upper right", borderpad=1.0)
         cbar = plt.colorbar(sm, cax=cax, orientation="horizontal")
-        cbar.set_label("#Relevant Docs", labelpad=1)
+        cbar.set_label("#Relevant Doc.", labelpad=1)
         cbar.set_ticks(ticks)
         cbar.set_ticklabels([str(round(t)) if t == 1 or t >= 200 else "" for t in ticks])
         cbar.ax.tick_params(labelsize=7)

@@ -37,7 +37,7 @@ def plot_metric_score_curve_by_bucket(
 
     fig, (ax1, ax2) = plt.subplots(
         2, 1, sharex=True,
-        gridspec_kw={"height_ratios": [10, 1]},
+        gridspec_kw={"height_ratios": [15, 1]},
         figsize=(
             FIGURE_CONFIG["half_width"],
             FIGURE_CONFIG["half_width"],
@@ -57,13 +57,14 @@ def plot_metric_score_curve_by_bucket(
     for idx, (bucket, mean_scores) in enumerate(sorted_buckets):
         for ax in (ax1, ax2):
             ax.plot(
-                ks[:5000],
-                mean_scores[:5000],
+                ks,#[:5000],
+                mean_scores,#[:5000],
                 label=bucket,
                 color=cmap(norm(idx)),
             )
 
-    ax1.set_ylim(0.93, 1.003)
+    ax1.set_ylim(0.925, 1.003)
+    ax1.set_yticks(np.arange(0.94, 1.01, 0.02))
     ax2.set_ylim(0, 0.05)
 
     ax1.spines.bottom.set_visible(False)
@@ -90,18 +91,26 @@ def plot_metric_score_curve_by_bucket(
     
     # legend
     ticks = TOP_K[0.7][0]
+    # sm = cm.ScalarMappable(cmap=cmap, norm=mcolors.Normalize(vmin=1, vmax=max(ticks)))
+    # sm.set_array([])
+    # cax = inset_axes(
+    #     ax1, width="50%", height="5%", loc="lower left",
+    #     bbox_to_anchor=(0.06, 0.12, 1, 1), 
+    #     bbox_transform=ax1.transAxes
+    # )
+    # cbar = plt.colorbar(sm, cax=cax, orientation="horizontal")
+    # cbar.set_label("#Relevant Doc.", labelpad=4)
+    # cbar.ax.xaxis.set_label_position('top')
+    # cbar.set_ticks(ticks)
+    # cbar.set_ticklabels([str(round(t)) if t == 1 or t >= 200 else "" for t in ticks])
     sm = cm.ScalarMappable(cmap=cmap, norm=mcolors.Normalize(vmin=1, vmax=max(ticks)))
     sm.set_array([])
-    cax = inset_axes(
-        ax1, width="50%", height="5%", loc="lower left",
-        bbox_to_anchor=(0.06, 0.12, 1, 1), 
-        bbox_transform=ax1.transAxes
-    )
+    cax = inset_axes(ax1, width="50%", height="5%", loc="upper right", borderpad=1.0)
     cbar = plt.colorbar(sm, cax=cax, orientation="horizontal")
-    cbar.set_label("#Relevant Doc.", labelpad=4)
-    cbar.ax.xaxis.set_label_position('top')
+    cbar.set_label("#Relevant Doc.", labelpad=1)
     cbar.set_ticks(ticks)
     cbar.set_ticklabels([str(round(t)) if t == 1 or t >= 200 else "" for t in ticks])
+    # cbar.ax.tick_params(labelsize=7)
     
     plt.tight_layout()
     plt.savefig(os.path.join(SAVE_DIR, "metric_score_curve_by_bucket.png"))
