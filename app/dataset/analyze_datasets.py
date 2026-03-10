@@ -177,6 +177,15 @@ def compute_dataset_statistics():
 
     print("\n=== Dataset-level macro statistics ===")
 
+    total_stats = {
+        "ratio_sum": 0.0,
+        "pos_sum": 0,
+        "neg_sum": 0,
+        "n_reviews": 0,
+        "empty_abstract_in_pos": 0,
+        "reviews_ge_25_positives": 0,
+    }
+
     for dataset_name, stats in sorted(group_stats.items()):
         n = stats["n_reviews"]
 
@@ -195,6 +204,22 @@ def compute_dataset_statistics():
             f"n_reviews={n}",
             f"reviews_ge_25_positives={reviews_ge_25_positives}",
         )
+
+        for key in total_stats:
+            total_stats[key] += stats[key]
+
+    n_total = total_stats["n_reviews"]
+    total_pos = total_stats["pos_sum"]
+    total_neg = total_stats["neg_sum"]
+    print(
+        f"TOTAL: "
+        f"avg_ratio={total_pos / (total_pos + total_neg):.3f}, "
+        f"avg_pos={total_pos / n_total:.1f}, "
+        f"avg_neg={total_neg / n_total:.1f}, "
+        f"empty_abstract_in_pos={total_stats['empty_abstract_in_pos']}, "
+        f"n_reviews={n_total}",
+        f"reviews_ge_25_positives={total_stats['reviews_ge_25_positives']}",
+    )
 
 
 def compute_train_review_ids(
@@ -275,5 +300,5 @@ def compute_train_review_ids(
 
 
 if __name__ == "__main__":
-    # compute_dataset_statistics()
-    compute_train_review_ids(total_samples=25, min_positives=50)
+    compute_dataset_statistics()
+    # compute_train_review_ids(total_samples=25, min_positives=50)
