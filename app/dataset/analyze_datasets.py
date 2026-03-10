@@ -213,7 +213,7 @@ def compute_dataset_statistics():
     total_neg = total_stats["neg_sum"]
     print(
         f"TOTAL: "
-        f"avg_ratio={total_pos / (total_pos + total_neg):.3f}, "
+        f"avg_ratio={total_stats['ratio_sum'] / n_total:.3f}, "
         f"avg_pos={total_pos / n_total:.1f}, "
         f"avg_neg={total_neg / n_total:.1f}, "
         f"empty_abstract_in_pos={total_stats['empty_abstract_in_pos']}, "
