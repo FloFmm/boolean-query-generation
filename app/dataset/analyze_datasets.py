@@ -108,7 +108,7 @@ def compute_dataset_statistics():
             "neg_sum": 0,
             "n_reviews": 0,
             "empty_abstract_in_pos": 0,
-            "reviews_ge_25_positives": 0,
+            "reviews_ge_50_positives": 0,
         }
     )
     missing_relevant_docs = defaultdict(list)
@@ -160,8 +160,8 @@ def compute_dataset_statistics():
             stats["pos_sum"] += pos
             stats["neg_sum"] += neg
             stats["n_reviews"] += 1
-            if pos >= 25:
-                stats["reviews_ge_25_positives"] += 1
+            if pos >= 50:
+                stats["reviews_ge_50_positives"] += 1
 
     count_dict["tar2019sum"] = (
         count_dict["tar2019"] + count_dict["tar2018"] + count_dict["tar2017"]
@@ -183,7 +183,7 @@ def compute_dataset_statistics():
         "neg_sum": 0,
         "n_reviews": 0,
         "empty_abstract_in_pos": 0,
-        "reviews_ge_25_positives": 0,
+        "reviews_ge_50_positives": 0,
     }
 
     for dataset_name, stats in sorted(group_stats.items()):
@@ -193,7 +193,7 @@ def compute_dataset_statistics():
         avg_pos = stats["pos_sum"] / n
         avg_neg = stats["neg_sum"] / n
         empty_abstract_in_pos = stats["empty_abstract_in_pos"]
-        reviews_ge_25_positives = stats["reviews_ge_25_positives"]
+        reviews_ge_50_positives = stats["reviews_ge_50_positives"]
 
         print(
             f"{dataset_name}: "
@@ -202,7 +202,7 @@ def compute_dataset_statistics():
             f"avg_neg={avg_neg:.1f}, "
             f"empty_abstract_in_pos={empty_abstract_in_pos}, "
             f"n_reviews={n}",
-            f"reviews_ge_25_positives={reviews_ge_25_positives}",
+            f"reviews_ge_50_positives={reviews_ge_50_positives}",
         )
 
         for key in total_stats:
@@ -218,7 +218,7 @@ def compute_dataset_statistics():
         f"avg_neg={total_neg / n_total:.1f}, "
         f"empty_abstract_in_pos={total_stats['empty_abstract_in_pos']}, "
         f"n_reviews={n_total}",
-        f"reviews_ge_25_positives={total_stats['reviews_ge_25_positives']}",
+        f"reviews_ge_50_positives={total_stats['reviews_ge_50_positives']}",
     )
 
 
