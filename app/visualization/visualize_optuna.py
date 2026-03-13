@@ -1,5 +1,5 @@
 from app.config.config import apply_matplotlib_style, COLORS, COLORMAPS
-from app.visualization.helper import prettify_axes
+from app.visualization.helper import REPLACEMENTS, prettify_axes
 import optuna
 import matplotlib.pyplot as plt
 import os
@@ -92,6 +92,10 @@ def plot_slice_custom(study, params: list[str], out_path: str, title: str):
 
 
 if __name__ == "__main__":
+    # from app.visualization.helper import REPLACEMENTS
+    # print(REPLACEMENTS)
+    # exit(0)
+    
     # Output directory for thesis images
     SAVE_DIR = "../master-thesis-writing/writing/thesis/images/graphs/optuna"
     os.makedirs(SAVE_DIR, exist_ok=True)
@@ -127,21 +131,25 @@ if __name__ == "__main__":
             "class_weight",
         ],
         "slice_appendix1": [
-            "dont_cares",
+            "top_k_or_candidates",
+            "pruning_beta",
+            "max_features",
+        ],
+        "slice_appendix2": [
             "max_depth",
+            "dont_cares",
+            "rank_weight",
+        ],
+        "slice_appendix3": [
             "min_rule_occ",
             "min_tree_occ",
             "min_weight_fraction_leaf",
-            "rank_weight",
-            "pruning_beta",
         ],
-        "slice_appendix2": [
-            "max_features",
-            "randomize_max_feature",
-            "top_k_or_candidates",
+        "slice_appendix4": [
             "min_impurity_decrease_range_start",
             "min_impurity_decrease_range_end",
             "randomize_min_impurity_decrease_range",
+            # "randomize_max_feature",
         ],
     }
     for name, params in slice_params.items():

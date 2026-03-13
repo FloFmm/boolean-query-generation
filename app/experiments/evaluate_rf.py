@@ -50,7 +50,7 @@ def evaluate_rf(
     term_expansions=None,
     meta_data=None,
     min_retrieved=0,
-    max_retrieved=100_000,
+    max_retrieved=200_000,
     always_retrieve=False,
     ignore_pubmed_errors=False,
     sorted_scores=None,
