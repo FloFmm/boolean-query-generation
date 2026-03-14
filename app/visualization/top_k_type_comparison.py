@@ -231,24 +231,24 @@ def plot_precision_recall_by_bucket(
     buckets_sorted = sorted(bucket_rankings.keys(), key=bucket_key)
 
     methods = {
-        pretty_print_param(f"fixed_k={fixed_k}"): lambda npos, scores: fixed_k,
-        pretty_print_param("pos_count_k"): lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
-        pretty_print_param(f"cosine_k ({cosine_percentage_threshold*100:.2f}%)"): lambda npos, scores: select_k_cosine_threshold(
+        pretty_print_param(f"#fixed_k (={fixed_k})"): lambda npos, scores: fixed_k,
+        pretty_print_param(f"#pos_count_k"): lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
+        pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"): lambda npos, scores: select_k_cosine_threshold(
             scores, cosine_percentage_threshold
         ),
     }
 
     # base colors per strategy using centralized config
     colors = {
-        pretty_print_param(f"fixed_k={fixed_k}"): COLORS["fixed_k"],
-        pretty_print_param("pos_count_k"): COLORS["pos_count_k"],
-        pretty_print_param(f"cosine_k ({cosine_percentage_threshold*100:.2f}%)"): COLORS["cosine_k"],
+        pretty_print_param(f"#fixed_k (={fixed_k})"): COLORS["fixed_k"],
+        pretty_print_param(f"#pos_count_k"): COLORS["pos_count_k"],
+        pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"): COLORS["cosine_k"],
     }
 
     markers = {
-        pretty_print_param(f"fixed_k={fixed_k}"): "o",
-        pretty_print_param("pos_count_k"): "s",
-        pretty_print_param(f"cosine_k ({cosine_percentage_threshold*100:.2f}%)"): "^",
+        pretty_print_param(f"#fixed_k (={fixed_k})"): "o",
+        pretty_print_param(f"#pos_count_k"): "s",
+        pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"): "^",
     }
 
     precision_means = {name: [] for name in methods}
@@ -438,24 +438,24 @@ def plot_actual_topk_by_bucket(bucket_rankings: dict, cosine_percentage_threshol
     buckets_sorted = sorted(bucket_rankings.keys(), key=bucket_key)
 
     methods = {
-        pretty_print_param(f"fixed_k={fixed_k}"): lambda npos, scores: fixed_k,
-        pretty_print_param("pos_count_k"): lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
-        pretty_print_param(f"cosine_k ({cosine_percentage_threshold*100:.2f}%)"): lambda npos, scores: select_k_cosine_threshold(
+        pretty_print_param(f"#fixed_k (={fixed_k})"): lambda npos, scores: fixed_k,
+        pretty_print_param(f"#pos_count_k"): lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
+        pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"): lambda npos, scores: select_k_cosine_threshold(
             scores, cosine_percentage_threshold
         ),
     }
 
     # base colors per strategy using centralized config
     colors = {
-        pretty_print_param(f"fixed_k={fixed_k}"): COLORS["fixed_k"],
-        pretty_print_param("pos_count_k"): COLORS["pos_count_k"],
-        pretty_print_param(f"cosine_k ({cosine_percentage_threshold*100:.2f}%)"): COLORS["cosine_k"],
+        pretty_print_param(f"#fixed_k (={fixed_k})"): COLORS["fixed_k"],
+        pretty_print_param(f"#pos_count_k"): COLORS["pos_count_k"],
+        pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"): COLORS["cosine_k"],
     }
 
     markers = {
-        pretty_print_param(f"fixed_k={fixed_k}"): "o",
-        pretty_print_param("pos_count_k"): "s",
-        pretty_print_param(f"cosine_k ({cosine_percentage_threshold*100:.2f}%)"): "^",
+        pretty_print_param(f"#fixed_k (={fixed_k})"): "o",
+        pretty_print_param(f"#pos_count_k"): "s",
+        pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"): "^",
     }
 
     avg_ks = {name: [] for name in methods}
@@ -485,7 +485,7 @@ def plot_actual_topk_by_bucket(bucket_rankings: dict, cosine_percentage_threshol
 
     plt.xticks(x, buckets_sorted, rotation=45)
     plt.xlabel("Number of Relevant Documents (Buckets)")
-    plt.ylabel(pretty_print_param("Cutoff Point top_k"))
+    plt.ylabel(pretty_print_param("Cutoff Point #k"))
     # plt.title("Average top-k per bucket for different selection strategies")
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.legend()
@@ -565,7 +565,7 @@ if __name__ == "__main__":
     )
 
     print(f"Fixed-k method:")
-    print(f"  min k       = {fixed_k}")
+    print(f"  min k       ={fixed_k}")
     print(f"  mean precision = {cos_prec:.4f}")
     print(f"  mean recall    = {cos_recall:.4f}")
     print(f"  mean F3-score  = {cos_f3:.4f}\n")

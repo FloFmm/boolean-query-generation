@@ -58,7 +58,7 @@ def plot_contour_custom(study, params: list[str], out_path: str, title: str):
     plt.close()
 
 
-def plot_slice_custom(study, params: list[str], out_path: str, title: str):
+def plot_slice_custom(study, params: list[str], out_path: str, title: str, break_long=True):
     """
     Plot slice plots for specific hyperparameters only.
 
@@ -80,7 +80,7 @@ def plot_slice_custom(study, params: list[str], out_path: str, title: str):
     # Update colormap and prettify labels
     cmap = plt.get_cmap(COLORMAPS["optuna"])
     for a in axes_list:
-        prettify_axes(a)
+        prettify_axes(a, break_long=break_long)
         # Update colormap for scatter collections
         for collection in a.collections:
             if hasattr(collection, "set_cmap"):
@@ -92,8 +92,9 @@ def plot_slice_custom(study, params: list[str], out_path: str, title: str):
 
 
 if __name__ == "__main__":
-    # from app.visualization.helper import REPLACEMENTS
+    # from app.visualization.helper import REPLACEMENTS, pretty_print_param
     # print(REPLACEMENTS)
+    # print(pretty_print_param("min_impurity_decrease_range_end (Niode) (hello world)", break_long=True))
     # exit(0)
     
     # Output directory for thesis images

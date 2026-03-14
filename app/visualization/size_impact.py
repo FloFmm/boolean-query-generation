@@ -96,7 +96,7 @@ def plot_performance_by_query_size_multi(
                 label="Recall",
                 color=COLORS["recall"],
             )
-            ax.plot(x, grouped["f50"], marker="D", label="F50", color=COLORS["f_score"])
+            ax.plot(x, grouped["f50"], marker="D", label=r"$F_{50}$", color=COLORS["f_score"])
 
             if pi_interval is not None:
                 ax.fill_between(x, grouped[f"{precision_col}_plo"], grouped[f"{precision_col}_phi"], alpha=0.15, color=COLORS["precision"])
@@ -174,7 +174,7 @@ def plot_performance_by_query_size_multi(
                     color=COLORS["recall"],
                 )
                 ax.plot(
-                    x, grouped["f50"], marker="D", label="F50", color=COLORS["f_score"]
+                    x, grouped["f50"], marker="D", label=r"$F_{50}$", color=COLORS["f_score"]
                 )
                 if pi_interval is not None:
                     ax.fill_between(x, grouped[f"{precision_col}_plo"], grouped[f"{precision_col}_phi"], alpha=0.15, color=COLORS["precision"])
