@@ -858,6 +858,11 @@ BASE_VARIATIONS = {
         "prefer_pos_splits": 1.0, # do not prefer positive splits
         "min_tree_occ": 0.0,
         "min_rule_occ": 0.0,
+    },
+    "exact_match": {
+        "tiab": True,
+        "mh_noexp": True,
+        "term_expansions": True,
     }
 }
 

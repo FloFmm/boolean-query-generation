@@ -79,9 +79,9 @@ if __name__ == "__main__":
         "min_rule_occ": "[0.0, 0.1]",
         "cover_beta": "[0.1, 2.0]",
         "pruning_beta": "[0.05, 1.0]",
-        "term_expansions": "{True, False}",
-        "mh_noexp": "{True, False}",
-        "tiab": "{True, False}"
+        "term_expansions": "{#true, #false}",
+        "mh_noexp": "{#true, #false}",
+        "tiab": "{#true, #false}"
     }
 
     groups = [
@@ -150,6 +150,11 @@ if __name__ == "__main__":
                 val = best_params.get(beta, {}).get(key, "")
                 if isinstance(val, float):
                     val_str = f"{val:.4g}"
+                elif isinstance(val, bool):
+                    if val:
+                        val_str = "#true"
+                    else:
+                        val_str = "#false"
                 else:
                     val_str = str(val)
                 vals.append(val_str)
