@@ -512,7 +512,8 @@ def generate_typst_table(
                             else:
                                 cell = f"[{fmt(value, m_name)}]"
                             metric_cells.append(cell)
-                        method_column = ktype if len(top_k_types) > 1 else f"{algo_name}\-{ktype}"
+                        pretty_ktype = f"#{ktype}_k"
+                        method_column = pretty_ktype if len(top_k_types) > 1 else f"{algo_name}\-{pretty_ktype}"
                         config_lines.append(f"    [{method_column}], {', '.join(metric_cells)},\n")
 
             # Write baselines and configs in the right order
