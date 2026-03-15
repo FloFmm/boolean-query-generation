@@ -85,21 +85,29 @@ if __name__ == "__main__":
                     raise ValueError(f"Unknown parameter {k} in base variation {base_name}")
 
         for query_id, trial_n in my_combinations:
-            qg_results = evaluate_rf(
-                run_name=run_name + f"/n{trial_n}",
-                query_id=query_id,
-                X=X,
-                positives=positives[query_id],
-                feature_names=feature_names,
-                sorted_ids=sorted_ids[query_id],
-                sorted_scores=sorted_scores[query_id],
-                ordered_pmids=ordered_pmids,
-                rf_params=copy.deepcopy(rf_p),
-                qg_params=copy.deepcopy(qg_p),
-                term_expansions=term_expansions,
-                meta_data=None,
-                max_retrieved=1_000_000,
-                always_retrieve=True,
-                ignore_pubmed_errors=True,
-                skip_existing=True,
-            )
+            last_run_failed = False
+            for i in range(10):
+                qg_results = evaluate_rf(
+                    run_name=run_name + f"/n{trial_n}",
+                    query_id=query_id,
+                    X=X,
+                    positives=positives[query_id],
+                    feature_names=feature_names,
+                    sorted_ids=sorted_ids[query_id],
+                    sorted_scores=sorted_scores[query_id],
+                    ordered_pmids=ordered_pmids,
+                    rf_params=copy.deepcopy(rf_p),
+                    qg_params=copy.deepcopy(qg_p),
+                    term_expansions=term_expansions,
+                    meta_data=None,
+                    min_retrieved=1,
+                    max_retrieved=200_000,
+                    always_retrieve=False,
+                    ignore_pubmed_errors=True,
+                    skip_existing=True,
+                    last_run_failed=last_run_failed,
+                )
+                if qg_results is not None:
+                    break
+                else:
+                    last_run_failed = True

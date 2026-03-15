@@ -113,7 +113,7 @@ if __name__ == "__main__":
     print(
         name, "samples", len(autobool_df[RESULT_TABLE_OPERATOR_METRICS[metric]["key"]])
     )
-
+    print("START")
     # for name, path in other_baseline_paths.items():
     for name, _ in BASE_VARIATIONS.items():
         path = f"data/statistics/optuna/evaluate_base_{name}_{CURRENT_BEST_RUN_FOLDER.split('/')[-1]}"
@@ -122,6 +122,8 @@ if __name__ == "__main__":
         )
 
         base_df = calc_missing_columns_in_result_df(base_df)
+        #print how many lines in base df with 0 postiives or over 200000 postiives
+        print(f"{name}: {len(base_df[base_df['pubmed_retrieved'] == 0])} queries with 0 positives, {len(base_df[base_df['pubmed_retrieved'] > 200000])} queries with over 200000 positives")
 
         name = BASE_VARIATIONS_NAMES[name.lower()]
         values = {"name": name}

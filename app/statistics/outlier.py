@@ -1,4 +1,4 @@
-from app.config.config import CURRENT_BEST, CURRENT_BEST_RUN_FOLDER
+from app.config.config import BASE_VARIATIONS, CURRENT_BEST, CURRENT_BEST_RUN_FOLDER
 from app.dataset.utils import calc_missing_columns_in_result_df, get_qg_results
 from app.helper.helper import f_beta
 from app.visualization.tables.result_table import aggregate_results
@@ -44,33 +44,35 @@ def filter_jsonl_outliers(folder_path, outlier_save_path):
 
 
 if __name__ == "__main__":
-    folder_path = CURRENT_BEST_RUN_FOLDER
-    # Remove outlier lines from all jsonl files and collect them
-    filter_jsonl_outliers(folder_path, "data/examples/outlier2.jsonl")
-    # Load and prepare DataFrame once
-    base_df = get_qg_results(folder_path, query_ids=None)
-    base_df = calc_missing_columns_in_result_df(base_df)
-    print("original", len(base_df), "total samples in results dataframe")
-    # fitler out all lines wher "pubmed_retrieved" is smaller than "top_k"/2 and bigger than top_k*10
-    zero_results = base_df[
-        (base_df["pubmed_retrieved"] == 0)
-    ].copy()
-    more_than_200_000 = base_df[
-        (base_df["pubmed_retrieved"] > 200_000)
-    ].copy()
-    
-    print(">200k results")
-    print("avg precision", more_than_200_000["pubmed_precision"].mean(),)
-    print("avg recall", more_than_200_000["pubmed_recall"].mean())
-    print("avg pubmed_retrieved", more_than_200_000["pubmed_retrieved"].mean())
-    print("num samples", len(more_than_200_000)/len(base_df)*100, "%")
-    
-    print("==0 retrieved")
-    print("avg precision", zero_results["pubmed_precision"].mean(),)
-    print("avg recall", zero_results["pubmed_recall"].mean())
-    print("avg pubmed_retrieved", zero_results["pubmed_retrieved"].mean())
-    print("num samples", len(zero_results)/len(base_df)*100, "%")
-    
-    # agg_df = aggregate_results(base_df)
-    # print fromd ataframe all rows wher dataset is tar2018 and bucket is \>\=50 and only print the columns dataset, bucket, pubmed_precisison and pubmed_recall
-    # print(agg_df[["dataset", "pubmed_retrieved", "num_positive_bucket", "pubmed_precision", "pubmed_recall", "pubmed_f50"]])
+    for name, _ in BASE_VARIATIONS.items():
+        folder_path = f"data/statistics/optuna/evaluate_base_{name}_{CURRENT_BEST_RUN_FOLDER.split('/')[-1]}"
+        # folder_path = CURRENT_BEST_RUN_FOLDER
+        # Remove outlier lines from all jsonl files and collect them
+        filter_jsonl_outliers(folder_path, "data/examples/outlier3.jsonl")
+        # Load and prepare DataFrame once
+        base_df = get_qg_results(folder_path, query_ids=None)
+        base_df = calc_missing_columns_in_result_df(base_df)
+        print("original", len(base_df), "total samples in results dataframe")
+        # fitler out all lines wher "pubmed_retrieved" is smaller than "top_k"/2 and bigger than top_k*10
+        zero_results = base_df[
+            (base_df["pubmed_retrieved"] == 0)
+        ].copy()
+        more_than_200_000 = base_df[
+            (base_df["pubmed_retrieved"] > 200_000)
+        ].copy()
+        
+        print(">200k results")
+        print("avg precision", more_than_200_000["pubmed_precision"].mean(),)
+        print("avg recall", more_than_200_000["pubmed_recall"].mean())
+        print("avg pubmed_retrieved", more_than_200_000["pubmed_retrieved"].mean())
+        print("num samples", len(more_than_200_000)/len(base_df)*100, "%")
+        
+        print("==0 retrieved")
+        print("avg precision", zero_results["pubmed_precision"].mean(),)
+        print("avg recall", zero_results["pubmed_recall"].mean())
+        print("avg pubmed_retrieved", zero_results["pubmed_retrieved"].mean())
+        print("num samples", len(zero_results)/len(base_df)*100, "%")
+        
+        # agg_df = aggregate_results(base_df)
+        # print fromd ataframe all rows wher dataset is tar2018 and bucket is \>\=50 and only print the columns dataset, bucket, pubmed_precisison and pubmed_recall
+        # print(agg_df[["dataset", "pubmed_retrieved", "num_positive_bucket", "pubmed_precision", "pubmed_recall", "pubmed_f50"]])
