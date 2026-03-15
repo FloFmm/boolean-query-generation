@@ -10,7 +10,7 @@ from collections import defaultdict
 from app.dataset.utils import ranking_file_path, get_dataset_details, select_k_positive_dependent, select_k_cosine_threshold
 from app.parameter_tuning.compute_top_k import BUCKETS
 from app.helper.helper import f_beta
-from app.config.config import FIGURE_CONFIG, TOP_K, apply_matplotlib_style, COLORS, COLORMAPS
+from app.config.config import FIGURE_CONFIG, TOP_K, apply_matplotlib_style, COLORS, COLORMAPS, TOP_K_TYPES_ORDERD
 from app.visualization.helper import pretty_print_param
 
 apply_matplotlib_style()
@@ -230,26 +230,32 @@ def plot_precision_recall_by_bucket(
 
     buckets_sorted = sorted(bucket_rankings.keys(), key=bucket_key)
 
-    methods = {
-        pretty_print_param(f"#fixed_k (={fixed_k})"): lambda npos, scores: fixed_k,
-        pretty_print_param(f"#pos_count_k"): lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
-        pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"): lambda npos, scores: select_k_cosine_threshold(
-            scores, cosine_percentage_threshold
+    methods_dict = {
+        "fixed": (
+            pretty_print_param(f"#fixed_k (={fixed_k})"),
+            lambda npos, scores: fixed_k,
+            COLORS["fixed_k"],
+            "o",
+        ),
+        "pos_count": (
+            pretty_print_param(f"#pos_count_k"),
+            lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
+            COLORS["pos_count_k"],
+            "s",
+        ),
+        "cosine": (
+            pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"),
+            lambda npos, scores: select_k_cosine_threshold(
+                scores, cosine_percentage_threshold
+            ),
+            COLORS["cosine_k"],
+            "^",
         ),
     }
 
-    # base colors per strategy using centralized config
-    colors = {
-        pretty_print_param(f"#fixed_k (={fixed_k})"): COLORS["fixed_k"],
-        pretty_print_param(f"#pos_count_k"): COLORS["pos_count_k"],
-        pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"): COLORS["cosine_k"],
-    }
-
-    markers = {
-        pretty_print_param(f"#fixed_k (={fixed_k})"): "o",
-        pretty_print_param(f"#pos_count_k"): "s",
-        pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"): "^",
-    }
+    methods = {methods_dict[t][0]: methods_dict[t][1] for t in TOP_K_TYPES_ORDERD}
+    colors = {methods_dict[t][0]: methods_dict[t][2] for t in TOP_K_TYPES_ORDERD}
+    markers = {methods_dict[t][0]: methods_dict[t][3] for t in TOP_K_TYPES_ORDERD}
 
     precision_means = {name: [] for name in methods}
     recall_means = {name: [] for name in methods}
@@ -322,7 +328,7 @@ def plot_precision_recall_by_bucket(
     plt.ylabel("Precision / Recall")
     # plt.title("Precision and Recall by bucket for different top-k selection strategies")
     plt.grid(True, linestyle="--", alpha=0.6)
-    plt.legend()
+    plt.legend(title=pretty_print_param("#top_k_type_long - Metric"))
     plt.tight_layout()
     plt.savefig(os.path.join(SAVE_DIR, "precision_recall_by_bucket.png"))
     plt.close()
@@ -437,26 +443,32 @@ def plot_actual_topk_by_bucket(bucket_rankings: dict, cosine_percentage_threshol
 
     buckets_sorted = sorted(bucket_rankings.keys(), key=bucket_key)
 
-    methods = {
-        pretty_print_param(f"#fixed_k (={fixed_k})"): lambda npos, scores: fixed_k,
-        pretty_print_param(f"#pos_count_k"): lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
-        pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"): lambda npos, scores: select_k_cosine_threshold(
-            scores, cosine_percentage_threshold
+    methods_dict = {
+        "fixed": (
+            pretty_print_param(f"#fixed_k (={fixed_k})"),
+            lambda npos, scores: fixed_k,
+            COLORS["fixed_k"],
+            "o",
+        ),
+        "pos_count": (
+            pretty_print_param(f"#pos_count_k"),
+            lambda npos, scores: math.ceil(select_k_positive_dependent(npos)),
+            COLORS["pos_count_k"],
+            "s",
+        ),
+        "cosine": (
+            pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"),
+            lambda npos, scores: select_k_cosine_threshold(
+                scores, cosine_percentage_threshold
+            ),
+            COLORS["cosine_k"],
+            "^",
         ),
     }
 
-    # base colors per strategy using centralized config
-    colors = {
-        pretty_print_param(f"#fixed_k (={fixed_k})"): COLORS["fixed_k"],
-        pretty_print_param(f"#pos_count_k"): COLORS["pos_count_k"],
-        pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"): COLORS["cosine_k"],
-    }
-
-    markers = {
-        pretty_print_param(f"#fixed_k (={fixed_k})"): "o",
-        pretty_print_param(f"#pos_count_k"): "s",
-        pretty_print_param(f"#cosine_k ({cosine_percentage_threshold*100:.2f}%)"): "^",
-    }
+    methods = {methods_dict[t][0]: methods_dict[t][1] for t in TOP_K_TYPES_ORDERD}
+    colors = {methods_dict[t][0]: methods_dict[t][2] for t in TOP_K_TYPES_ORDERD}
+    markers = {methods_dict[t][0]: methods_dict[t][3] for t in TOP_K_TYPES_ORDERD}
 
     avg_ks = {name: [] for name in methods}
 
@@ -488,7 +500,7 @@ def plot_actual_topk_by_bucket(bucket_rankings: dict, cosine_percentage_threshol
     plt.ylabel(pretty_print_param("Cutoff Point #k"))
     # plt.title("Average top-k per bucket for different selection strategies")
     plt.grid(True, linestyle="--", alpha=0.6)
-    plt.legend()
+    plt.legend(title=pretty_print_param("#top_k_type_long"))
     plt.tight_layout()
     plt.savefig(os.path.join(SAVE_DIR, "actual_topk_by_bucket.png"))
     plt.close()

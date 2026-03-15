@@ -9,8 +9,10 @@ from app.config.config import (
     COLORMAPS,
     CURRENT_BEST_RUN_FOLDER,
     FIGURE_CONFIG,
+    TOP_K_TYPES_ORDERD,
     apply_matplotlib_style,
 )
+from app.visualization.helper import pretty_print_param
 
 # Apply consistent styling for all figures
 apply_matplotlib_style()
@@ -141,8 +143,8 @@ def plot_precision_recall_histograms(
     plt.subplots_adjust(wspace=0.05)
 
     # Split data by top_k_type
-    top_k_types = data["top_k_type"].unique()
-    split_data = [data[data["top_k_type"] == t] for t in sorted(top_k_types)]
+    top_k_types = TOP_K_TYPES_ORDERD#data["top_k_type"].unique()
+    split_data = [data[data["top_k_type"] == t] for t in top_k_types]
 
     # Color mapping for top_k_type
     color_map = {
@@ -150,8 +152,8 @@ def plot_precision_recall_histograms(
         "fixed": COLORS["fixed_k"],
         "pos_count": COLORS["pos_count_k"],
     }
-    colors_split = [color_map.get(t, COLORS["primary"]) for t in sorted(top_k_types)]
-    labels_split = [t for t in sorted(top_k_types)]
+    colors_split = [color_map.get(t, COLORS["primary"]) for t in top_k_types]
+    labels_split = [pretty_print_param(f"#{t}_k") for t in top_k_types]
 
     # Count total values for debugging
     precision_count = sum(len(d["pubmed_precision"].dropna()) for d in split_data)
@@ -161,11 +163,11 @@ def plot_precision_recall_histograms(
 
     ax = axes[0]
     ax.hist(
-        [d["pubmed_precision"] for d in split_data],
+        [d["pubmed_precision"] for d in split_data][::-1],
         bins=bins,
         stacked=True,
-        color=colors_split,
-        label=labels_split,
+        color=colors_split[::-1],
+        label=labels_split[::-1],
     )
     ax.set_xlabel("Precision")
     ax.set_ylabel("Frequency")
@@ -173,15 +175,17 @@ def plot_precision_recall_histograms(
 
     ax = axes[1]
     ax.hist(
-        [d["pubmed_recall"] for d in split_data],
+        [d["pubmed_recall"] for d in split_data][::-1],
         bins=bins,
         stacked=True,
-        color=colors_split,
-        label=labels_split,
+        color=colors_split[::-1],
+        label=labels_split[::-1],
     )
     ax.set_xlabel("Recall")
     ax.set_title("Recall Distribution")
-    # ax.legend(title="Top-K Type")
+    
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles[::-1], labels[::-1], title=pretty_print_param("#top_k_type_long"))
     ax.set_yticklabels([])
 
     # Sync y-axis between both plots

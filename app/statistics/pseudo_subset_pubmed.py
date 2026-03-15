@@ -32,7 +32,8 @@ if __name__ == "__main__":
     # print(compute_pseudo_recall_by_bucket(dataframe, num_buckets=20, metric="recall"))
     # print(compute_pseudo_recall_by_bucket(dataframe, num_buckets=20, metric="precision"))
     
-    dataframe = get_qg_results(CURRENT_BEST_RUN_FOLDER, min_positive_threshold=None, top_k_types=["cosine"], restrict_betas=["50"])
+    dataframe = get_qg_results(CURRENT_BEST_RUN_FOLDER, min_positive_threshold=50, top_k_types=["cosine"], restrict_betas=["50"])
+    print(len(dataframe), "samples")
     r_results = compute_average_mismatch(dataframe, metric="recall")
     print("average subset recall", dataframe["subset_recall"].mean())
     print("average pubmed recall", dataframe["pubmed_recall"].mean())

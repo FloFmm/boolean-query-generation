@@ -698,6 +698,8 @@ COLORS = {
     "pos_count_k": "#1B993D",  # Green
 }
 
+TOP_K_TYPES_ORDERD = ["pos_count", "cosine", "fixed"]
+
 HIGHLIGHT_LIGHTNESS = 50.0
 
 # Colormaps for heatmaps and spectrum colors
