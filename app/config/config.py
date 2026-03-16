@@ -875,5 +875,8 @@ BASE_VARIATIONS = {
     "no_atm": {
         "tiab": True,
         "term_expansions": True,
+    },
+    "no_atm_not_countered": {
+        "tiab": True,
     }
 }
