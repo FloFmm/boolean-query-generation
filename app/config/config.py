@@ -866,16 +866,14 @@ BASE_VARIATIONS = {
         "mh_noexp": True,
         "term_expansions": True,
     },
+    "no_rule_pruning": {
+        "acceptance_threshold": 1000_000.0, # no variation
+        "removal_threshold": 1000_000.0, # no greedy pruning
+        "min_tree_occ": 0.0,
+        "min_rule_occ": 0.0,
+    },
     "no_atm": {
         "tiab": True,
         "term_expansions": True,
     }
-}
-
-BASE_VARIATIONS_NAMES = {
-    "no_ors": "DNF",
-    "no_variation": "No Rule Variations",
-    "random_forest": "Random Forest",
-    "exact_match": "Exact Match",
-    "no_atm": "No ATM",
 }

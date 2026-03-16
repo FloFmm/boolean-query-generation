@@ -1,7 +1,7 @@
 import json
 from app.config.config import (
     BASE_VARIATIONS,
-    BASE_VARIATIONS_NAMES,
+    # BASE_VARIATIONS_NAMES,
     CURRENT_BEST_RUN_FOLDER,
     RESULT_TABLE_OPERATOR_METRICS_ORDERED,
     RESULT_TABLE_PERFORMANCE_METRICS_ORDERED,
@@ -120,12 +120,11 @@ if __name__ == "__main__":
         base_df = get_qg_results(
             path, min_positive_threshold=50, datasets=["tar2017", "tar2018"]
         )
-
         base_df = calc_missing_columns_in_result_df(base_df)
         #print how many lines in base df with 0 postiives or over 200000 postiives
         print(f"{name}: {len(base_df[base_df['pubmed_retrieved'] == 0])} queries with 0 positives, {len(base_df[base_df['pubmed_retrieved'] > 200000])} queries with over 200000 positives")
 
-        name = BASE_VARIATIONS_NAMES[name.lower()]
+        name = "#" + name #BASE_VARIATIONS_NAMES[name.lower()]
         values = {"name": name}
         for metric in RESULT_TABLE_PERFORMANCE_METRICS_ORDERED:
             values[metric] = (

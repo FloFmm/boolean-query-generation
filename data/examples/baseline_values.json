@@ -127,7 +127,7 @@
             ]
         },
         {
-            "name": "DNF",
+            "name": "#no_Ors",
             "Precision": [
                 0.017895599175257827,
                 0.018535882999719176
@@ -166,7 +166,7 @@
             ]
         },
         {
-            "name": "No Rule Variations",
+            "name": "#no_variation",
             "Precision": [
                 0.015551699099956106,
                 0.014128529392684873
@@ -205,7 +205,7 @@
             ]
         },
         {
-            "name": "Random Forest",
+            "name": "#random_forest",
             "Precision": [
                 0.018667825009318142,
                 0.021575120294156272
@@ -244,7 +244,7 @@
             ]
         },
         {
-            "name": "Exact Match",
+            "name": "#exact_match",
             "Precision": [
                 0.026807958878885766,
                 0.022078196054577805

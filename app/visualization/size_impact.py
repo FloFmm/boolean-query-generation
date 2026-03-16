@@ -19,6 +19,28 @@ from app.visualization.helper import pretty_print_param
 apply_matplotlib_style()
 
 
+def _debug_print_metric_summary(
+    grouped: pd.DataFrame,
+    x: np.ndarray,
+    size_label: str,
+    precision_col: str,
+    recall_col: str,
+) -> None:
+    """Print compact debug stats for one plotted size metric."""
+    avg_x = float(np.mean(x)) if len(x) > 0 else float("nan")
+    avg_precision = float(grouped[precision_col].mean())
+    avg_recall = float(grouped[recall_col].mean())
+    avg_f50 = float(grouped["f50"].mean())
+    print(
+        "[DEBUG] "
+        f"metric={size_label} | "
+        f"avg_x={avg_x:.4f} | "
+        f"avg_{precision_col}={avg_precision:.4f} | "
+        f"avg_{recall_col}={avg_recall:.4f} | "
+        f"avg_f50={avg_f50:.4f}"
+    )
+
+
 def plot_performance_by_query_size_multi(
     df: pd.DataFrame,
     size_keys: list[tuple[str, int | None]],
@@ -81,6 +103,13 @@ def plot_performance_by_query_size_multi(
                 continue
 
             x, counts, grouped, size_label = data
+            _debug_print_metric_summary(
+                grouped,
+                x,
+                size_label,
+                precision_col,
+                recall_col,
+            )
 
             ax.plot(
                 x,
@@ -157,6 +186,13 @@ def plot_performance_by_query_size_multi(
                 continue
 
             x, counts, grouped, size_label = data
+            _debug_print_metric_summary(
+                grouped,
+                x,
+                size_label,
+                precision_col,
+                recall_col,
+            )
 
             for ax in (ax_high, ax_low):
                 ax.plot(
@@ -266,7 +302,7 @@ def _prepare_size_data(
             lambda x: sum(x.get(k, 0) for k in keys) if isinstance(x, dict) else None
         )
         size_label = "all_ORs"
-    elif size_key == "avg_term_len" or size_key == "avg_df" or size_key == "duplicate_pct_exact" or size_key == "duplicate_pct_substring":
+    elif size_key == "avg_term_len" or size_key == "avg_df" or size_key == "duplicate_pct_exact" or size_key == "duplicate_pct_substring" or size_key == "mesh_pct":
         if size_key in working.columns:
             working["size_value"] = working[size_key]
         size_label = size_key
@@ -386,6 +422,7 @@ def plot_size_impact(top_k_types, betas_key, min_points_in_bucket, out_dir, y_br
 
     dataframe["avg_df"] = dataframe["rules"].apply(compute_avg_df)
     dataframe["duplicate_pct_exact"] = dataframe["rules"].apply(lambda rules: calculate_duplicate_features_percentage(rules, feature_names, exact_match=True))
+    dataframe["mesh_pct"] = dataframe["pubmed_query"].apply(lambda q: q.count("[mh]") / (q.count("AND") + q.count("OR") + q.count("NOT") + 1))
     dataframe["duplicate_pct_substring"] = dataframe["rules"].apply(lambda rules: calculate_duplicate_features_percentage(rules, feature_names, exact_match=False))
 
     os.makedirs(out_dir, exist_ok=True)
@@ -395,7 +432,7 @@ def plot_size_impact(top_k_types, betas_key, min_points_in_bucket, out_dir, y_br
         ("group1", [("paths", None), ("avg_path_len", 0.5), ("avg_term_len", 0.7)]),
         ("group2", [("all_ORs", 5), ("ANDs", 2), ("NOTs", None)]),
         ("group3", [("avg_df", 3000), ("duplicate_pct_exact", 7), ("duplicate_pct_substring", 7)]),
-        ("group4", [("ops_count", 10), ("added_ORs", 5), ("synonym_ORs", 5)]),
+        ("group4", [("ops_count", 5), ("added_ORs", 5), ("mesh_pct", 0.1)]),#, ("synonym_ORs", 5)]),
     ]
 
     for group_name, size_configs in groups:

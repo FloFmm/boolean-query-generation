@@ -836,27 +836,28 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=N
     if duplicates > 0:
         print(f"warning {duplicates} duplicate query_ids found and skipped")
     print("df", df)
-    df = calc_missing_columns_in_result_df(df, recompute_query_Size=recompute_query_Size)
-    # FILTERS
-    if min_positive_threshold is not None:
-        df = df[df["num_positive"] >= min_positive_threshold].copy()
-    if query_ids is not None:
-        df = df[df["query_id"].isin(query_ids)].copy()
+    if not df.empty:
+        df = calc_missing_columns_in_result_df(df, recompute_query_Size=recompute_query_Size)
+        # FILTERS
+        if min_positive_threshold is not None:
+            df = df[df["num_positive"] >= min_positive_threshold].copy()
+        if query_ids is not None:
+            df = df[df["query_id"].isin(query_ids)].copy()
         
         
-    # Add dataset column
-    df["dataset"] = df["query_id"].apply(lambda qid: review_id_to_dataset(qid)[0])
-    if include_top_k_type:
-        df["top_k_type"] = df["file_path"].apply(lambda file_path: get_ktype(file_path))
-    # Map tar2017 to tar2018 (tar2017 is part of 2018)
-    df.loc[df["dataset"] == "tar2017", "dataset"] = "tar2018"
+        # Add dataset column
+        df["dataset"] = df["query_id"].apply(lambda qid: review_id_to_dataset(qid)[0])
+        if include_top_k_type:
+            df["top_k_type"] = df["file_path"].apply(lambda file_path: get_ktype(file_path))
+        # Map tar2017 to tar2018 (tar2017 is part of 2018)
+        df.loc[df["dataset"] == "tar2017", "dataset"] = "tar2018"
     
-    if datasets is not None:
-        df = df[df["dataset"].isin(datasets)].copy()
-    if restrict_betas is not None:
-        df = df[df["betas"].apply(lambda x: all(b in x for b in restrict_betas))].copy()
-    if top_k_types is not None: 
-        df = df[df["top_k_type"].isin(top_k_types)].copy()
+        if datasets is not None:
+            df = df[df["dataset"].isin(datasets)].copy()
+        if restrict_betas is not None:
+            df = df[df["betas"].apply(lambda x: all(b in x for b in restrict_betas))].copy()
+        if top_k_types is not None: 
+            df = df[df["top_k_type"].isin(top_k_types)].copy()
     return df
 
 
