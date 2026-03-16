@@ -203,7 +203,20 @@ def plot_all_heatmaps(betas_key, out_dir):
         CURRENT_BEST_RUN_FOLDER, min_positive_threshold=50, restrict_betas=[betas_key]
     )
     # Filter to only num_positive >= 50
+    before = len(data)
     data = data[data["num_positive"] >= 50]
+    assert before == len(data), f"Expected {before} rows after filtering, but got {len(data)}"
+    
+    # print percentage how many rows have over 70%, 80% and 90% recall
+    print(f"Percentage of rows with recall >= 0.6: {(data['pubmed_recall'] >= 0.6).mean() * 100:.2f}%")
+    print(f"Percentage of rows with recall >= 0.7: {(data['pubmed_recall'] >= 0.7).mean() * 100:.2f}%")
+    print(f"Percentage of rows with recall >= 0.8: {(data['pubmed_recall'] >= 0.8).mean() * 100:.2f}%")
+    print(f"Percentage of rows with recall >= 0.9: {(data['pubmed_recall'] >= 0.9).mean() * 100:.2f}%")
+    print(f"Percentage of rows with precision >= 0.005: {(data['pubmed_precision'] >= 0.005).mean() * 100:.2f}%")
+    print(f"Percentage of rows with precision >= 0.01: {(data['pubmed_precision'] >= 0.01).mean() * 100:.2f}%")
+    print(f"Percentage of rows with precision <= 0.025: {(data['pubmed_precision'] <= 0.025).mean() * 100:.2f}%")
+    print(f"Percentage of rows with precision <= 0.05: {(data['pubmed_precision'] <= 0.05).mean() * 100:.2f}%")
+
     plot_precision_recall_heatmap(
         data,
         out_path=os.path.join(out_dir, "precision_recall_heatmap.png"),

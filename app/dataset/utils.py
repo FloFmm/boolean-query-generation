@@ -813,9 +813,10 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=N
                 betas_str = ",".join(map(str, betas))
 
         with open(jsonl_path, "r", encoding="utf-8") as f:
+            # print("read", f.read())
             query_ids_in_file = set()
             for line in f:
-                line = line.strip()
+                line = line.strip().rstrip('\x00\n')
                 if not line:
                     continue
                 data = json.loads(line)
@@ -834,7 +835,7 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=N
     print(f"{len(df)} samples")
     if duplicates > 0:
         print(f"warning {duplicates} duplicate query_ids found and skipped")
-    
+    print("df", df)
     df = calc_missing_columns_in_result_df(df, recompute_query_Size=recompute_query_Size)
     # FILTERS
     if min_positive_threshold is not None:

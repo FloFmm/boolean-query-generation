@@ -865,6 +865,10 @@ BASE_VARIATIONS = {
         "tiab": True,
         "mh_noexp": True,
         "term_expansions": True,
+    },
+    "no_atm": {
+        "tiab": True,
+        "term_expansions": True,
     }
 }
 
@@ -872,4 +876,6 @@ BASE_VARIATIONS_NAMES = {
     "no_ors": "DNF",
     "no_variation": "No Rule Variations",
     "random_forest": "Random Forest",
+    "exact_match": "Exact Match",
+    "no_atm": "No ATM",
 }
