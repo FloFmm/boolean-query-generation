@@ -1,6 +1,7 @@
 import json
 import os
 from app.config.config import (
+    BASE_VARIATIONS,
     CURRENT_BEST,
     CURRENT_BEST_RUN_FOLDER,
     RESULT_TABLE_OPERATOR_METRICS_ORDERED,
@@ -658,7 +659,7 @@ if __name__ == "__main__":
         used_datasets=["tar2018"],
         show_performance=True,
         show_operators=False,
-        baseline_names=["#no_Ors", "#no_variation", "#exact_match", "#no_atm"],
+        baseline_names=["#no_Ors", "#no_variation", "#no_rule_pruning", "#no_atm_not_countered", "#no_atm"],
         top_k_types=["cosine"],
         table_name="base_variations_table",
         baseline_name="Variations",
@@ -675,7 +676,7 @@ if __name__ == "__main__":
         used_datasets=["tar2018"],
         show_performance=False,
         show_operators=True,
-        baseline_names=["#no_Ors", "#no_variation", "#exact_match", "#no_atm"],
+        baseline_names=["#no_Ors", "#no_variation", "#no_rule_pruning", "#no_atm_not_countered", "#no_atm"],
         top_k_types=["cosine"],
         table_name="base_variations_table_operators",
         baseline_name="Variations",

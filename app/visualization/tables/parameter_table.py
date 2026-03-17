@@ -31,7 +31,7 @@ if __name__ == "__main__":
     ]
 
     descriptions = {
-        "max_depth": "Maximum depth of trees",
+        "max_depth": "Maximum depth of the trees, and therefore the maximum length of a rule",
         "min_weight_fraction_leaf": "Early stopping criterion for tree learning (required fraction of the total sum of document weights)",
         "top_k": "Multiplier for the top $k$ documents considered as pseudo-relevant",
         "dont_cares": "Multiplier for the number of intermediate ranked documents considered as don't cares",

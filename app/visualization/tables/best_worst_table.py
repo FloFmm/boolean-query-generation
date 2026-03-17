@@ -28,6 +28,7 @@ def dataframe_to_best_worst_table(
     query_col: str = "pubmed_query",
     table_name: str = "best_worst_table",
     highlight_unique_terms: bool = False,
+    show_title: bool = True,
 ) -> None:
     """
     Generate a Typst table with best/worst query comparisons.
@@ -153,8 +154,12 @@ def dataframe_to_best_worst_table(
     typst_lines.append('#import "../thesis/assets/assets.typ": *')
     typst_lines.append(f"#let {table_name}() = [")
     typst_lines.append("#table(")
-    typst_lines.append("  columns: (auto, 1fr, 2fr),")
-    typst_lines.append("  table.header([Type], [Title], [Query]),")
+    if show_title:
+        typst_lines.append("  columns: (auto, 1fr, 2fr),")
+        typst_lines.append("  table.header([Type], [Title], [Query]),")
+    else:
+        typst_lines.append("  columns: (auto, 2fr),")
+        typst_lines.append("  table.header([Type], [Query]),")
 
     for name, precision, recall, title, query_text in rows:
         
@@ -190,7 +195,10 @@ def dataframe_to_best_worst_table(
         
         query_text = mark_outer_operators(query_text, operator_types=["OR"])
         type_text = f"*{escape_typst(name)}*\\ *Precision:* {precision_text}\\ *Recall:* {recall_text}"
-        typst_lines.append(f"  [{type_text}], [{title_text}], [{query_text}],")
+        if show_title:
+            typst_lines.append(f"  [{type_text}], [{title_text}], [{query_text}],")
+        else:
+            typst_lines.append(f"  [{type_text}], [{query_text}],")
 
     typst_lines.append(")")
     typst_lines.append("]")
@@ -268,4 +276,5 @@ if __name__ == "__main__":
         query_col="pubmed_query",
         table_name="best_worst_table_same_query",
         highlight_unique_terms=True,
+        show_title=False,
     )
