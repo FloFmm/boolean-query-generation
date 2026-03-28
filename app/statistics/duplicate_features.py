@@ -38,7 +38,6 @@ if __name__ == "__main__":
     dataframe = get_qg_results(CURRENT_BEST_RUN_FOLDER, min_positive_threshold=50, top_k_types=["cosine"], restrict_betas=["50"])
     print(len(dataframe), "queries in dataframe")
     X, ordered_pmids, feature_names = load_vectors(**BOW_PARAMS)
-    print("Duplicates = extra occurrences beyond the first occurrence of a feature (under a chosen matching rule)")
     dataframe["duplicate_percentage_exact"] = dataframe["rules"].apply(
         lambda rules: calculate_duplicate_features_percentage(
             rules, feature_names, exact_match=True

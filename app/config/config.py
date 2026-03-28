@@ -714,8 +714,8 @@ COLORMAPS = {
 # Figure settings for consistent sizing across all plots
 # A4 paper: 210mm width, with ~25mm margins on each side = 160mm text width ≈ 6.3 inches
 FIGURE_CONFIG = {
-    "full_width": 7,#5.7834646,  # inches - full text width
-    "half_width": 3.4,#2.7417323,  # inches - for side-by-side figures
+    "full_width": 7.5,#5.7834646,  # inches - full text width
+    "half_width": 3.6,#2.7417323,  # inches - for side-by-side figures
     "aspect_ratio": 0.75,  # height = width * aspect_ratio (for single plots)
     "dpi": 300,  # resolution for saving
     "font_size": 10,  # base font size in points

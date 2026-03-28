@@ -94,7 +94,7 @@
     },
     "wangAutoBoolReinforcementLearningTrained2025": {
         "title": "AutoBool: An Reinforcement-Learning trained LLM for Effective Automated Boolean Query Generation for Systematic Reviews",
-        "name": "#fine-tuned-llm-approach",
+        "name": "#fine-tuned-llm-approach-repr",
         "examples": [
             {
                 "query_id": "ignore_CD007394_old",

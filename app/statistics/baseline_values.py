@@ -17,7 +17,7 @@ if __name__ == "__main__":
     baseline_dict = {
         "tar2018": [
             {
-                "name": "Manual",
+                "name": "#manual-approach-src",
                 "Precision": (0.0217, None),
                 "F1": (0.0407, None),
                 "F3": (0.1439, None),
@@ -29,7 +29,7 @@ if __name__ == "__main__":
                 # 0.5,
             },  # original, conceptional and obj all from https://bevankoopman.github.io/papers/irj2020-comparison.pdf (same as in other verions of that paper, was also chosen as source from ChatGPT paper)
             (
-                "Conceptual",
+                "#conceptional-approach-src",
                 0.0021,
                 0.0037,
                 0.0114,
@@ -37,7 +37,7 @@ if __name__ == "__main__":
                 None,
             ),  # highest recall, highest f3
             (
-                "Objective",
+                "#objective-approach-src",
                 0.0002,
                 0.0005,
                 0.0022,
@@ -45,7 +45,7 @@ if __name__ == "__main__":
                 None,
             ),  # highest recall (since highest f3 has very low recall)
             (
-                "ChatGPT",
+                "#chatgpt-approach-src",
                 0.0752,
                 0.0642,
                 0.0847,
@@ -54,14 +54,14 @@ if __name__ == "__main__":
             ),  # https://arxiv.org/pdf/2302.03495, highest recall, highest F3, with example q4
             # ("FI-BE-CONTXT", 0.0003, 0.0005, 0.0029, 0.9676 , None), # https://www.sciencedirect.com/science/article/pii/S1386505622002428 2 of the 3 above 80% recall frameworks (last of the 3 is simply bad (almost same recall as this and much lower precision)) -> simplys ay we only cosnidered above 80% recall in selection of those two values and then the best 2 of those 3
             {
-                "name": "Fine-Tuned LLM",
+                "name": "#fine-tuned-llm-approach-src",
                 "Precision": (0.0499, None),
                 "F1": None,
                 "F3": (0.2401, None),
                 "Recall": (0.8387, None),
             },  # highest recall (for clef TAR 2017+2018) from https://arxiv.org/pdf/2602.00005 (Autobool)
             (
-                "Semantic",
+                "#semantic-approach-src",
                 0.0236,
                 0.0458,
                 0.1872,
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     # set manual counts
     manual_counts = calc_manual_query_size()["tar2018"]
     for data in baseline_dict["tar2018"]:
-        if isinstance(data, dict) and data["name"] == "Manual":
+        if isinstance(data, dict) and data["name"] == "#manual-approach-src":
             for k, v in manual_counts.items():
                 data[k] = (v["avg"], v["std"])
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         datasets=["tar2018"],
         query_ids=dataset_details.keys()-TRAIN_REVIEWS,
     )
-    name = "Fine-Tuned LLM (self-evaluation)"
+    name = "#fine-tuned-llm-approach-repr-src"
     values = {"name": name}
     for metric in RESULT_TABLE_PERFORMANCE_METRICS_ORDERED:
         values[metric] = (

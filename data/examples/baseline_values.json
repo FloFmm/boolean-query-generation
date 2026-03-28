@@ -1,7 +1,7 @@
 {
     "tar2018": [
         {
-            "name": "Manual",
+            "name": "#manual-approach-src",
             "Precision": [
                 0.0217,
                 null
@@ -40,7 +40,7 @@
             ]
         },
         [
-            "Conceptual",
+            "#conceptional-approach-src",
             0.0021,
             0.0037,
             0.0114,
@@ -48,7 +48,7 @@
             null
         ],
         [
-            "Objective",
+            "#objective-approach-src",
             0.0002,
             0.0005,
             0.0022,
@@ -56,7 +56,7 @@
             null
         ],
         [
-            "ChatGPT",
+            "#chatgpt-approach-src",
             0.0752,
             0.0642,
             0.0847,
@@ -64,7 +64,7 @@
             null
         ],
         {
-            "name": "Fine-Tuned LLM",
+            "name": "#fine-tuned-llm-approach-src",
             "Precision": [
                 0.0499,
                 null
@@ -80,7 +80,7 @@
             ]
         },
         [
-            "Semantic",
+            "#semantic-approach-src",
             0.0236,
             0.0458,
             0.1872,
@@ -88,7 +88,7 @@
             null
         ],
         {
-            "name": "Fine-Tuned LLM (self-evaluation)",
+            "name": "#fine-tuned-llm-approach-repr-src",
             "Precision": [
                 0.05062965798491815,
                 0.05829922833576072

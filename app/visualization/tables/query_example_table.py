@@ -32,7 +32,7 @@ REPLACEMENT_FILES = {
     # ("CD007394", "#chatgpt-approach"): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_chatgpt_CD007394.json",
     (
         "CD007394",
-        "#fine-tuned-llm-approach",
+        "#fine-tuned-llm-approach-repr",
     ): f"data/examples/feature_replacement_map_{CURRENT_BEST}/generated_autobool_CD007394.json",
     (
         "CD007394",
@@ -322,7 +322,7 @@ def _write_query_table_row(
         )
         words = split_query_into_words(my_query)
         if review_id == "CD007394":
-            comparison_appraoch = "#fine-tuned-llm-approach"
+            comparison_appraoch = "#fine-tuned-llm-approach-repr"
         else:
             comparison_appraoch = "#manual-approach"
         json_path = REPLACEMENT_FILES.get((review_id, comparison_appraoch))
@@ -352,7 +352,7 @@ def _write_query_table_row(
     my_query_marked = mark_outer_operators(
         mark_query_terms(my_query, my_markings), ["OR"]
     )
-    my_query_text = f"*#algo-name-short\-F50\-cosine*\\ *Precision:* {my_p:.4f} *Recall:* {my_r:.4f}\\ {my_query_marked}"
+    my_query_text = f"*#best-config*\\ *Precision:* {my_p:.4f} *Recall:* {my_r:.4f}\\ {my_query_marked}"
     my_query_cell = f"[{my_query_text}]"
 
     # If multiple rows (multiple baselines), add rowspan to first two columns
@@ -545,7 +545,7 @@ if __name__ == "__main__":
             (
                 table["review_id"].isin(["CD007394"])
                 & table["approach"].isin(
-                    ["#fine-tuned-llm-approach", "#semantic-approach"]
+                    ["#fine-tuned-llm-approach-repr", "#semantic-approach"]
                 )
             )
             | (

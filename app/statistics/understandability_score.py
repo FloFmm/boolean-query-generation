@@ -3,7 +3,7 @@ import os
 CUSTOM_HF_PATH = "../systematic-review-datasets/data/huggingface"
 os.environ["HF_HOME"] = CUSTOM_HF_PATH  # has to be up here
 
-from app.config.config import BOW_PARAMS
+from app.config.config import BOW_PARAMS, CURRENT_BEST_RUN_FOLDER
 from app.dataset.utils import load_synonym_map, load_vectors
 import json
 import re
@@ -24,6 +24,7 @@ from gensim.models import KeyedVectors
 def remove_tags(w):
     w = (
         w.replace("[mh]", "")
+        .replace("[tx]", "")
         .replace("[mh:noexp]", "")
         .replace("[tiab]", "")
         .replace('"', "")
@@ -268,23 +269,27 @@ def document_counts(words, X, feature_index):
 def analyze_qg_results(root_folder):
     all_terms = set()
     entries = []
-    for root, _, files in os.walk(root_folder):
-        if "qg_results.jsonl" not in files or "qg_config.json" not in files:
-            continue
+    results_paths =[]
+    if root_folder.endswith("jsonl"):
+        results_paths = [root_folder]
+    else:
+        for root, _, files in os.walk(root_folder):
+            if "qg_results.jsonl" not in files or "qg_config.json" not in files:
+                continue
 
-        config_path = os.path.join(root, "qg_config.json")
-        results_path = os.path.join(root, "qg_results.jsonl")
+            config_path = os.path.join(root, "qg_config.json")
+            results_path = os.path.join(root, "qg_results.jsonl")
 
-        # Load config
-        with open(config_path) as f:
-            config = json.load(f)
+            # Load config
+            with open(config_path) as f:
+                config = json.load(f)
 
-        # Only consider term_expansions == False
-        if config.get("term_expansions", True):
-            continue
+            # Only consider term_expansions == False
+            if config.get("term_expansions", True):
+                continue
 
-        # Collect all terms from this file
-
+            results_paths.append(results_path)
+    for results_path in results_paths:
         with open(results_path) as f:
             for line in f:
                 line = line.strip()
@@ -292,7 +297,7 @@ def analyze_qg_results(root_folder):
                     continue
                 entry = json.loads(line)
                 query = entry.get("pubmed_query", "")
-                query_list = query_str_to_list(query)
+                query_list = query_str_to_list(query.replace("\n",""))
                 terms = [x for z in query_list for y in z for x in y]  # flatten
                 all_terms.update(terms)
                 entries.append((query, query_list, terms))
@@ -354,8 +359,20 @@ if __name__ == "__main__":
     term_expansions = load_synonym_map(**BOW_PARAMS)
     qg_results_path = "data/statistics/optuna/best0"
 
-    entries, all_terms = analyze_qg_results(root_folder=qg_results_path)
+    print("====PATH====", "data/examples/autobool_results.jsonl")
+    entries, all_terms = analyze_qg_results(root_folder="data/examples/autobool_results.jsonl")
+    sim_stats = compute_similarity_stats(
+        feature_names=feature_names,
+        entries=entries,
+        max_queries=10_000_000,
+        random_pairs=100_000,
+        use_word2vec=True,
+        wv_model=wv_model
+    )
+    print(sim_stats)
     
+    print("====PATH====", CURRENT_BEST_RUN_FOLDER)
+    entries, all_terms = analyze_qg_results(root_folder=CURRENT_BEST_RUN_FOLDER)
     sim_stats = compute_similarity_stats(
         feature_names=feature_names,
         entries=entries,

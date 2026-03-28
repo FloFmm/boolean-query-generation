@@ -186,11 +186,11 @@ def generate_typst_table(
         parts = row["selection_betas"].split(",")
         source_file = row["source_file"]
         ktype = get_ktype(source_file=source_file)
-        algo_name = "#algo-name-short\-F"
+        algo_name = "#algo-name-short"
         if betas is not None:
-            algo_name += ", ".join(sorted(set(parts) & betas))
+            algo_name += "\-$F_(" + ", ".join(sorted(set(parts) & betas)) + ")$"
         else:
-            algo_name += f"{parts[0]}-{parts[-1]}" if len(parts) > 1 else parts[0]
+            algo_name += "\-$F_(" + f"{parts[0]}-{parts[-1]}" if len(parts) > 1 else parts[0] + ")$"
         return algo_name, ktype
 
     with open(typst_file, "w") as f:
@@ -475,7 +475,7 @@ def generate_typst_table(
             for algo_name in sorted(
                 all_rows_by_algo.keys(),
                 reverse=True,
-                key=lambda x: int(x.split("-F")[-1].split("\\")[0]),
+                key=lambda x: int(x.split("-$F_(")[-1].split(")$")[0]),
             ):
                 rows_with_ktype = all_rows_by_algo[algo_name]
 
@@ -591,13 +591,13 @@ if __name__ == "__main__":
         show_performance=True,
         show_operators=False,
         baseline_names=[
-            "Manual",
-            "Conceptual",
-            "Objective",
-            "Semantic",
-            "ChatGPT",
-            "Fine-Tuned LLM",
-            "Fine-Tuned LLM (self-evaluation)",
+            "#manual-approach-src",
+            "#conceptional-approach-src",
+            "#objective-approach-src",
+            "#semantic-approach-src",
+            "#chatgpt-approach-src",
+            "#fine-tuned-llm-approach-src",
+            "#fine-tuned-llm-approach-repr-src",
         ],
         top_k_types=["cosine", "pos_count", "fixed"],
         table_name="best_table",
@@ -614,13 +614,13 @@ if __name__ == "__main__":
         show_performance=True,
         show_operators=True,
         baseline_names=[
-            "Manual",
-            "Conceptual",
-            "Objective",
-            "Semantic",
-            "ChatGPT",
-            "Fine-Tuned LLM",
-            "Fine-Tuned LLM (self-evaluation)",
+            "#manual-approach-src",
+            "#conceptional-approach-src",
+            "#objective-approach-src",
+            "#semantic-approach-src",
+            "#chatgpt-approach-src",
+            "#fine-tuned-llm-approach-src",
+            "#fine-tuned-llm-approach-repr-src",
         ],
         top_k_types=["cosine", "pos_count", "fixed"],
         table_name="best_table_appendix",
@@ -637,14 +637,15 @@ if __name__ == "__main__":
         show_performance=False,
         show_operators=True,
         baseline_names=[
-            "Manual",
-            "Conceptual",
-            "Objective",
-            "Semantic",
-            "ChatGPT",
-            "Fine-Tuned LLM",
-            "Fine-Tuned LLM (self-evaluation)",
+            "#manual-approach-src",
+            "#conceptional-approach-src",
+            "#objective-approach-src",
+            "#semantic-approach-src",
+            "#chatgpt-approach-src",
+            "#fine-tuned-llm-approach-src",
+            "#fine-tuned-llm-approach-repr-src",
         ],
+        baseline_name="Base.",
         top_k_types=["cosine", "pos_count", "fixed"],
         table_name="best_table_operators",
     )
