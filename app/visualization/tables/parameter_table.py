@@ -134,8 +134,9 @@ if __name__ == "__main__":
     typst_lines.append("#let parameter_table() = [")
     typst_lines.append("#table(")
     typst_lines.append("  columns: (auto, 3fr, 5fr, 2fr, 1fr, 1fr, 1fr, 1fr),")
+    typst_lines.append("table.hline(stroke: table_strong_line),\n")
     typst_lines.append("  table.header([], [Parameter], [Description], [Range], [$F_3$], [$F_(15)$], [$F_(30)$], [$F_(50)$]),")
-
+    typst_lines.append("table.hline(stroke: table_strong_line),\n")
     for group in groups:
         label = group["label"]
         keys = group["keys"]
@@ -164,6 +165,7 @@ if __name__ == "__main__":
 
             typst_lines.append(f"  [#{key}_long\ #{key}], [{desc}], [{rng}], [{vals[0]}], [{vals[1]}], [{vals[2]}], [{vals[3]}],")
 
+    typst_lines.append("table.hline(stroke: table_strong_line),\n")
     typst_lines.append(")")
     typst_lines.append("]")
 

@@ -229,7 +229,9 @@ def dataframe_to_typst_query_table(
 
     # Header row
     header_cells = ["[#algo-name-short]", "[Baseline]"]
-    typst_lines.append(f"  table.header({', '.join(header_cells)}),")
+    typst_lines.append("table.hline(stroke: table_strong_line),\n")
+    typst_lines.append(f"  table.header({', '.join(header_cells)}),\n")
+    typst_lines.append("table.hline(stroke: table_strong_line),\n")
 
     # Process data rows
     current_review_id = None
@@ -259,6 +261,7 @@ def dataframe_to_typst_query_table(
             typst_lines, current_review_id, row_buffer, highlight_replacements
         )
 
+    typst_lines.append("table.hline(stroke: table_strong_line),\n")
     typst_lines.append(")")
     typst_lines.append("]")
 

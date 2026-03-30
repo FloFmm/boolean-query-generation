@@ -1,7 +1,6 @@
 import json
 import os
 from app.config.config import (
-    BASE_VARIATIONS,
     CURRENT_BEST,
     CURRENT_BEST_RUN_FOLDER,
     RESULT_TABLE_OPERATOR_METRICS_ORDERED,
@@ -204,13 +203,18 @@ def generate_typst_table(
             "[]",
             "[]",
             "[Method]",
-            "table.vline(start:0, stroke:(thickness:0.5pt))",
+            f"table.vline(start:0, stroke:(thickness:table_thin_line))",
         ]
+        
+            
+        
         for name, cfg in metrics.items():
             if cfg.get("vline_before"):
-                header_cells.append("table.vline(start:0, stroke:(thickness:0.5pt))")
+                header_cells.append(f"table.vline(start:0, stroke:(thickness:table_thin_line))")
             header_cells.append(f"[{name}]")
+        f.write("table.hline(stroke: table_strong_line),\n")
         f.write(f"  table.header({', '.join(header_cells)}),\n")
+        f.write("table.hline(stroke: table_strong_line),\n")
         seperator = f"  table.cell(colspan: {3 + len(metrics)}, inset: (top: 1pt, bottom: 1pt))[],\n"
         for i, dataset in enumerate(used_datasets):  # enumerate(stats.items())]
             buckets = stats.get(dataset, {})
@@ -274,10 +278,11 @@ def generate_typst_table(
             if total_rows == 0:
                 continue
 
-            if i != 0:
-                f.write(seperator)
+            # if i != 0:
+            #     f.write(seperator)
 
             # Rotated dataset label
+
             f.write(
                 f"  table.cell(rowspan: {total_rows}, rotate(-90deg, reflow:true)[{dataset_names(dataset)}]),\n"
             )
@@ -493,6 +498,8 @@ def generate_typst_table(
                 if displayed_rows:
                     num_displayed = len(displayed_rows)
                     # Write algo_name with rowspan across all rows for this config
+                    if config_lines and "table.cell(" not in config_lines[-1]:
+                        config_lines.append("table.hline(stroke: table_strong_line),\n")
                     config_lines.append(
                         f"  table.cell(rowspan: {num_displayed}, rotate(-90deg, reflow:true)[{algo_name if len(top_k_types) > 1 else ''}]),\n"
                     )
@@ -525,6 +532,7 @@ def generate_typst_table(
                 f.writelines(config_lines)
                 f.writelines(baseline_lines)
 
+            f.write("table.hline(stroke: table_strong_line),\n")
         f.write(")]\n")
 
     print(f"Typst table written to {typst_file}")
@@ -601,6 +609,8 @@ if __name__ == "__main__":
         ],
         top_k_types=["cosine", "pos_count", "fixed"],
         table_name="best_table",
+        
+        
     )
     generate_typst_table(
         df=agg_df,
@@ -648,6 +658,8 @@ if __name__ == "__main__":
         baseline_name="Base.",
         top_k_types=["cosine", "pos_count", "fixed"],
         table_name="best_table_operators",
+        
+        
     )
     generate_typst_table(
         df=agg_df,
@@ -665,6 +677,8 @@ if __name__ == "__main__":
         table_name="base_variations_table",
         baseline_name="Variations",
         show_baselines_first=False,
+        
+        
     )
     generate_typst_table(
         df=agg_df,
@@ -682,6 +696,8 @@ if __name__ == "__main__":
         table_name="base_variations_table_operators",
         baseline_name="Variations",
         show_baselines_first=False,
+        
+        
     )
 
     print("done")

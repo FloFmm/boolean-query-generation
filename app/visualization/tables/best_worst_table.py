@@ -154,12 +154,14 @@ def dataframe_to_best_worst_table(
     typst_lines.append('#import "../thesis/assets/assets.typ": *')
     typst_lines.append(f"#let {table_name}() = [")
     typst_lines.append("#table(")
+    typst_lines.append("table.hline(stroke: table_strong_line),\n")
     if show_title:
         typst_lines.append("  columns: (auto, 1fr, 2fr),")
         typst_lines.append("  table.header([Type], [Title], [Query]),")
     else:
         typst_lines.append("  columns: (auto, 2fr),")
         typst_lines.append("  table.header([Type], [Query]),")
+    typst_lines.append("table.hline(stroke: table_strong_line),\n")
 
     for name, precision, recall, title, query_text in rows:
         
@@ -200,6 +202,7 @@ def dataframe_to_best_worst_table(
         else:
             typst_lines.append(f"  [{type_text}], [{query_text}],")
 
+    typst_lines.append("table.hline(stroke: table_strong_line),\n")
     typst_lines.append(")")
     typst_lines.append("]")
 
