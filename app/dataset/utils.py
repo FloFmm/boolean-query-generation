@@ -835,7 +835,7 @@ def get_qg_results(path, min_positive_threshold=None, query_ids=None, datasets=N
     print(f"{len(df)} samples")
     if duplicates > 0:
         print(f"warning {duplicates} duplicate query_ids found and skipped")
-    print("df", df)
+    # print("df", df)
     if not df.empty:
         df = calc_missing_columns_in_result_df(df, recompute_query_Size=recompute_query_Size)
         # FILTERS

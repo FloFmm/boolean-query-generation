@@ -42,15 +42,15 @@ if __name__ == "__main__":
         "class_weight": "Class balancing ranging from equivalent weight for both classes to full inverse frequency balancing",
         "top_k_or_candidates": "Heuristic number of top keywords to consider for #OR\-connected addition to a node",
         "randomize_max_feature": """
-            Biased randomization of #max_features in [#max_features, 1.0]. \ 
+            Biased randomization of $#max_features\(t)$ in [#max_features, 1.0] for each tree $t$. \ 
             #set align(left)
             $#randomize_max_feature>1$: biased towards #max_features\ 
             $#randomize_max_feature<1$: biased towards 1.0
             """,
         "randomize_min_impurity_decrease_range": """
-            Biased randomization of #min_impurity_decrease in [#min_impurity_decrease, 1.0]. \ 
+            Biased randomization of $#min_impurity_decrease _x\(t)$ in [$#min_impurity_decrease _x$, 1.0] ($x in {"root","leaf"}$) for each tree $t$. \ 
             #set align(left)
-            $#randomize_max_feature>1$: biased towards #min_impurity_decrease\ 
+            $#randomize_max_feature>1$: biased towards $#min_impurity_decrease _x$\ 
             $#randomize_max_feature<1$: biased towards 1.0
         """,
         "min_tree_occ": "Minimum fraction of trees a keyword must appear in",
