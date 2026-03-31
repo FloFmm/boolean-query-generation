@@ -3,6 +3,7 @@ import os
 from app.config.config import (
     CURRENT_BEST,
     CURRENT_BEST_RUN_FOLDER,
+    EXTRA_OPERATOR_METRICS,
     RESULT_TABLE_OPERATOR_METRICS_ORDERED,
     RESULT_TABLE_PERFORMANCE_METRICS_ORDERED,
     RESULT_TABLE_PERFORMANCE_METRICS,
@@ -17,6 +18,8 @@ from app.dataset.utils import (
     dataset_names,
     review_id_to_dataset,
 )
+from app.tree_learning.query_generation import query_size
+from app.visualization.size_impact import compute_avg_term_len
 
 
 AGGREGATE_METRIC_COLS = [
@@ -32,6 +35,8 @@ AGGREGATE_METRIC_COLS = [
     "pseudo_recall",
     "optimization_score",
     "qg_time_seconds",
+    "query_size_avg_path_len",
+    "query_size_avg_term_len",
     "query_size_paths",
     "query_size_ANDs",
     "query_size_NOTs",
@@ -549,7 +554,10 @@ if __name__ == "__main__":
     # Load and prepare DataFrame once
     base_df = get_qg_results(folder_path, min_positive_threshold=None, query_ids=None)
     base_df = calc_missing_columns_in_result_df(base_df)
-    
+    base_df["query_size_avg_term_len"] = base_df["rules"].apply(compute_avg_term_len)
+    base_df["query_size_avg_path_len"] = base_df["rules"].apply(lambda x: query_size(x)["avg_path_len"])
+    # print(base_df.columns)
+    # exit(0)
     outliers_0 = len(base_df[["dataset", "num_positive_bucket", "pubmed_retrieved"]]
         [
             (base_df["pubmed_retrieved"] == 0)
@@ -640,7 +648,7 @@ if __name__ == "__main__":
         typst_file=typst_base,
         baseline_dict=baseline_dict,
         betas={"3", "15", "30", "50"},
-        metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,
+        metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,# | EXTRA_OPERATOR_METRICS,
         text_size=10.3,
         min_positive_buckets=["\>\=50"],
         used_datasets=["tar2018"],

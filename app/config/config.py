@@ -768,7 +768,7 @@ CURRENT_BEST = "best5"
 CURRENT_BEST_RUN_FOLDER = f"data/statistics/optuna/{CURRENT_BEST}"
 CURRENT_N_TRIALS_FOLDER = "data/statistics/optuna/evaluate_best_100_times" #final (do not recompute)
 
-RESULT_TABLE_OPERATOR_METRICS_ORDERED = ["\#Ops", "\#Rules", "\#ANDs", "\#ORs", "\#NOTs"]
+RESULT_TABLE_OPERATOR_METRICS_ORDERED = ["\#Ops", "\#ANDs", "\#ORs", "\#NOTs", "\#Rules"]#, "Avg. Rule Length", "Avg. Disj. Length"]
 RESULT_TABLE_PERFORMANCE_METRICS_ORDERED = ["Precision", "F1", "F3", "Recall"]
 RESULT_TABLE_PERFORMANCE_METRICS = {
     "Precision": {
@@ -804,13 +804,6 @@ RESULT_TABLE_OPERATOR_METRICS = {
         "baseline_index": 5,
         "vline_before": True,
     },
-    "\#Rules": {
-        "key": "query_size_paths",
-        "direction": "min",
-        "fmt": "{:.1f}",
-        "baseline_index": 6,
-        "vline_before": False,
-    },
     "\#ANDs": {
         "key": "query_size_ANDs",
         "direction": "min",
@@ -832,13 +825,30 @@ RESULT_TABLE_OPERATOR_METRICS = {
         "baseline_index": 9,
         "vline_before": False,
     },
-    # "\#Ops per Rule": {
-    #     "key": "query_size_avg_path_len",
-    #     "direction": "min",
-    #     "fmt": "{:.1f}",
-    #     "baseline_index": 10,
-    #     "vline_before": False,
-    # },
+    "\#Rules": {
+        "key": "query_size_paths",
+        "direction": "min",
+        "fmt": "{:.1f}",
+        "baseline_index": 6,
+        "vline_before": False,
+    },
+}
+
+EXTRA_OPERATOR_METRICS = {
+    "Avg. Rule Length": {
+        "key": "query_size_avg_path_len",
+        "direction": "min",
+        "fmt": "{:.1f}",
+        "baseline_index": 10,
+        "vline_before": False,
+    },
+    "Avg. Disj. Length": {
+        "key": "query_size_avg_term_len",
+        "direction": "min",
+        "fmt": "{:.1f}",
+        "baseline_index": 11,
+        "vline_before": False,
+    },
 }
 
 BASE_VARIATIONS = {
