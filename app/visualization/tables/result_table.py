@@ -532,9 +532,11 @@ def generate_typst_table(
             # Write baselines and configs in the right order
             if show_baselines_first:
                 f.writelines(baseline_lines)
+                f.write("table.hline(stroke: table_strong_line),\n")
                 f.writelines(config_lines)
             else:
                 f.writelines(config_lines)
+                f.write("table.hline(stroke: table_strong_line),\n")
                 f.writelines(baseline_lines)
 
             f.write("table.hline(stroke: table_strong_line),\n")

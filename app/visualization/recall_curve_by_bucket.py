@@ -42,7 +42,7 @@ def plot_metric_curve_by_bucket(
     plt.figure(
         figsize=(
             FIGURE_CONFIG["half_width"],
-            FIGURE_CONFIG["half_width"]# * FIGURE_CONFIG["aspect_ratio"],
+            FIGURE_CONFIG["half_width"] #* FIGURE_CONFIG["aspect_ratio"],
         )
     )
 

@@ -21,4 +21,5 @@ python -m app.visualization.tables.result_table
 python -m app.visualization.tables.handmade_table
 python -m app.visualization.tables.best_worst_table
 python -m app.visualization.tables.parameter_table
+python -m app.visualization.rules_vs_length
 
