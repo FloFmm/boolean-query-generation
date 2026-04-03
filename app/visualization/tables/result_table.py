@@ -472,7 +472,7 @@ def generate_typst_table(
                         algo_name, _ = config_name(row, betas)
                         algo_name_with_bucket = f"{algo_name}"
                         if len(min_positive_buckets) > 1:
-                            algo_name_with_bucket += f"{bucket_name}"
+                            algo_name_with_bucket += "$" + bucket_name.replace("\\", "") + "$"
                         if algo_name_with_bucket not in all_rows_by_algo:
                             all_rows_by_algo[algo_name_with_bucket] = []
                         all_rows_by_algo[algo_name_with_bucket].append(
@@ -531,12 +531,14 @@ def generate_typst_table(
 
             # Write baselines and configs in the right order
             if show_baselines_first:
-                f.writelines(baseline_lines)
-                f.write("table.hline(stroke: table_strong_line),\n")
+                if baseline_dict:
+                    f.writelines(baseline_lines)
+                    f.write("table.hline(stroke: table_strong_line),\n")
                 f.writelines(config_lines)
             else:
-                f.writelines(config_lines)
-                f.write("table.hline(stroke: table_strong_line),\n")
+                if baseline_dict:
+                    f.writelines(config_lines)
+                    f.write("table.hline(stroke: table_strong_line),\n")
                 f.writelines(baseline_lines)
 
             f.write("table.hline(stroke: table_strong_line),\n")
@@ -625,7 +627,7 @@ if __name__ == "__main__":
     generate_typst_table(
         df=agg_df,
         typst_file=typst_base,
-        baseline_dict=baseline_dict,
+        baseline_dict={},#baseline_dict,
         betas={"3", "15", "30", "50"},
         metrics=RESULT_TABLE_PERFORMANCE_METRICS | RESULT_TABLE_OPERATOR_METRICS,
         text_size=10.3,
