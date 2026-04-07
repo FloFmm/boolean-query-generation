@@ -158,7 +158,7 @@ if __name__ == "__main__":
     )
     metrics_to_compare = [
         "map",
-        "mrr@100",
+        # "mrr@100",
         # "recall@10",
         "recall@100",
         "recall@1000",

@@ -690,8 +690,8 @@ COLORS = {
     "f_score": "#9B5DE5",  # Purple
     "time": "#1B993D",  # Green
     "query_size": "#F4A261",  # Orange
-    "map": "#F15BB5",  # Pink
-    "mrr": "#1B993D",  # Green
+    "map": "#1B993D",  # Green
+    "mrr": "#F15BB5",  # Pink
     # Top-k strategy colors
     "fixed_k": "#2E86AB",
     "cosine_k": "#E94F37",

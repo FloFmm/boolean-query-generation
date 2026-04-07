@@ -352,7 +352,7 @@ def generate_typst_table(
 
             def fmt(x, metric=None):
                 if x is None:
-                    return ""
+                    return "---"
                 x = float(x)
                 cfg = metrics.get(metric, {}) if metric is not None else {}
                 fmt_str = cfg.get("fmt", "{:.4f}")
