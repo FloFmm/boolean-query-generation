@@ -498,7 +498,7 @@ if __name__ == "__main__":
 
             # compare to mine
             pubmed_query, pubmed_precision, pubmed_recall = my_query_performance[
-                query_id
+                review_id
             ]
 
             assert dataset_details[review_id]["title"] == example["query"]

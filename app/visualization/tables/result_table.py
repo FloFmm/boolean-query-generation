@@ -114,6 +114,7 @@ def generate_typst_table(
     top_k_types=None,
     baseline_name="Baselines",
     show_baselines_first=True,
+    custom_columns=None,
 ):
     """
     Generates a Typst table from an aggregated DataFrame and a baseline dictionary.
@@ -203,7 +204,10 @@ def generate_typst_table(
 
         f.write(f"#let {table_name}() = [\n")
         f.write("#table(\n")
-        f.write(f"  columns: {3 + len(metrics)},\n")
+        if custom_columns:
+            f.write(f"  columns: {custom_columns},\n")
+        else:
+            f.write(f"  columns: {3 + len(metrics)},\n")
         header_cells = [
             "[]",
             "[]",
@@ -393,7 +397,7 @@ def generate_typst_table(
                                 value = baseline[idx]
 
                         metric_cells.append(f"[{fmt(value, m_name)}]")
-                    if not all(cell == "[]" for cell in metric_cells):
+                    if not all(cell in ("[]", "[---]") for cell in metric_cells):
                         displayed_baseline_count += 1
 
                 if displayed_baseline_count > 0:
@@ -437,7 +441,7 @@ def generate_typst_table(
                             metric_cells.append(cell)
 
                         # Skip baseline if all metrics are empty
-                        if all(cell == "[]" for cell in metric_cells):
+                        if all(cell in ("[]", "[---]") for cell in metric_cells):
                             continue
 
                         baseline_lines.append(f"    [{name}], {', '.join(metric_cells)},\n")
@@ -497,7 +501,7 @@ def generate_typst_table(
                         key = cfg.get("key")
                         value = row.get(key) if key is not None else None
                         metric_cells.append(f"[{fmt(value, m_name)}]")
-                    if not all(cell == "[]" for cell in metric_cells):
+                    if not all(cell in ("[]", "[---]") for cell in metric_cells):
                         displayed_rows.append((row, ktype, bucket_name))
 
                 if displayed_rows:
@@ -621,7 +625,7 @@ if __name__ == "__main__":
         ],
         top_k_types=["cosine", "pos_count", "fixed"],
         table_name="best_table",
-        
+        custom_columns = "(0.3fr, 0.3fr, 2.0fr, 1.25fr, 1.25fr, 1.25fr, 1.25fr)"
         
     )
     generate_typst_table(
@@ -646,6 +650,7 @@ if __name__ == "__main__":
         ],
         top_k_types=["cosine", "pos_count", "fixed"],
         table_name="best_table_appendix",
+        custom_columns="(auto, auto, 1fr, auto, auto, auto, auto, auto, auto, auto, auto, auto)"
     )
     generate_typst_table(
         df=agg_df,
@@ -670,7 +675,7 @@ if __name__ == "__main__":
         baseline_name="Base.",
         top_k_types=["cosine", "pos_count", "fixed"],
         table_name="best_table_operators",
-        
+        custom_columns = "(0.3fr, 0.3fr, 2.0fr, 1fr, 1fr, 1fr, 1fr, 1fr)"
         
     )
     generate_typst_table(
@@ -689,8 +694,7 @@ if __name__ == "__main__":
         table_name="base_variations_table",
         baseline_name="Variations",
         show_baselines_first=False,
-        
-        
+        custom_columns = "(0.3fr, 0.3fr, 2.0fr, 1.25fr, 1.25fr, 1.25fr, 1.25fr)"
     )
     generate_typst_table(
         df=agg_df,
@@ -708,8 +712,7 @@ if __name__ == "__main__":
         table_name="base_variations_table_operators",
         baseline_name="Variations",
         show_baselines_first=False,
-        
-        
+        custom_columns = "(0.3fr, 0.3fr, 2.0fr, 1fr, 1fr, 1fr, 1fr, 1fr)"
     )
 
     print("done")

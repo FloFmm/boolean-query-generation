@@ -37,10 +37,10 @@ if __name__ == "__main__":
         "dont_cares": "Multiplier for the number of intermediate ranked documents considered as don't cares",
         "rank_weight": "Weight of the document ranked first compared to the last pseudo-relevant document",
         "max_features": "Fraction of keywords to consider when looking for the best split",
-        "min_impurity_decrease_range_start": "Minimum impurity decrease required for adding a #OR\-connected keyword to the root node",
-        "min_impurity_decrease_range_end": "Minimum impurity decrease required for adding a #OR\-connected keyword to a leaf node",
+        "min_impurity_decrease_range_start": "Minimum impurity decrease required for adding an #OR\-connected keyword to the root node",
+        "min_impurity_decrease_range_end": "Minimum impurity decrease required for adding an #OR\-connected keyword to a leaf node",
         "class_weight": "Class balancing ranging from equivalent weight for both classes to full inverse frequency balancing",
-        "top_k_or_candidates": "Heuristic number of top keywords to consider for #OR\-connected addition to a node",
+        "top_k_or_candidates": "Heuristic number of top keywords to consider for an #OR\-connected addition to a node",
         "randomize_max_feature": """
             Biased randomization of $#max_features\(t)$ in [#max_features, 1.0] for each tree $t$. \ 
             #set align(left)
@@ -55,8 +55,8 @@ if __name__ == "__main__":
         """,
         "min_tree_occ": "Minimum fraction of trees a keyword must appear in",
         "min_rule_occ": "Minimum fraction of rules a keyword must appear in",
-        "cover_beta": "Part of optimization target\ #opt_target_cover during rule subset selection",
-        "pruning_beta": "Part of optimization target #opt_target_pruning during rule pruning",
+        "cover_beta": "Part of the optimization target\ #opt_target_cover during rule subset selection",
+        "pruning_beta": "Part of the optimization target #opt_target_pruning during rule pruning",
         "term_expansions": "Whether to explode keywords using our generated synonym set",
         "mh_noexp": "Whether to use no-explode for MeSH terms",
         "tiab": "Whether to deactivate #gls(\"atm\") and restrict search to Title/Abstract"
