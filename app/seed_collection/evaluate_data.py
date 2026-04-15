@@ -43,5 +43,5 @@ def analyze_qrels(file_path):
 
 if __name__ == "__main__":
     analyze_qrels(
-        "/home/florian/Data/dev/master-thesis/data/seed_collection/candidate_documents.res"
+        "boolean-query-generation/data/seed_collection/candidate_documents.res"
     )

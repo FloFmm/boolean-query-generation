@@ -41,3 +41,16 @@ jsonpickle
 numba
 retriv
 ranx
+
+sentence-transformers
+torchvision
+
+numpy
+
+# Utilities
+tqdm
+regex
+
+pandas
+scikit-learn
+jsonpickle

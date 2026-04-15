@@ -44,5 +44,4 @@ def analyze_querels(file_path):
 
 
 if __name__ == "__main__":
-    # analyze_querels("/home/florian/Downloads/full.train.dta.abs.2019.qrels")
-    analyze_querels("/home/florian/Data/dev/tar/training/qrels/qrel_abs_train")
+    analyze_querels("tar/training/qrels/qrel_abs_train")

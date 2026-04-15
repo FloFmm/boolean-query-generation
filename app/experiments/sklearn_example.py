@@ -6,8 +6,8 @@ import numpy as np
 import pickle
 import time
 
-file = "/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/data/bag_of_words/vectors,d=433660,mindf=10,maxdf=0.5,mesh=True.pkl"
-features_file = "/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/data/bag_of_words/feature_names,d=433660,mindf=10,maxdf=0.5,mesh=True.pkl"
+file = "[Path to your workspace]/systematic-review-datasets/data/bag_of_words/vectors,d=433660,mindf=10,maxdf=0.5,mesh=True.pkl"
+features_file = "[Path to your workspace]/systematic-review-datasets/data/bag_of_words/feature_names,d=433660,mindf=10,maxdf=0.5,mesh=True.pkl"
 with open(file, "rb") as f:
     X = pickle.load(f)
 with open(features_file, "rb") as f:

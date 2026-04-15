@@ -59,10 +59,10 @@ def get_filenames_set(path):
 def get_tar_review_ids(year=2018):
     if year == 2017:
         tar2017_train = read_qrels_first_column_set(
-            "/data/horse/ws/flml293c-master-thesis/tar/2017-TAR/training/qrels/train.combined.qrels"
+            "[Path to your workspace]/tar/2017-TAR/training/qrels/train.combined.qrels"
         )
         tar2017_test = read_qrels_first_column_set(
-            "/data/horse/ws/flml293c-master-thesis/tar/2017-TAR/testing/qrels/test.combined.qrels"
+            "[Path to your workspace]/tar/2017-TAR/testing/qrels/test.combined.qrels"
         )
         print("Overlap:", len(tar2017_test & tar2017_train))
         print("Number:", len(tar2017_test | tar2017_train))
@@ -71,22 +71,22 @@ def get_tar_review_ids(year=2018):
     if year == 2018:
         tar2018_train = set(
             get_filenames_set(
-                "/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Training/protocols"
+                "[Path to your workspace]/tar/2018-TAR/Task1/Training/protocols"
             )
         )
         tar2018_train |= set(
             get_filenames_set(
-                "/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Training/protocols_revised_03092018"
+                "[Path to your workspace]/tar/2018-TAR/Task1/Training/protocols_revised_03092018"
             )
         )
         tar2018_test = set(
             get_filenames_set(
-                "/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Testing/protocols"
+                "[Path to your workspace]/tar/2018-TAR/Task1/Testing/protocols"
             )
         )
         tar2018_test |= set(
             get_filenames_set(
-                "/data/horse/ws/flml293c-master-thesis/tar/2018-TAR/Task1/Testing/protocols_revised_20180708"
+                "[Path to your workspace]/tar/2018-TAR/Task1/Testing/protocols_revised_20180708"
             )
         )
         print("Overlap:", len(tar2018_test & tar2018_train))

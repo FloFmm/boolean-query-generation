@@ -13,7 +13,7 @@ from mesh_term import expand_mesh_terms
 # ==========================
 # CONFIG
 # ==========================
-folder_path = "/home/florian/.cache/huggingface/datasets/tar2018//*.csv"  # CSV folder
+folder_path = "/home/.cache/huggingface/datasets/tar2018//*.csv"  # CSV folder
 Entrez.email = "florian.maurus.mueller@gmail.com"  # Required by NCBI API
 pause_seconds = 0.35  # Avoid hitting API rate limit
 

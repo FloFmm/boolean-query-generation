@@ -27,7 +27,7 @@ echo "Upgrading pip..."
 pip install --upgrade pip
 
 echo "Installing requirements..."
-pip install -r /data/horse/ws/flml293c-master-thesis/boolean-query-generation/requirements.txt
+pip install -r [Path to your workspace]/boolean-query-generation/requirements.txt
 
 echo "Conda environment ready at $ENV_PATH"
 echo "To activate it later:"

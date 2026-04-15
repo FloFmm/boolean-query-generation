@@ -390,7 +390,7 @@ if __name__ == "__main__":
     opt_beta = args.opt_beta
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_name = f"run_10_nodes_10tasks_1cpu_per_task_opt_beta={opt_beta}"
-    run_path = f"/data/horse/ws/flml293c-master-thesis/boolean-query-generation/data/statistics/optuna/{run_name}"
+    run_path = f"[Path to your workspace]/boolean-query-generation/data/statistics/optuna/{run_name}"
     os.makedirs(run_path, exist_ok=True)
 
     initial_solutions = [s["params"] for s in load_initial_solutions()]

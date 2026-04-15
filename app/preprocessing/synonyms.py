@@ -3,10 +3,10 @@ from pathlib import Path
 NLTK_DATA_PATH = Path("../systematic-review-datasets/data/nltk_data")
 import nltk
 
-# nltk.download("wordnet", download_dir="/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/data/nltk_data")
-# nltk.download("omw-1.4", download_dir="/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/data/nltk_data")
-# nltk.download("punkt", download_dir="/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/data/nltk_data")
-# nltk.download("averaged_perceptron_tagger", download_dir="/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/data/nltk_data")
+# nltk.download("wordnet", download_dir="[Path to your workspace]/systematic-review-datasets/data/nltk_data")
+# nltk.download("omw-1.4", download_dir="[Path to your workspace]/systematic-review-datasets/data/nltk_data")
+# nltk.download("punkt", download_dir="[Path to your workspace]/systematic-review-datasets/data/nltk_data")
+# nltk.download("averaged_perceptron_tagger", download_dir="[Path to your workspace]/systematic-review-datasets/data/nltk_data")
 # Tell NLTK to look here first
 nltk.data.path.insert(0, str(NLTK_DATA_PATH))
 from nltk import word_tokenize, pos_tag

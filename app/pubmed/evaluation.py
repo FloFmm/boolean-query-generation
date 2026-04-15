@@ -1,14 +1,10 @@
 import json
 import time
 import os
-import re
 from pathlib import Path
-from tqdm import tqdm
-from Bio import Entrez
 from app.pubmed.retrieval import classify_by_mesh
 from app.tree_learning.logical_query_generation import (
     train_text_classifier,
-    build_semantic_map,
     map_synonyms,
     build_synonym_map,
 )
@@ -16,8 +12,6 @@ from app.tree_learning.disjunctive_dt import GreedyORDecisionTree
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# from imodels import SkopeRulesClassifier, DecisionTreeClassifier
-from sklearn.tree import DecisionTreeClassifier
 from typing import List
 
 

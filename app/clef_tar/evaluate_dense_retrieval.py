@@ -5,9 +5,9 @@ import numpy as np
 from typing import Dict, List, Set
 from app.pubmed.retrieval import search_pubmed_med_cpt, load_pubmed_embeddings
 
-QRELS_PATH = "/home/florian/Data/dev/tar/testing/qrels/qrel_abs_test.txt"
-TOPICS_DIR = "/home/florian/Data/dev/tar/testing/topics"
-EMBEDDINGS_DIR = "/home/florian/Data/dev/master-thesis/data/pubmed/embeddings"
+QRELS_PATH = "tar/testing/qrels/qrel_abs_test.txt"
+TOPICS_DIR = "tar/testing/topics"
+EMBEDDINGS_DIR = "boolean-query-generation/data/pubmed/embeddings"
 
 
 def filter_qrels_to_embeddings(qrels, valid_pmids):

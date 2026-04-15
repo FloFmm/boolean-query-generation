@@ -28,7 +28,7 @@ source "$VENV_PATH/bin/activate"
 pip install --upgrade pip
 
 # install requirements (optional)
-pip install -r /data/horse/ws/flml293c-master-thesis/boolean-query-generation/requirements_disjunctive_dt.txt
+pip install -r [Path to your workspace]/boolean-query-generation/requirements_disjunctive_dt.txt
 
 echo "Virtual environment ready at $VENV_PATH"
 echo "To activate it: source $VENV_PATH/bin/activate"

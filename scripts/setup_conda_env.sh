@@ -20,5 +20,5 @@ if [ ! -d "./csmed_conda" ]; then
 fi
 
 # Use the Python inside the environment explicitly (instead of conda activate ./csmed_conda)
-CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
+CSMED_PY=[Path to your workspace]/systematic-review-datasets/csmed_conda/bin/python
 $CSMED_PY -m pip install -r requirements.txt

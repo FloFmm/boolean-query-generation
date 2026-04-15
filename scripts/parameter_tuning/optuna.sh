@@ -14,7 +14,7 @@
 # export OPENBLAS_NUM_THREADS=1
 # Otherwise NumPy may spawn threads silently → catastrophic oversubscription.
 
-CSMED_PY=/data/horse/ws/flml293c-master-thesis/systematic-review-datasets/csmed_conda/bin/python
+CSMED_PY=[Path to your workspace]/systematic-review-datasets/csmed_conda/bin/python
 
 cd boolean-query-generation
 srun $CSMED_PY -m app.parameter_tuning.optuna --opt_beta 3.0

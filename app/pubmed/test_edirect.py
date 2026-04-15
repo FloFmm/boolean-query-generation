@@ -7,8 +7,6 @@ and save them to a text file. Works for very large queries (>10,000 PMIDs).
 """
 
 import subprocess
-import math
-import sys
 
 # SUPER SLOW
 
