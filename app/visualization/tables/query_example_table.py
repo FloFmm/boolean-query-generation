@@ -494,7 +494,6 @@ if __name__ == "__main__":
                 positives,
                 end_year=end_year,
             )
-            # precision, recall, retrieved_count, TP = 1,1,1,1 #TODO remove
 
             # compare to mine
             pubmed_query, pubmed_precision, pubmed_recall = my_query_performance[

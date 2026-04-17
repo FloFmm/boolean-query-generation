@@ -13,7 +13,7 @@ python -m app.visualization.visualize_optuna
 
 
 # tables
-# python -m app.visualization.feature_replacement_map
+python -m app.visualization.feature_replacement_map
 python -m app.statistics.baseline_values
 
 python -m app.visualization.tables.query_example_table

@@ -61,7 +61,7 @@ TOP_K = {
 FIXED_TOP_K = 752
 COSINE_PCT_THRESHOLD = 0.0266
 
-DEBUG = False  # TODO remove
+DEBUG = False
 
 FORBIDDEN_FEATURES = {"nan"}  # used as empty abstract in csmed
 
